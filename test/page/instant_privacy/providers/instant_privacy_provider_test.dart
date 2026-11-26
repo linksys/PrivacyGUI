@@ -1,82 +1,341 @@
-// Unit tests for InstantPrivacyNotifier's reads after a poll (#1834).
+// Instant Privacy: the router's MAC filter as the notifier reads and writes
+// it, against the router behind RouterRepository and a device list built
+// from a poll.
 //
-// The notifier reads its status when polling signals a completed poll
-// (pollCompletedProvider), instead of being called by polling. The router is a
-// RouterBoundary, so what the notifier sends is observable.
+// Since #1834 the notifier also reads its status when polling signals a
+// completed poll (pollCompletedProvider): "after a poll" covers that. The other
+// tests call fetch() themselves and never assert that polling does.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
 
 import '../../../common/di.dart';
+import '../../../common/recording_polling.dart';
 import '../../../common/router_boundary.dart';
+import '../../../mocks/jnap_service_supported_mocks.dart';
+import '../../instant_device/providers/home_network_poll.dart';
+
+/// `GetMACFilterSettings`, as the router writes the addresses: lower case.
+Map<String, dynamic> _filter(String mode, List<String> macAddresses) => {
+      'macFilterMode': mode,
+      'maxMACAddresses': 32,
+      'macAddresses': macAddresses,
+    };
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
   mockDependencyRegister();
+  final services = serviceHelper as MockServiceHelper;
 
   late RouterBoundary router;
+  late RecordingPolling polling;
   late ProviderContainer container;
 
-  Map<String, dynamic> macFilter(String mode) => {
-        'macFilterMode': mode,
-        'maxMACAddresses': 32,
-        'macAddresses': const <String>[],
-      };
+  InstantPrivacyNotifier notifier() =>
+      container.read(instantPrivacyProvider.notifier);
+  InstantPrivacyState page() => container.read(instantPrivacyProvider);
 
-  int reads() => router.actions
-      .where((action) => action == JNAPAction.getMACFilterSettings)
-      .length;
-
-  setUp(() {
-    initBetterActions();
+  setUp(() async {
     router = RouterBoundary()
-      ..holds(JNAPAction.getMACFilterSettings, macFilter('Disabled'))
-      // Refused, so the device list stays out of these tests: the notifier
-      // then knows no MAC address of its own.
-      ..refuses(JNAPAction.getLocalDevice);
+      ..holds(JNAPAction.getMACFilterSettings,
+          _filter('Allow', ['a4:bb:6d:00:00:10', 'd2:60:cb:00:00:20']))
+      ..holds(JNAPAction.getLocalDevice, {'deviceID': 'laptop'})
+      ..holds(JNAPAction.getSTABSSIDs, {
+        'staBSSIDS': ['80:69:1a:00:02:51'],
+      });
+    when(services.isSupportGetSTABSSID()).thenReturn(true);
+    polling = RecordingPolling(homeNetworkPoll());
     container = ProviderContainer(overrides: [
       routerRepositoryProvider.overrideWithValue(router.repo),
+      pollingProvider.overrideWith(() => polling),
     ]);
-  });
-
-  tearDown(() => container.dispose());
-
-  /// Builds the notifier, as a screen that shows it does, and lets its own
-  /// first read finish.
-  Future<void> buildNotifier() async {
+    // Building the notifier starts a fetch of its own; let it land, so each
+    // test starts from the filter the router holds and an empty log.
     container.read(instantPrivacyProvider);
     await pumpEventQueue();
-  }
-
-  test('a completed poll reads the status', () async {
-    await buildNotifier();
-    final before = reads();
-    router.holds(JNAPAction.getMACFilterSettings, macFilter('Allow'));
-
-    container.read(pollCompletedProvider.notifier).state++;
-    await pumpEventQueue();
-
-    expect(reads(), before + 1);
-    expect(container.read(instantPrivacyProvider).status.mode,
-        MacFilterMode.allow);
+    router.sent.clear();
   });
 
-  test('a failed read after a poll stays with Instant Privacy', () async {
-    // An error that escaped the listener would fail this test as an uncaught
-    // error, and in the app it would never reach polling either way.
-    await buildNotifier();
-    router.refuses(JNAPAction.getMACFilterSettings, result: '_ErrorUnexpected');
+  tearDown(() {
+    container.dispose();
+    reset(services);
+  });
 
-    container.read(pollCompletedProvider.notifier).state++;
-    await pumpEventQueue();
+  group('fetch', () {
+    test('reads an allow list, in capitals', () async {
+      await notifier().fetch();
 
-    expect(container.read(instantPrivacyProvider).status.mode,
-        MacFilterMode.disabled,
-        reason: 'the status it had');
+      expect(page().settings.mode, MacFilterMode.allow);
+      expect(page().status.mode, MacFilterMode.allow);
+      expect(page().settings.macAddresses, [laptopMac, phoneMac]);
+      expect(page().settings.denyMacAddresses, isEmpty);
+      expect(page().settings.maxMacAddresses, 32);
+    });
+
+    test('reads a deny list as the deny list', () async {
+      router.holds(JNAPAction.getMACFilterSettings,
+          _filter('Deny', ['3c:22:fb:00:00:30']));
+
+      await notifier().fetch();
+
+      expect(page().settings.mode, MacFilterMode.deny);
+      expect(page().settings.denyMacAddresses, [tabletMac]);
+      expect(page().settings.macAddresses, isEmpty);
+    });
+
+    test('reads a filter that is off as disabled, with no lists', () async {
+      router.holds(JNAPAction.getMACFilterSettings,
+          _filter('Disabled', ['3c:22:fb:00:00:30']));
+
+      await notifier().fetch();
+
+      expect(page().settings.mode, MacFilterMode.disabled);
+      expect(page().status.mode, MacFilterMode.disabled);
+      expect(page().settings.macAddresses, isEmpty);
+      expect(page().settings.denyMacAddresses, isEmpty);
+    });
+
+    test("knows the MAC address of the user's own device", () async {
+      await notifier().fetch();
+
+      expect(page().settings.myMac, laptopMac);
+    });
+
+    test('has no own address when the router cannot say which device this is',
+        () async {
+      router.refuses(JNAPAction.getLocalDevice);
+
+      await notifier().fetch();
+
+      expect(page().settings.myMac, isNull);
+    });
+
+    test('has no own address when this device is not in the device list',
+        () async {
+      router.holds(JNAPAction.getLocalDevice, {'deviceID': 'unknown'});
+
+      await notifier().fetch();
+
+      expect(page().settings.myMac, isNull);
+    });
+
+    test("reads the nodes' station BSSIDs, in capitals", () async {
+      await notifier().fetch();
+
+      expect(page().settings.bssids, ['80:69:1A:00:02:51']);
+    });
+
+    test('asks for no BSSIDs on a router that cannot list them', () async {
+      when(services.isSupportGetSTABSSID()).thenReturn(false);
+
+      await notifier().fetch();
+
+      expect(router.actions, isNot(contains(JNAPAction.getSTABSSIDs)));
+      expect(page().settings.bssids, isEmpty);
+    });
+
+    test('goes on without BSSIDs when the router refuses to list them',
+        () async {
+      router.refuses(JNAPAction.getSTABSSIDs);
+
+      await notifier().fetch();
+
+      expect(page().settings.bssids, isEmpty);
+      expect(page().settings.macAddresses, [laptopMac, phoneMac]);
+    });
+
+    test('a status-only fetch updates the mode and keeps the page as it is',
+        () async {
+      await notifier().fetch();
+      notifier().setSelection(['3c:22:fb:00:00:30']);
+      router.holds(JNAPAction.getMACFilterSettings, _filter('Deny', const []));
+      router.sent.clear();
+
+      await notifier().fetch(statusOnly: true);
+
+      expect(page().status.mode, MacFilterMode.deny);
+      expect(page().settings.mode, MacFilterMode.allow);
+      expect(page().settings.macAddresses, [laptopMac, phoneMac, tabletMac]);
+      expect(router.actions, [JNAPAction.getMACFilterSettings]);
+    });
+
+    test('returns the state it ends in', () async {
+      final returned = await notifier().fetch();
+
+      expect(returned, same(page()));
+    });
+
+    test('a refused read reaches the caller and leaves the page as it was',
+        () async {
+      final before = page();
+      router.refuses(JNAPAction.getMACFilterSettings);
+
+      await expectLater(notifier().fetch(), throwsA(isA<JNAPError>()));
+
+      expect(page(), same(before));
+    });
+  });
+
+  group('save', () {
+    setUp(() => notifier().fetch());
+
+    test(
+        'with allow on, writes the chosen devices, the nodes and the '
+        "nodes' BSSIDs, each once", () async {
+      router.holds(JNAPAction.getMACFilterSettings,
+          _filter('Allow', ['a4:bb:6d:00:00:10', '80:69:1a:00:00:01']));
+      await notifier().fetch();
+
+      await notifier().save();
+
+      expect(router.payloadsOf(JNAPAction.setMACFilterSettings).single, {
+        'macFilterMode': 'Allow',
+        'macAddresses': [
+          laptopMac,
+          masterMac,
+          bedroomMac,
+          '80:69:1A:00:02:51',
+        ],
+      });
+    });
+
+    test('with deny on, writes the deny list the page set', () async {
+      notifier()
+        ..setAccess(MacFilterMode.deny)
+        ..setMacAddressList(['3c:22:fb:00:00:30']);
+
+      await notifier().save();
+
+      expect(router.payloadsOf(JNAPAction.setMACFilterSettings).single, {
+        'macFilterMode': 'Deny',
+        'macAddresses': [tabletMac],
+      });
+    });
+
+    test('turned off, writes no addresses', () async {
+      notifier().setEnable(false);
+
+      await notifier().save();
+
+      expect(router.payloadsOf(JNAPAction.setMACFilterSettings).single, {
+        'macFilterMode': 'Disabled',
+        'macAddresses': <String>[],
+      });
+    });
+
+    test('reads the filter back fresh after the save', () async {
+      notifier().setEnable(false);
+      router.holds(JNAPAction.getMACFilterSettings, _filter('Disabled', []));
+      router.sent.clear();
+      clearInteractions(router.repo);
+
+      final saved = await notifier().save();
+
+      expect(router.actions.first, JNAPAction.setMACFilterSettings);
+      expect(router.actions, contains(JNAPAction.getMACFilterSettings));
+      expect(saved.settings.mode, MacFilterMode.disabled);
+      expect(page().status.mode, MacFilterMode.disabled);
+      verify(router.repo.send(JNAPAction.getMACFilterSettings,
+              fetchRemote: true, auth: true))
+          .called(1);
+    });
+
+    test('a refused write reaches the caller, and nothing is read back',
+        () async {
+      router.refuses(JNAPAction.setMACFilterSettings);
+      router.sent.clear();
+
+      await expectLater(notifier().save(), throwsA(isA<JNAPError>()));
+
+      expect(router.actions, [JNAPAction.setMACFilterSettings]);
+      expect(page().settings.mode, MacFilterMode.allow);
+    });
+  });
+
+  group('the page edits', () {
+    setUp(() => notifier().fetch());
+
+    test('turning it on allows, turning it off disables', () {
+      notifier().setEnable(false);
+      expect(page().settings.mode, MacFilterMode.disabled);
+
+      notifier().setEnable(true);
+      expect(page().settings.mode, MacFilterMode.allow);
+    });
+
+    test('a selection adds to the allow list in capitals, once each', () {
+      notifier().setSelection(['3c:22:fb:00:00:30', 'a4:bb:6d:00:00:10']);
+
+      expect(page().settings.macAddresses, [laptopMac, phoneMac, tabletMac]);
+      expect(page().settings.denyMacAddresses, isEmpty);
+    });
+
+    test('a deny selection starts the deny list and drops the allow list', () {
+      notifier().setSelection(['3c:22:fb:00:00:30'], true);
+
+      expect(page().settings.denyMacAddresses, [tabletMac]);
+      expect(page().settings.macAddresses, isEmpty);
+    });
+
+    test('a removal takes the devices off the list it names', () {
+      notifier().removeSelection(['d2:60:cb:00:00:20']);
+      expect(page().settings.macAddresses, [laptopMac]);
+
+      notifier()
+        ..setSelection([printerMac, tabletMac], true)
+        ..removeSelection([printerMac], true);
+      expect(page().settings.denyMacAddresses, [tabletMac]);
+    });
+
+    test('a new list replaces the old one, in capitals', () {
+      notifier().setMacAddressList(['00:1e:0b:00:00:40']);
+
+      expect(page().settings.macAddresses, [printerMac]);
+    });
+  });
+
+  test('asks polling for a poll now', () async {
+    await notifier().doPolling();
+
+    expect(polling.forced, 1);
+  });
+
+  group('after a poll (#1834)', () {
+    // The notifier reads its status when polling signals a completed poll,
+    // instead of being called by polling.
+    int reads() => router.actions
+        .where((action) => action == JNAPAction.getMACFilterSettings)
+        .length;
+
+    test('a completed poll reads the status', () async {
+      router.holds(JNAPAction.getMACFilterSettings, _filter('Disabled', []));
+
+      container.read(pollCompletedProvider.notifier).state++;
+      await pumpEventQueue();
+
+      expect(reads(), 1);
+      expect(page().status.mode, MacFilterMode.disabled);
+    });
+
+    test('a failed read after a poll stays with Instant Privacy', () async {
+      // An error that escaped the listener would fail this test as an uncaught
+      // error, and in the app it would never reach polling either way.
+      router.refuses(JNAPAction.getMACFilterSettings,
+          result: '_ErrorUnexpected');
+
+      container.read(pollCompletedProvider.notifier).state++;
+      await pumpEventQueue();
+
+      expect(reads(), 1);
+      expect(page().status.mode, MacFilterMode.allow,
+          reason: 'the status it had');
+    });
   });
 }
