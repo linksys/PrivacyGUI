@@ -37,16 +37,21 @@ import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
+import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
+import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
+import 'package:privacy_gui/page/vpn/models/vpn_models.dart';
+import 'package:privacy_gui/page/vpn/providers/vpn_notifier.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 
 import '../../../common/di.dart';
 import '../../../mocks/instant_privacy_provider_mocks.dart';
 import '../../../mocks/jnap_service_supported_mocks.dart';
 import '../../../mocks/router_repository_mocks.dart';
+import '../../../test_data/vpn_test_state.dart';
 
 /// An [AuthNotifier] that reports a local login and records logouts instead of
 /// performing one.
@@ -1695,6 +1700,595 @@ void main() {
         await stopAndClearCooldown(tester);
         await advanceThroughRereads(tester);
       });
+    });
+  });
+
+  group("following the router's services", () {
+    // #1923 P2: each poll's GetDeviceInfo keeps the action table, and the
+    // gates that read the same services, on what the router reports now, as
+    // after a firmware update that adds a service.
+    const core = 'http://linksys.com/jnap/core/Core';
+    const wirelessAP5 = 'http://linksys.com/jnap/wirelessap/WirelessAP5';
+
+    Future<JNAPTransactionSuccessWrap> reporting(List<String> services) async =>
+        JNAPTransactionSuccessWrap(
+          result: 'OK',
+          data: transactions.last.commands
+              .map((command) => MapEntry(
+                  command.key,
+                  JNAPSuccess(
+                      result: 'OK',
+                      output: command.key == JNAPAction.getDeviceInfo
+                          ? {'services': services}
+                          : const {})))
+              .toList(),
+        );
+
+    testWidgets('a poll that reports new services rebuilds the action table',
+        (tester) async {
+      buildBetterActions(const [core]);
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction((_) => reporting(const [core, wirelessAP5]));
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+
+      expect(routerServices, {core, wirelessAP5});
+      expect(JNAPAction.clientDeauth.actionValue,
+          'http://linksys.com/jnap/wirelessap/ClientDeauth');
+
+      await stopAndSettle(tester);
+    });
+
+    // A poll answered after polling stopped or paused speaks for a router
+    // nobody is watching any more. The flow that stopped it builds the table
+    // for the router it moves to, and the late answer must not undo that.
+    testWidgets('a poll answered after polling stops leaves the action table '
+        'alone', (tester) async {
+      final onTheWire = Completer<JNAPTransactionSuccessWrap>();
+      buildBetterActions(const [core]);
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction((_) => onTheWire.future);
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      expect(transactions, hasLength(1), reason: 'the poll is on the wire');
+
+      notifier.stopPolling();
+      buildBetterActions(const [core, wirelessAP5]);
+      onTheWire.complete(reporting(const [core]));
+      await tester.pump();
+
+      expect(routerServices, {core, wirelessAP5},
+          reason: 'the table is the next router\'s');
+    });
+
+    testWidgets('a poll answered while polling is paused leaves the action '
+        'table alone', (tester) async {
+      final onTheWire = Completer<JNAPTransactionSuccessWrap>();
+      buildBetterActions(const [core]);
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction((_) => onTheWire.future);
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      expect(transactions, hasLength(1), reason: 'the poll is on the wire');
+
+      // What PnP does: pause polling, then build the table for its router.
+      notifier.paused = true;
+      buildBetterActions(const [core, wirelessAP5]);
+      onTheWire.complete(reporting(const [core]));
+      await tester.pump();
+
+      expect(routerServices, {core, wirelessAP5},
+          reason: "the table is PnP's router's");
+
+      notifier.paused = false;
+      await advanceToFirstPoll(tester);
+      await stopAndSettle(tester);
+    });
+  });
+
+  group('the poll completed signal (#1834)', () {
+    // The one thing a feature that reads after a poll listens to. See
+    // [pollCompletedProvider] for what it promises.
+    int completed() => container.read(pollCompletedProvider);
+
+    testWidgets('moves once per successful poll, after the poll is published',
+        (tester) async {
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction((_) => transactionSuccess());
+      final readyWhenSignalled = <bool>[];
+      container.listen(
+          pollCompletedProvider,
+          (_, __) => readyWhenSignalled
+              .add(container.read(pollingProvider).value?.isReady ?? false));
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      expect(completed(), 1);
+      await advanceOneTick(tester);
+      expect(completed(), 2);
+      expect(readyWhenSignalled, [true, true],
+          reason: 'each time, the poll had been published first');
+
+      await stopAndSettle(tester);
+    });
+
+    testWidgets('a failed poll does not move it', (tester) async {
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction((n) async {
+        if (n == 2) throw const JNAPError(result: '_ErrorUnexpected');
+        return transactionSuccess();
+      });
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      await advanceOneTick(tester);
+
+      expect(container.read(pollingProvider).hasError, isTrue);
+      expect(completed(), 1, reason: 'only the first poll succeeded');
+
+      await stopAndSettle(tester);
+    });
+
+    testWidgets('a poll answered after polling stops does not move it',
+        (tester) async {
+      // A logout stops polling while a poll may be on the wire; whatever
+      // listens must not read for a session that has ended.
+      final onTheWire = Completer<JNAPTransactionSuccessWrap>();
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction((_) => onTheWire.future);
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      notifier.stopPolling();
+      onTheWire.complete(transactionSuccess());
+      await tester.pump();
+      await tester.pump();
+
+      expect(completed(), 0);
+    });
+
+    testWidgets('a poll answered while polling is paused does not move it',
+        (tester) async {
+      // PnP and Remote Assistance pause polling for flows of their own.
+      final onTheWire = Completer<JNAPTransactionSuccessWrap>();
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction((_) => onTheWire.future);
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      notifier.paused = true;
+      onTheWire.complete(transactionSuccess());
+      await tester.pump();
+      await tester.pump();
+
+      expect(completed(), 0);
+
+      notifier.paused = false;
+      await advanceToFirstPoll(tester);
+      await stopAndSettle(tester);
+    });
+
+    testWidgets('a poll made while polling is paused moves it',
+        (tester) async {
+      // A flow that pauses polling and then polls on purpose, as a Wi-Fi
+      // save's read-back does inside holdWhile, wants that poll whole.
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction((_) => transactionSuccess());
+      notifier.paused = true;
+
+      final done = notifier.forcePolling();
+      await tester.pump();
+      await tester.pump();
+      await done;
+
+      expect(transactions, hasLength(1));
+      expect(completed(), 1);
+
+      notifier.paused = false;
+      await advanceToFirstPoll(tester);
+      await stopAndSettle(tester);
+    });
+
+    testWidgets('a client signal merge does not move it', (tester) async {
+      final helper = serviceHelper as MockServiceHelper;
+      when(helper.isSupportNodesNetworkConnections()).thenReturn(true);
+      addTearDown(() => reset(helper));
+      whenSend((action) async => action ==
+              JNAPAction.getNodesWirelessNetworkConnections
+          ? JNAPSuccess(result: 'OK', output: const {
+              'nodeWirelessConnections': [
+                {
+                  'deviceID': 'node',
+                  'connections': [
+                    {'macAddress': 'AA:BB:CC:DD:EE:FF', 'signal': -60}
+                  ],
+                }
+              ],
+            })
+          : action == JNAPAction.getDeviceMode
+              ? deviceMode('Master')
+              : JNAPSuccess(result: 'OK', output: const {}));
+      whenTransaction((_) => transactionSuccess());
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      expect(completed(), 1);
+
+      final done = notifier.refreshClientSignals();
+      await advance(
+          tester,
+          const Duration(
+              seconds:
+                  clientSignalRereadDelayInSec * clientSignalRereadCount + 1));
+      await done;
+
+      expect(
+          sends.where(
+              (a) => a == JNAPAction.getNodesWirelessNetworkConnections),
+          hasLength(clientSignalRereadCount),
+          reason: 'the re-reads were merged');
+      expect(completed(), 1);
+
+      notifier.stopPolling();
+      notifier.init();
+      await tester.pump();
+    });
+  });
+
+  group("the features' reads after a poll (#1834 P0)", () {
+    // The net for #1834, which moves these reads out of polling and into the
+    // features, as listeners of a "poll completed" signal. Each test goes
+    // through the router repository, the seam that move leaves in place: what
+    // reaches the router, and what the dashboard is told. Instant Privacy is the
+    // real notifier, built before polling starts, as the dashboard's quick panel
+    // builds it.
+
+    const wanConnected = {
+      'macAddress': '00:00:00:00:00:01',
+      'detectedWANType': 'DHCP',
+      'wanStatus': 'Connected',
+      'wanIPv6Status': 'Disconnected',
+      'supportedWANTypes': ['DHCP'],
+    };
+
+    /// What Instant Privacy's next read of its settings answers.
+    late Future<JNAPSuccess> Function() macFilterSettings;
+
+    JNAPSuccess macFilter(String mode) => JNAPSuccess(result: 'OK', output: {
+          'macFilterMode': mode,
+          'maxMACAddresses': 32,
+          'macAddresses': const <String>[],
+        });
+
+    int sent(JNAPAction action) => sends.where((a) => a == action).length;
+
+    /// The polls: core transactions, told apart from a feature's own
+    /// transaction by the getDeviceInfo every poll carries.
+    int polls() => transactions
+        .where((t) =>
+            t.commands.any((command) => command.key == JNAPAction.getDeviceInfo))
+        .length;
+
+    /// Every request answers OK, the WAN is connected, and Instant Privacy's
+    /// read answers [macFilterSettings]. [outputs] gives other actions theirs.
+    void whenRouterAnswers(
+        {Map<JNAPAction, Map<String, dynamic>> outputs = const {}}) {
+      whenSend((action) {
+        if (action == JNAPAction.getMACFilterSettings) {
+          return macFilterSettings();
+        }
+        if (action == JNAPAction.getDeviceMode) {
+          return Future.value(deviceMode('Master'));
+        }
+        return Future.value(
+            JNAPSuccess(result: 'OK', output: outputs[action] ?? const {}));
+      });
+      whenTransaction((_) async => JNAPTransactionSuccessWrap(
+            result: 'OK',
+            data: transactions.last.commands
+                .map((command) => MapEntry(
+                    command.key,
+                    JNAPSuccess(
+                        result: 'OK',
+                        output: command.key == JNAPAction.getWANStatus
+                            ? wanConnected
+                            : outputs[command.key] ?? const {})))
+                .toList(),
+          ));
+    }
+
+    /// Builds Instant Privacy, as the dashboard does, and lets its own first
+    /// read finish.
+    Future<void> buildInstantPrivacy(WidgetTester tester) async {
+      container.read(instantPrivacyProvider);
+      await tester.pump();
+      await tester.pump();
+    }
+
+    setUp(() {
+      // The real Instant Privacy notifier: no override for it here.
+      container.dispose();
+      container = ProviderContainer(overrides: [
+        routerRepositoryProvider.overrideWithValue(mockRepo),
+        authProvider.overrideWith(() => auth),
+      ]);
+      notifier = container.read(pollingProvider.notifier);
+      macFilterSettings = () async => macFilter('Disabled');
+    });
+
+    testWidgets('isReady does not wait for Instant Privacy', (tester) async {
+      // Changed by #1834 P1 (decided 2026-11-26). Until then a poll was
+      // published as ready only once the features had read. Now they read after
+      // the poll completes, so isReady does not wait for them.
+      whenRouterAnswers();
+      await buildInstantPrivacy(tester);
+      final status = Completer<JNAPSuccess>();
+      macFilterSettings = () => status.future;
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      expect(polls(), 1, reason: 'the poll has answered');
+      expect(container.read(pollingProvider).value?.isReady, isTrue,
+          reason: 'though Instant Privacy has not');
+
+      status.complete(macFilter('Allow'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(container.read(instantPrivacyProvider).status.mode,
+          MacFilterMode.allow,
+          reason: 'it read after the poll');
+
+      await stopAndSettle(tester);
+    });
+
+    testWidgets(
+        'a failed Instant Privacy read leaves the poll and the internet as they '
+        'are', (tester) async {
+      // Changed by #1834 P1 (decided 2026-11-26, as a bug). Until then a
+      // feature's failed read failed the poll, and the internet showed offline.
+      whenRouterAnswers();
+      await buildInstantPrivacy(tester);
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      expect(container.read(internetStatusProvider), InternetStatus.online,
+          reason: 'the WAN is connected');
+
+      macFilterSettings =
+          () async => throw const JNAPError(result: '_ErrorUnexpected');
+      await advanceOneTick(tester);
+
+      expect(polls(), 2);
+      expect(container.read(pollingProvider).hasError, isFalse,
+          reason: 'the transaction answered OK');
+      expect(container.read(internetStatusProvider), InternetStatus.online);
+
+      await stopAndSettle(tester);
+    });
+
+    testWidgets('a timed-out Instant Privacy read does not count towards '
+        'silence', (tester) async {
+      // Changed by #1834 P1 as well (decided 2026-11-26). Until then a
+      // feature's timeout got the router reported unreachable.
+      whenRouterAnswers();
+      await buildInstantPrivacy(tester);
+      macFilterSettings = () async => throw TimeoutException('no answer');
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      await advanceToUnreachable(tester);
+
+      expect(container.read(routerUnreachableProvider), 0,
+          reason: 'every transaction was answered');
+
+      await stopAndSettle(tester);
+    });
+
+    testWidgets('each completed poll reads each feature once', (tester) async {
+      final helper = serviceHelper as MockServiceHelper;
+      when(helper.isSupportLedMode()).thenReturn(true);
+      when(helper.isSupportVPN()).thenReturn(true);
+      addTearDown(() => reset(helper));
+      final vpn = VPNTestState.defaultState;
+      whenRouterAnswers(outputs: {
+        JNAPAction.getLedNightModeSetting: {'Enable': false},
+        JNAPAction.getVPNUser: {
+          'credentials': vpn.settings.userCredentials!.toMap(),
+        },
+        JNAPAction.getVPNGateway: {
+          'settings': vpn.settings.gatewaySettings!.toMap(),
+        },
+        JNAPAction.getVPNService: {
+          'settings': VPNServiceSettings(
+            enabled: true,
+            autoConnect: true,
+            statistics: vpn.status.statistics,
+            tunnelStatus: vpn.status.tunnelStatus,
+          ).toMap(),
+        },
+      });
+      // Every screen that shows a feature builds its notifier; VPN's tile and
+      // page build vpnProvider.
+      await buildInstantPrivacy(tester);
+      container.read(vpnProvider);
+      sends.clear();
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      await advanceOneTick(tester);
+
+      expect(polls(), 2);
+      expect(container.read(pollingProvider).hasError, isFalse);
+      expect(sent(JNAPAction.getMACFilterSettings), 2,
+          reason: 'Instant Privacy, once a poll');
+      expect(sent(JNAPAction.getLedNightModeSetting), 2,
+          reason: 'the node lights, once a poll');
+      expect(sent(JNAPAction.getVPNService), 2, reason: 'VPN, once a poll');
+
+      await stopAndSettle(tester);
+    });
+
+    testWidgets(
+        'a client signal refresh merges into the poll and reads no feature',
+        (tester) async {
+      // Each merge publishes the poll's value again, up to twice a tick. A
+      // feature that read on every published value would read up to three
+      // times a tick while a page shows client signals.
+      final helper = serviceHelper as MockServiceHelper;
+      when(helper.isSupportNodesNetworkConnections()).thenReturn(true);
+      addTearDown(() => reset(helper));
+      whenRouterAnswers(outputs: {
+        JNAPAction.getNodesWirelessNetworkConnections: {
+          'nodeWirelessConnections': [
+            {
+              'deviceID': 'node',
+              'connections': [
+                {'macAddress': 'AA:BB:CC:DD:EE:FF', 'signal': -60}
+              ],
+            }
+          ],
+        },
+      });
+      await buildInstantPrivacy(tester);
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      final reads = sent(JNAPAction.getMACFilterSettings);
+      final rereads = sent(JNAPAction.getNodesWirelessNetworkConnections);
+
+      final done = notifier.refreshClientSignals();
+      await advance(
+          tester,
+          const Duration(
+              seconds:
+                  clientSignalRereadDelayInSec * clientSignalRereadCount + 1));
+      await done;
+
+      expect(sent(JNAPAction.getNodesWirelessNetworkConnections),
+          rereads + clientSignalRereadCount,
+          reason: 'the re-reads went out and were merged');
+      expect(sent(JNAPAction.getMACFilterSettings), reads,
+          reason: 'a merge is not a completed poll');
+
+      // The client signal cooldown outlives a stop on purpose; init clears it.
+      notifier.stopPolling();
+      notifier.init();
+      await tester.pump();
+    });
+
+    testWidgets('a poll answered after polling stops reads no feature',
+        (tester) async {
+      // A logout stops polling while a poll may still be on the wire. When that
+      // poll answers, the features must not read: the session that asked is
+      // gone, and their reads would carry the factory default credential
+      // (#1904).
+      whenRouterAnswers();
+      await buildInstantPrivacy(tester);
+      final onTheWire = Completer<JNAPTransactionSuccessWrap>();
+      whenTransaction((_) => onTheWire.future);
+      final reads = sent(JNAPAction.getMACFilterSettings);
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      expect(polls(), 1, reason: 'the poll is on the wire');
+
+      notifier.stopPolling();
+      onTheWire.complete(JNAPTransactionSuccessWrap(
+        result: 'OK',
+        data: transactions.last.commands
+            .map((command) => MapEntry(
+                command.key, JNAPSuccess(result: 'OK', output: const {})))
+            .toList(),
+      ));
+      await tester.pump();
+      await tester.pump();
+
+      expect(sent(JNAPAction.getMACFilterSettings), reads,
+          reason: 'nobody is watching this router any more');
+    });
+
+    testWidgets('a poll answered after polling stops makes no read of its own',
+        (tester) async {
+      // Polling's own reads after a poll (the node lights here; Remote
+      // Assistance's session check is compiled out of these tests) would
+      // carry the factory default credential after a logout too.
+      final helper = serviceHelper as MockServiceHelper;
+      when(helper.isSupportLedMode()).thenReturn(true);
+      addTearDown(() => reset(helper));
+      whenRouterAnswers(outputs: {
+        JNAPAction.getLedNightModeSetting: {'Enable': false},
+      });
+      final onTheWire = Completer<JNAPTransactionSuccessWrap>();
+      whenTransaction((_) => onTheWire.future);
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      notifier.stopPolling();
+      onTheWire.complete(JNAPTransactionSuccessWrap(
+        result: 'OK',
+        data: transactions.last.commands
+            .map((command) => MapEntry(
+                command.key, JNAPSuccess(result: 'OK', output: const {})))
+            .toList(),
+      ));
+      await tester.pump();
+      await tester.pump();
+
+      expect(sent(JNAPAction.getLedNightModeSetting), 0);
+    });
+
+    testWidgets('a poll made while polling is paused makes its own reads',
+        (tester) async {
+      // The pausing flow's own poll, such as the first login's firmware
+      // finish, still reads the node lights.
+      final helper = serviceHelper as MockServiceHelper;
+      when(helper.isSupportLedMode()).thenReturn(true);
+      addTearDown(() => reset(helper));
+      whenRouterAnswers(outputs: {
+        JNAPAction.getLedNightModeSetting: {'Enable': false},
+      });
+      notifier.paused = true;
+
+      final done = notifier.forcePolling();
+      await tester.pump();
+      await tester.pump();
+      await done;
+
+      expect(polls(), 1);
+      expect(sent(JNAPAction.getLedNightModeSetting), 1);
+
+      notifier.paused = false;
+      await advanceToFirstPoll(tester);
+      await stopAndSettle(tester);
+    });
+
+    testWidgets(
+        "Instant Privacy's doPolling brings one poll and one read, then stops",
+        (tester) async {
+      // InstantPrivacyNotifier.doPolling() -> forcePolling() -> the read. The
+      // read must not start another poll, or the two would loop.
+      whenRouterAnswers();
+      await buildInstantPrivacy(tester);
+      final reads = sent(JNAPAction.getMACFilterSettings);
+
+      final done = container.read(instantPrivacyProvider.notifier).doPolling();
+      await tester.pump();
+      await tester.pump();
+      await done;
+
+      expect(polls(), 1);
+      expect(sent(JNAPAction.getMACFilterSettings), reads + 1);
+
+      await advance(tester,
+          const Duration(seconds: BuildConfig.refreshTimeInterval - 1));
+      expect(polls(), 1, reason: 'nothing comes round again before the tick');
+      expect(sent(JNAPAction.getMACFilterSettings), reads + 1);
+
+      await stopAndSettle(tester);
     });
   });
 }

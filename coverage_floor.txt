@@ -10,4 +10,4 @@
 # varies again, find the test that leaves a line to timing and make it
 # deterministic, rather than lower the floor.
 # Lower the floor only with the reason in the PR.
-46.6
+58.5

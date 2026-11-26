@@ -50,8 +50,14 @@ class StaticRoutingRuleNotifier extends Notifier<StaticRoutingRuleState> {
   }
 
   bool isValidSubnetMask(int perfixLength) {
-    return NetworkUtils.isValidSubnetMask(
-        NetworkUtils.prefixLengthToSubnetMask(perfixLength));
+    // NetworkUtils.isValidSubnetMask throws for a prefix outside 8 to 30, as
+    // SubnetMaskRule knows; here that is an invalid mask.
+    try {
+      return NetworkUtils.isValidSubnetMask(
+          NetworkUtils.prefixLengthToSubnetMask(perfixLength));
+    } on FormatException {
+      return false;
+    }
   }
 
   bool isValidIpAddress(String ipAddress, [bool localIPOnly = false]) {

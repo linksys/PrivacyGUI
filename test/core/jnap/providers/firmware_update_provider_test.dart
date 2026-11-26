@@ -119,6 +119,7 @@ void main() {
       onCompleted: anyNamed('onCompleted'),
       requestTimeoutOverride: anyNamed('requestTimeoutOverride'),
       auth: anyNamed('auth'),
+      logoutGeneration: anyNamed('logoutGeneration'),
     )).thenAnswer((invocation) {
       final named = invocation.namedArguments;
       scheduledActions.add(named[#action] as JNAPAction);

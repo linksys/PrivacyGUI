@@ -7,7 +7,7 @@
   "baseline": {
     "ref": "1.0.0",
     "commit": "878c31de23416d6459e4a2de659907f8a5caf74e",
-    "about": "The JNAP release in the oldest firmware 1.x still supports. Its services need no gate. Provisional until #1923 confirms it."
+    "about": "The JNAP release in the oldest firmware 1.x still supports. Its services need no gate (#1923)."
   },
   "services": {
     "http://linksys.com/HNAPExt/HND/HND": [

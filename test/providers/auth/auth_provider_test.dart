@@ -217,7 +217,8 @@ void main() {
     });
 
     // Only the cloud account login, removed in #1849, stored a refresh token.
-    test('says an expired account login token is over too: nothing refreshes it',
+    test(
+        'says an expired account login token is over too: nothing refreshes it',
         () async {
       start(secure: {
         pSessionToken: _token(expiresIn: 60, refreshToken: 'refresh'),
@@ -228,8 +229,7 @@ void main() {
           throwsA(isA<SessionTokenExpiredException>()));
     });
 
-    test('handleSessionTokenError settles any error as no token',
-        () async {
+    test('handleSessionTokenError settles any error as no token', () async {
       expect(
           await notifier().handleSessionTokenError(
               NoSessionTokenFoundException(), StackTrace.empty),
@@ -321,8 +321,40 @@ void main() {
         expect(await stored(key), isNull, reason: key);
       }
       expect(auth().value?.loginType, LoginType.none);
-      expect(polling.stopped, 1);
+      // Stopped first, and again at the end (#1904): a start-up already under
+      // way may have started it again while the stores were being cleared.
+      expect(polling.stopped, isPositive);
       expect(container.read(selectedNetworkIdProvider), isNull);
+    });
+
+    test('stops polling before it forgets the login', () async {
+      // A Router AI build forgets the login before it clears the stores, and a
+      // poll that ticked in that gap went out with the factory default
+      // password (#1904).
+      start(secure: {pLocalPassword: 'TestAdmin1!'});
+      await notifier().init();
+      int? stoppedWhenForgotten;
+      container.listen<AsyncValue<AuthState>>(authProvider, (_, next) {
+        if (next.value?.loginType == LoginType.none) {
+          stoppedWhenForgotten ??= polling.stopped;
+        }
+      });
+
+      await notifier().logout();
+
+      expect(stoppedWhenForgotten, isPositive);
+    });
+
+    test('moves the logout generation on', () async {
+      start(secure: {pLocalPassword: 'TestAdmin1!'});
+      final before = notifier().logoutGeneration;
+      expect(notifier().loggedOutSince(before), isFalse);
+
+      await notifier().logout();
+
+      expect(notifier().logoutGeneration, isNot(before));
+      expect(notifier().loggedOutSince(before), isTrue);
+      expect(notifier().loggedOutSince(notifier().logoutGeneration), isFalse);
     });
   });
 
@@ -344,7 +376,7 @@ void main() {
           errorMessage: 'Invalid session token: agent-token'));
 
       expect(await stored(pLocalPassword), isNull);
-      expect(polling.stopped, 1);
+      expect(polling.stopped, isPositive);
     });
 
     test('logs out when the stored token is the one turned down', () async {

@@ -47,6 +47,13 @@ class MockServiceHelper extends _i1.Mock implements _i2.ServiceHelper {
       ) as bool);
 
   @override
+  bool isSupportAutoMaster([List<String>? services]) => (super.noSuchMethod(
+        Invocation.method(#isSupportAutoMaster, [services]),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
   bool isSupportGuestNetwork([List<String>? services]) => (super.noSuchMethod(
         Invocation.method(#isSupportGuestNetwork, [services]),
         returnValue: false,
@@ -167,13 +174,6 @@ class MockServiceHelper extends _i1.Mock implements _i2.ServiceHelper {
   bool isSupportChildFactoryReset([List<String>? services]) =>
       (super.noSuchMethod(
         Invocation.method(#isSupportChildFactoryReset, [services]),
-        returnValue: false,
-        returnValueForMissingStub: false,
-      ) as bool);
-
-  @override
-  bool isSupportWANExternal([List<String>? services]) => (super.noSuchMethod(
-        Invocation.method(#isSupportWANExternal, [services]),
         returnValue: false,
         returnValueForMissingStub: false,
       ) as bool);

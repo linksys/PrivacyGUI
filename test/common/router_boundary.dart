@@ -85,6 +85,7 @@ class RouterBoundary {
       onCompleted: anyNamed('onCompleted'),
       requestTimeoutOverride: anyNamed('requestTimeoutOverride'),
       auth: anyNamed('auth'),
+      logoutGeneration: anyNamed('logoutGeneration'),
     )).thenAnswer((invocation) {
       final named = invocation.namedArguments;
       return _poll(
@@ -126,8 +127,9 @@ class RouterBoundary {
   }
 
   /// The router answers [action] with each of [answers] in turn, and with the
-  /// last from then on. An answer is an output map, or a [JNAPError] the
-  /// router answers with instead.
+  /// last from then on. An answer is an output map, a [JNAPError] the router
+  /// answers with instead, or an [Exception] the send throws because no answer
+  /// came back, such as a `ClientException` from an unreachable router.
   void holdsInTurn(JNAPAction action, List<Object> answers) {
     if (answers.isEmpty) {
       throw ArgumentError.value(
@@ -137,6 +139,7 @@ class RouterBoundary {
       for (final answer in answers)
         switch (answer) {
           final JNAPError error => () => throw error,
+          final Exception error => () => throw error,
           final Map<String, dynamic> output => () =>
               JNAPSuccess(result: 'OK', output: output),
           _ => throw ArgumentError.value(answer, 'answers'),
