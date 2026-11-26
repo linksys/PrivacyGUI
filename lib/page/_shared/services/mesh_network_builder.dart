@@ -39,7 +39,10 @@ import 'package:privacy_gui/validator_rules/lan_host_ipv4.dart';
 /// 1. its MAC is a DataElements node: that node's own row;
 /// 2. marked: an offline node, built as a [SlaveNode] with no DataElements ID,
 ///    whether the row is active or not;
-/// 3. anything else: a client.
+/// 3. a node's backhaul station ([MeshTopologyInfo.backhaulStations]): no
+///    entry at all. It is part of the mesh, not a client (#1839); an agent's
+///    backhaul station has a row while the agent rejoins;
+/// 4. anything else: a client.
 ///
 /// **A marked row that is active is still an offline node.** The mark says the
 /// MAC *was* a node and DataElements says it is not one now, while `Active`
@@ -96,11 +99,16 @@ class MeshNetworkBuilder {
     //    no nodes at all (the first build before the mesh read returns, or a
     //    first mesh read that failed; a later failure keeps the topology
     //    already known, in `DevicesDataNotifier`), nothing is known about
-    //    which agents are up, the same
-    //    rule `SlaveNode.livenessKnown` keeps, so no offline node is built and
-    //    the row is read as a client, as before #1443.
+    //    which agents are up, the same rule `SlaveNode.livenessKnown` keeps,
+    //    so no offline node is built and the row is read as a client, as
+    //    before #1443.
+    //
+    //    A node's backhaul station is dropped (#1839). Its MACs are compared
+    //    in the same normalized form as the node test, so a separator
+    //    spelling cannot let one through.
     final nodeMacSet =
         meshNodeMacSet(meshTopology.nodes.map((n) => n.deviceId));
+    final backhaulStationSet = meshNodeMacSet(meshTopology.backhaulStations);
     final meshAnswered = meshTopology.isNotEmpty;
     final nodeHostRows = <String, ConnectedDevice>{};
     final offlineNodeRows = <String, ConnectedDevice>{};
@@ -111,6 +119,8 @@ class MeshNetworkBuilder {
         nodeHostRows[meshNodeMacKey(d.macAddress)] ??= d;
       } else if (meshAnswered && _isOfflineNodeRow(d)) {
         offlineNodeRows[meshNodeMacKey(d.macAddress)] ??= d;
+      } else if (isMeshNodeHost(d.macAddress, backhaulStationSet)) {
+        continue;
       } else if (d.interface_.isNotEmpty || d.isActive) {
         clientHostDevices.add(d);
       }

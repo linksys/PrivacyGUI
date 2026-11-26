@@ -2812,4 +2812,115 @@ void main() {
       expect(noStamp.offlineSince, isNull);
     });
   });
+
+  // #1839. While an agent rejoins, its backhaul station has a Hosts row for
+  // about 50 s, shaped as on the bench: active, IPAddress 0.0.0.0, no host
+  // name, on Wi-Fi.
+  group('MeshNetworkBuilder.build — a backhaul station (#1839)', () {
+    const controllerMac = 'AA:BB:CC:DD:EE:01';
+    const agentMac = 'aa:bb:cc:dd:ee:08';
+    const backhaulStaMac = 'aa:bb:cc:dd:ee:0d';
+    final backhaulStations = {backhaulStaMac.toUpperCase()};
+
+    ConnectedDevice backhaulStaRow({String mac = backhaulStaMac}) =>
+        buildConnectedDevice(
+          macAddress: mac,
+          instancePath: 'Device.Hosts.Host.4.',
+          ipAddress: '0.0.0.0',
+          interface_: 'Device.WiFi.Radio.1',
+          interfaceType: 'Wi-Fi',
+          isActive: true,
+        );
+
+    MeshNetwork buildWith(
+      List<ConnectedDevice> rows, {
+      Set<String> backhaulStations = const {},
+    }) =>
+        MeshNetworkBuilder.build(
+          connectedDevices: ConnectedDevices(items: rows),
+          wifiClientMap: {},
+          connectionDetailMap: {},
+          meshTopology: MeshTopologyInfo(
+            nodes: [buildMasterNode(deviceId: controllerMac)],
+            clientToNodeMap: const {},
+            backhaulStations: backhaulStations,
+          ),
+          gatewayName: 'Router',
+        );
+
+    test('its row is neither a node nor a client', () {
+      final result =
+          buildWith([backhaulStaRow()], backhaulStations: backhaulStations);
+
+      expect(result.slaves, isEmpty);
+      expect(result.allClients, isEmpty);
+    });
+
+    test('during a rejoin only the offline extender is listed', () {
+      final result = buildWith([
+        buildConnectedDevice(
+          macAddress: agentMac,
+          instancePath: 'Device.Hosts.Host.5.',
+          isActive: false,
+          linksysIsMeshNode: true,
+          activeLastChange: DateTime.utc(2026, 11, 17, 6, 23),
+        ),
+        backhaulStaRow(),
+      ], backhaulStations: backhaulStations);
+
+      expect(result.slaves.single.isOnline, isFalse);
+      expect(result.allClients, isEmpty);
+    });
+
+    // The backhaul test comes after the node tests, so a MAC that is a
+    // node's and also in the set stays that node's row.
+    test("a node's own row is kept even when its MAC is in the set", () {
+      const onlineAgentMac = 'AA:BB:CC:DD:EE:02';
+      final result = MeshNetworkBuilder.build(
+        connectedDevices: ConnectedDevices(items: [
+          buildConnectedDevice(
+              macAddress: onlineAgentMac, ipAddress: '192.168.1.189'),
+          buildConnectedDevice(
+            macAddress: agentMac,
+            instancePath: 'Device.Hosts.Host.5.',
+            isActive: false,
+            linksysIsMeshNode: true,
+          ),
+        ]),
+        wifiClientMap: {},
+        connectionDetailMap: {},
+        meshTopology: MeshTopologyInfo(
+          nodes: [
+            buildMasterNode(deviceId: controllerMac),
+            buildSlaveNode(deviceId: onlineAgentMac),
+          ],
+          clientToNodeMap: const {},
+          backhaulStations: {onlineAgentMac, agentMac.toUpperCase()},
+        ),
+        gatewayName: 'Router',
+      );
+
+      expect(result.slaves.singleWhere((s) => s.isOnline).ipAddress,
+          '192.168.1.189',
+          reason: 'the online node keeps its Hosts row');
+      expect(result.slaves.where((s) => !s.isOnline), hasLength(1),
+          reason: 'the offline node is still built');
+    });
+
+    test('a MAC spelled with dashes is still dropped', () {
+      final result = buildWith([backhaulStaRow(mac: 'aa-bb-cc-dd-ee-0d')],
+          backhaulStations: backhaulStations);
+
+      expect(result.allClients, isEmpty);
+    });
+
+    // The first seconds of the window, before DataElements lists the station
+    // under the backhaul BSS: nothing says it is a node's yet, so it is a
+    // client, as before. A limit recorded on #1839.
+    test('a row no backhaul station matches is still a client', () {
+      final result = buildWith([backhaulStaRow()]);
+
+      expect(result.allClients.single.mac, backhaulStaMac.toUpperCase());
+    });
+  });
 }

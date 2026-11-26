@@ -55,7 +55,11 @@ class DataElementsTestData {
         bssList: bssList,
       );
 
-  /// One fronthaul BSS with [stations] attached.
+  /// One BSS with [stations] attached.
+  ///
+  /// [backhaulUse] and [fronthaulUse] are its `BackhaulUse` / `FronthaulUse`.
+  /// Both default to null, as from firmware that leaves them out; a
+  /// backhaul-only BSS is `backhaulUse: true, fronthaulUse: false` (#1839).
   ///
   /// [stationRates] gives the stations their `LastDataDownlinkRate` /
   /// `LastDataUplinkRate` (kbps), keyed by MAC; a station not listed has none.
@@ -65,11 +69,15 @@ class DataElementsTestData {
     String ssid = 'HomeNetwork',
     List<({String mac, int rcpi})> stations = const [],
     Map<String, ({int downlink, int uplink})> stationRates = const {},
+    bool? backhaulUse,
+    bool? fronthaulUse,
   }) =>
       MeshBss(
         instancePath: '${nodePath}Radio.1.BSS.1.',
         bssid: bssid,
         ssid: ssid,
+        backhaulUse: backhaulUse,
+        fronthaulUse: fronthaulUse,
         stations: [
           for (var i = 0; i < stations.length; i++)
             MeshStation(
