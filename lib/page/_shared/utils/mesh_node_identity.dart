@@ -10,12 +10,14 @@
 /// > Build the nodes from DataElements. A Hosts row whose `PhysAddress` equals
 /// > a node's `Device.{i}.ID` is that node.
 ///
-/// So membership is a set test against the IDs DataElements reports, and this
-/// file is the only place that test is spelled. It takes plain ID strings
+/// So membership is a set test against MACs DataElements reports, and this
+/// file is the only place that test is spelled. It takes plain MAC strings
 /// rather than a model because its two callers hold different layers: the
 /// devices builder has the [MeshTopologyInfo] UI model, the MAC filter service
-/// the raw codegen `DataElementsNetwork`. Each extracts its own IDs; neither
-/// re-implements the comparison.
+/// the raw codegen `DataElementsNetwork`. Each extracts its own MACs: the
+/// node IDs, and the nodes' backhaul stations from
+/// `MeshTopologyBuilder.backhaulStationsOf` (#1839). Neither re-implements the
+/// comparison.
 ///
 /// Replaces `mesh_device_role.dart` (`isMeshNodeRole`), which keyed on the
 /// deleted `DeviceRole` and so recognised no node at all on 2.0.
@@ -27,7 +29,8 @@
 /// (constitution §5.4.3).
 library;
 
-/// The normalized MAC set of every node in [nodeIds].
+/// The normalized MAC set of every MAC in [nodeIds]: node IDs, and any other
+/// node-owned MAC a caller adds, such as a backhaul station (#1839).
 ///
 /// Normalization is upper-case hex with every separator removed, so the
 /// comparison is indifferent to whether a side spells the MAC with colons,

@@ -1058,4 +1058,137 @@ void main() {
           contains(client));
     });
   });
+
+  // #1839. While an agent rejoins, its backhaul station associates with the
+  // controller's backhaul BSS, and gets a Hosts row, about 50 s before
+  // DataElements lists the agent. The flags are as read on 2.0.4.26112201: the
+  // backhaul BSS is `BackhaulUse` true and `FronthaulUse` false.
+  group('MeshTopologyBuilder — backhaul stations (#1839)', () {
+    const controllerId = 'AA:BB:CC:DD:EE:01';
+    const clientMac = '11:22:33:44:55:01';
+    const backhaulStaMac = 'aa:bb:cc:dd:ee:0d';
+    final backhaulStaKey = backhaulStaMac.toUpperCase();
+    final p1 = DataElementsTestData.nodePath('1');
+
+    MeshNode controllerWith(List<MeshBss> bssList) => DataElementsTestData.node(
+        instance: '1', id: controllerId, bssList: bssList);
+
+    MeshBss fronthaul() => DataElementsTestData.bss(
+          p1,
+          bssid: 'AA:BB:CC:DD:EE:F1',
+          backhaulUse: false,
+          fronthaulUse: true,
+          stations: const [(mac: clientMac, rcpi: 180)],
+        );
+
+    MeshBss backhaulBss(
+            {bool? backhaulUse = true, bool? fronthaulUse = false}) =>
+        DataElementsTestData.bss(
+          p1,
+          bssid: 'AA:BB:CC:DD:EE:F2',
+          ssid: 'BackhaulSsid',
+          backhaulUse: backhaulUse,
+          fronthaulUse: fronthaulUse,
+          stations: const [(mac: backhaulStaMac, rcpi: 200)],
+          stationRates: const {
+            backhaulStaMac: (downlink: 866000, uplink: 866000)
+          },
+        );
+
+    test('a station on a backhaul-only BSS is no client', () {
+      final result = MeshTopologyBuilder.build(DataElementsNetwork(items: [
+        controllerWith([fronthaul(), backhaulBss()])
+      ]));
+
+      expect(result.backhaulStations, {backhaulStaKey});
+      expect(result.clientToNodeMap.containsKey(backhaulStaKey), isFalse);
+      expect(result.clientBandSsidMap.containsKey(backhaulStaKey), isFalse,
+          reason: 'the backhaul SSID must not reach any client');
+      expect(result.clientSignalMap.containsKey(backhaulStaKey), isFalse);
+      expect(result.clientRateMap.containsKey(backhaulStaKey), isFalse);
+      expect(result.clientToNodeMap, {clientMac: controllerId},
+          reason: 'a fronthaul station is still a client');
+    });
+
+    // A client can be on such a BSS, so nothing says the station is a node's.
+    test('a station on a BSS with both flags, or neither, stays a client', () {
+      for (final flags in const <(bool?, bool?)>[
+        (true, true),
+        (false, false),
+        (null, null),
+        // Only one flag reported: not enough to call the BSS backhaul-only.
+        (true, null),
+        (null, false),
+      ]) {
+        final result = MeshTopologyBuilder.build(DataElementsNetwork(items: [
+          controllerWith(
+              [backhaulBss(backhaulUse: flags.$1, fronthaulUse: flags.$2)]),
+        ]));
+
+        expect(result.backhaulStations, isEmpty, reason: 'flags=$flags');
+        expect(result.clientToNodeMap.keys, [backhaulStaKey],
+            reason: 'flags=$flags');
+      }
+    });
+
+    test("a listed agent's own BackhaulSta MAC is a backhaul station", () {
+      final result = MeshTopologyBuilder.build(DataElementsNetwork(items: [
+        controllerWith([fronthaul()]),
+        DataElementsTestData.node(
+          instance: '2',
+          id: 'AA:BB:CC:DD:EE:08',
+          linkType: 'Wi-Fi',
+          parentDeviceId: controllerId,
+          backhaulStaMac: backhaulStaMac,
+        ),
+      ]));
+
+      expect(result.backhaulStations, {backhaulStaKey});
+    });
+
+    // The second source does not depend on the BSS: a listed agent's own
+    // backhaul station is no client even on a BSS whose flags decide nothing.
+    test("a listed agent's BackhaulSta MAC is no client on any BSS", () {
+      final result = MeshTopologyBuilder.build(DataElementsNetwork(items: [
+        controllerWith([backhaulBss(backhaulUse: true, fronthaulUse: true)]),
+        DataElementsTestData.node(
+          instance: '2',
+          id: 'AA:BB:CC:DD:EE:08',
+          linkType: 'Wi-Fi',
+          parentDeviceId: controllerId,
+          backhaulStaMac: backhaulStaMac,
+        ),
+      ]));
+
+      expect(result.backhaulStations, {backhaulStaKey});
+      expect(result.clientToNodeMap.containsKey(backhaulStaKey), isFalse);
+      expect(result.clientBandSsidMap.containsKey(backhaulStaKey), isFalse);
+    });
+
+    // The agent is not listed yet, so no node owns the MAC, and a backhaul
+    // station is also a bridge-FDB entry on the controller.
+    test('a backhaul station is not a wired client either', () {
+      final result = MeshTopologyBuilder.build(
+        DataElementsNetwork(items: [
+          controllerWith([fronthaul(), backhaulBss()])
+        ]),
+        interfaces: DataElementsTestData.interfaces([
+          DataElementsTestData.nodeInterfaces(
+            instance: '1',
+            id: controllerId,
+            interfaces: [
+              DataElementsTestData.interface(p1,
+                  index: 4,
+                  macAddress: controllerId,
+                  mediaType: 'IEEE_802_3AB_GIGABIT_ETHERNET',
+                  neighbors: const [(id: backhaulStaMac, isIeee1905: false)]),
+            ],
+          ),
+        ]),
+      );
+
+      expect(result.wiredClientToNodeMap.containsKey(backhaulStaKey), isFalse);
+      expect(result.ambiguousWiredClients, isEmpty);
+    });
+  });
 }
