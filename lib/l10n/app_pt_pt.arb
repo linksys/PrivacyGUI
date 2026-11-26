@@ -692,6 +692,7 @@
   "errorNetwork": "Erro de rede. Verifique a sua ligação e tente novamente.",
   "errorNotAuthenticated": "Não tem sessão iniciada. Inicie sessão e tente novamente.",
   "errorResourceNotFound": "Não foi possível encontrar a definição pretendida no router.",
+  "errorDeviceNotOnNetwork": "Este dispositivo já não está na rede. Atualize a página e tente novamente.",
   "errorServiceNotReady": "O serviço ainda não está pronto. Tente novamente dentro de momentos.",
   "errorSessionExpired": "A sua sessão expirou. Inicie sessão novamente.",
   "errorTimeout": "A operação excedeu o tempo limite. Tente novamente.",

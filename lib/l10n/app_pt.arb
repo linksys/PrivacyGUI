@@ -692,6 +692,7 @@
   "errorNetwork": "Erro de rede. Verifique sua conexão e tente novamente.",
   "errorNotAuthenticated": "Você não está conectado. Faça login e tente novamente.",
   "errorResourceNotFound": "Não foi possível encontrar a configuração solicitada no roteador.",
+  "errorDeviceNotOnNetwork": "Este dispositivo não está mais na rede. Atualize a página e tente novamente.",
   "errorServiceNotReady": "O serviço ainda não está pronto. Tente novamente em instantes.",
   "errorSessionExpired": "Sua sessão expirou. Faça login novamente.",
   "errorTimeout": "A operação expirou. Tente novamente.",

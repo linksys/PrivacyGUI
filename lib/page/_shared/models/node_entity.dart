@@ -355,8 +355,11 @@ final class SlaveNode extends NodeEntity {
   /// is its DataElements ID — where a rename writes
   /// `X_LINKSYS_UserDeviceLocation` (#1688 item 4). Null when no row matched:
   /// there is nothing to write to, so the agent cannot be renamed. Also null on
-  /// an offline extender (#1443): a rename writes to a row index read earlier,
-  /// and rows renumber while a node rejoins (#1840).
+  /// an offline extender (#1443): renaming a node that is not on the network
+  /// buys nothing, so it is offered no rename.
+  ///
+  /// The rename itself writes the row that carries [deviceId] when it saves,
+  /// not this one: rows renumber while a node rejoins (#1840).
   final String? hostInstancePath;
 
   /// The name the user gave this agent: its Hosts row's

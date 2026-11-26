@@ -692,6 +692,7 @@
   "errorNetwork": "Netzwerkfehler. Bitte prüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
   "errorNotAuthenticated": "Sie sind nicht angemeldet. Bitte melden Sie sich an und versuchen Sie es erneut.",
   "errorResourceNotFound": "Die angeforderte Einstellung konnte auf dem Router nicht gefunden werden.",
+  "errorDeviceNotOnNetwork": "Dieses Gerät ist nicht mehr im Netzwerk. Aktualisieren Sie die Seite und versuchen Sie es erneut.",
   "errorServiceNotReady": "Der Dienst ist noch nicht bereit. Bitte versuchen Sie es in einem Moment erneut.",
   "errorSessionExpired": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.",
   "errorTimeout": "Bei dem Vorgang ist eine Zeitüberschreitung aufgetreten. Bitte versuchen Sie es erneut.",

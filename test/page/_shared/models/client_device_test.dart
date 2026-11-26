@@ -608,6 +608,44 @@ void main() {
       expect(DevicesTestData.createWifiClient().hostInstancePaths, isEmpty);
     });
 
+    // What a rename passes: the rows are found by these MACs when it writes,
+    // since row numbers move (#1840).
+    test('hostRowMacs lists each row\'s MAC, in the same order', () {
+      expect(merged.hostRowMacs, [merged.mac, '11:22:33:44:55:FE']);
+    });
+
+    test('hostRowMacs leaves out an interface with no Hosts row', () {
+      final primaryOnly = merged.copyWith(additionalInterfaces: const [
+        ClientInterfaceInfo(
+          mac: '11:22:33:44:55:FE',
+          ip: '192.168.1.151',
+          connectionType: ConnectionType.wired,
+          isActive: true,
+        ),
+      ]);
+      expect(primaryOnly.hostRowMacs, [merged.mac]);
+    });
+
+    test('hostRowMacs leaves out a primary with no Hosts row', () {
+      final interfaceOnly =
+          DevicesTestData.createWifiClient().copyWith(additionalInterfaces: [
+        merged.additionalInterfaces.single,
+      ]);
+
+      expect(interfaceOnly.hostRowMacs, ['11:22:33:44:55:FE']);
+    });
+
+    test('hostRowMacs is empty for a client not built from a Hosts row', () {
+      expect(DevicesTestData.createWifiClient().hostRowMacs, isEmpty);
+    });
+
+    // The rename finds rows by MAC, so a row with none cannot be found.
+    test('hostRowMacs leaves out a row with no MAC', () {
+      final noMac = merged.copyWith(mac: '');
+
+      expect(noMac.hostRowMacs, ['11:22:33:44:55:FE']);
+    });
+
     // The grouping key (FWDEV#224): kept by copyWith, seen by equality.
     test('detectedName survives copyWith and takes part in equality', () {
       final named =

@@ -690,6 +690,7 @@
   "errorNetwork": "Kesalahan jaringan. Harap periksa koneksi Anda dan coba lagi.",
   "errorNotAuthenticated": "Anda belum masuk. Harap masuk dan coba lagi.",
   "errorResourceNotFound": "Setelan yang diminta tidak dapat ditemukan pada router.",
+  "errorDeviceNotOnNetwork": "Perangkat ini tidak lagi berada di jaringan. Muat ulang halaman dan coba lagi.",
   "errorServiceNotReady": "Layanan belum siap. Harap coba lagi sebentar.",
   "errorSessionExpired": "Sesi Anda telah kedaluwarsa. Harap masuk lagi.",
   "errorTimeout": "Operasi melebihi batas waktu. Harap coba lagi.",

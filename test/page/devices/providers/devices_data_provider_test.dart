@@ -480,7 +480,7 @@ void main() {
   group('DevicesDataNotifier — updateIdentity', () {
     void stubUpdate(Future<void> Function() answer) {
       when(() => mockDevicesSvc.updateIdentity(
-            hostInstancePaths: any(named: 'hostInstancePaths'),
+            macs: any(named: 'macs'),
             name: any(named: 'name'),
             userTypeCode: any(named: 'userTypeCode'),
           )).thenAnswer((_) => answer());
@@ -500,14 +500,14 @@ void main() {
       fetchCount(); // resets the count: build's own fetch
 
       await container.read(devicesDataProvider.notifier).updateIdentity(
-        hostInstancePaths: ['Device.Hosts.Host.3.', 'Device.Hosts.Host.7.'],
+        macs: ['AA:BB:CC:DD:EE:03', 'AA:BB:CC:DD:EE:07'],
         name: 'Living room TV',
         userTypeCode: '4',
       );
 
       // Every row of a merged device reaches the service (#1719).
       verify(() => mockDevicesSvc.updateIdentity(
-            hostInstancePaths: ['Device.Hosts.Host.3.', 'Device.Hosts.Host.7.'],
+            macs: ['AA:BB:CC:DD:EE:03', 'AA:BB:CC:DD:EE:07'],
             name: 'Living room TV',
             userTypeCode: '4',
           )).called(1);
@@ -525,7 +525,7 @@ void main() {
       stubUpdate(() async => lockedDuringWrite = lock.isLocked);
 
       await container.read(devicesDataProvider.notifier).updateIdentity(
-        hostInstancePaths: ['Device.Hosts.Host.3.'],
+        macs: ['AA:BB:CC:DD:EE:03'],
         name: 'x',
         userTypeCode: '1',
       );
@@ -546,7 +546,7 @@ void main() {
 
       await expectLater(
         container.read(devicesDataProvider.notifier).updateIdentity(
-          hostInstancePaths: ['Device.Hosts.Host.3.'],
+          macs: ['AA:BB:CC:DD:EE:03'],
           name: 'x',
           userTypeCode: '1',
         ),
