@@ -12,8 +12,14 @@ enum PwaMode { none, native, ios, mac }
 // ... (imports)
 
 class PwaInstallService extends Notifier<PwaMode> {
-  // Reuse logic instance
-  final _pwaLogic = PwaLogic();
+  /// [logic] and [isWeb] default to the browser's [PwaLogic] and [kIsWeb].
+  /// Tests pass their own, so that the service runs on the Dart VM.
+  PwaInstallService({PwaLogic? logic, bool? isWeb})
+      : _pwaLogic = logic ?? PwaLogic(),
+        _isWeb = isWeb ?? kIsWeb;
+
+  final PwaLogic _pwaLogic;
+  final bool _isWeb;
   bool _isListenersInitialized = false;
 
   BeforeInstallPromptEvent? _deferredPrompt;
@@ -28,7 +34,7 @@ class PwaInstallService extends Notifier<PwaMode> {
     final modelNumber = ref.watch(globalModelNumberProvider);
 
     // Only run on Web
-    if (kIsWeb) {
+    if (_isWeb) {
       if (!_isListenersInitialized) {
         _initListeners();
         _isListenersInitialized = true;
@@ -107,7 +113,7 @@ class PwaInstallService extends Notifier<PwaMode> {
   }
 
   void _initListeners() {
-    if (!kIsWeb) return;
+    if (!_isWeb) return;
 
     // Listen to model number changes to handle device switching or delayed load
     ref.listen(globalModelNumberProvider, (prev, next) {
@@ -157,17 +163,17 @@ class PwaInstallService extends Notifier<PwaMode> {
   }
 
   bool get isIOS {
-    if (!kIsWeb) return false;
+    if (!_isWeb) return false;
     return _pwaLogic.isIOS;
   }
 
   bool get isMacSafari {
-    if (!kIsWeb) return false;
+    if (!_isWeb) return false;
     return _pwaLogic.isMacSafari;
   }
 
   bool get isStandalone {
-    if (!kIsWeb) return false;
+    if (!_isWeb) return false;
     return _pwaLogic.isStandalone;
   }
 }
