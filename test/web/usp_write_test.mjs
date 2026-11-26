@@ -83,7 +83,10 @@ const setAccepted = id => message(id, field(2, field(4, field(1, Buffer.concat([
 
 const writes = {
   set: client => client.set({'Device.WiFi.SSID.1.SSID': 'NewHome'}, {allowPartial: false}),
-  setOrdered: client => client.setOrdered([{'Device.WiFi.SSID.1.SSID': 'NewHome'}], false),
+  // Groups of {path, value}: the shape `usp_client_wasm.dart` sends. A group
+  // given as a plain map is accepted too, but the request it produces names no
+  // parameter.
+  setOrdered: client => client.setOrdered([[{path: 'Device.WiFi.SSID.1.SSID', value: 'NewHome'}]], false),
   add: client => client.add({path: 'Device.NAT.PortMapping.', params: {ExternalPort: '8080'}}),
   delete: client => client.delete('Device.NAT.PortMapping.3.'),
 };
@@ -154,4 +157,30 @@ test('set: an accepted write has no errors', async () => {
   const response = await write('set', (id, r) => respond(setAccepted(id), r));
   assert.equal(response.success, true);
   assert.deepEqual(response.result.errors ?? [], []);
+});
+
+// Every group goes out in ONE request, in group order, not one Set per group
+// (#1961's review). So an unanswered setOrdered is unanswered as a whole.
+test('setOrdered: every group goes out in one request, in group order', async () => {
+  const bodies = [];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async request => {
+    bodies.push(Buffer.from(await request.arrayBuffer()).toString('latin1'));
+    return respond(null, request, 503);
+  };
+  const client = new UspClientBuilder('https://router.example').authToken('synthetic-token').build();
+  try {
+    await client.setOrdered([
+      [{path: 'Device.WiFi.SSID.1.SSID', value: 'First'}],
+      [{path: 'Device.WiFi.SSID.2.SSID', value: 'Second'}],
+    ], false);
+  } finally {
+    client.free();
+    globalThis.fetch = originalFetch;
+  }
+  assert.equal(bodies.length, 1);
+  const first = bodies[0].indexOf('Device.WiFi.SSID.1.');
+  const second = bodies[0].indexOf('Device.WiFi.SSID.2.');
+  assert.ok(first >= 0, 'the first group is in the request');
+  assert.ok(second > first, 'the second group follows it in the same request');
 });

@@ -816,14 +816,17 @@ class UspClient {
   // Set Ordered — preserves parameter execution sequence
   // ===========================================================================
 
-  /// Performs an ordered Set operation where parameter groups are processed
-  /// sequentially. Each group is sent as a separate USP Set message.
-  /// Use when parameter order affects correctness
-  /// (e.g., AddressingType must be set before SubnetMask).
+  /// Performs a Set whose parameter groups keep their order. Use when parameter
+  /// order affects correctness (e.g., AddressingType must be set before
+  /// SubnetMask).
   ///
   /// [parameterGroups] is a list of groups, where each group is a list of
-  /// `{path, value}` maps. Groups are processed in order; params within a
-  /// group are sent together in one Set message.
+  /// `{path, value}` maps. **All the groups go out in one USP Set message**, in
+  /// group order: usp-client 0.16.0 does not send a Set per group (measured,
+  /// `test/web/usp_write_test.mjs`). So the order holds as far as the router
+  /// applies one message's objects in the order they arrive, which has not been
+  /// measured, and there is no answer in which one group landed and a later
+  /// one went unanswered.
   Future<Map<String, dynamic>> setOrdered(
           List<List<Map<String, String>>> parameterGroups,
           {bool allowPartial = false}) =>
