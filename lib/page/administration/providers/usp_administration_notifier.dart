@@ -88,46 +88,38 @@ class UspAdministrationNotifier
   /// services, so they are separate Sets, not one combined Set; and SIP ALG's
   /// alone takes ~9 s, which a UPnP save should not wait for. They run in order
   /// under one lock, whose 30 s window fits all three. A failure stops the
-  /// rest, and `save()` re-reads the device so the page shows what landed.
+  /// rest, and `save()` re-reads the device so the page shows what landed —
+  /// a write the lock gives up on too, which it raises as a `TimeoutError`
+  /// (#1831): a hung write is the case where nobody knows what the router
+  /// holds.
   @override
   Future<void> performSave() async {
     final original = state.settings.original;
     final current = state.settings.current;
-    try {
-      await ref.read(uspMutationLockProvider).withLock(() async {
-        if (current.upnpEnabled != original.upnpEnabled) {
-          try {
-            await _svc.setUpnpEnabled(current.upnpEnabled);
-          } finally {
-            // The dashboard's Firewall card shows UPnP, and the router pushes
-            // nothing for Device.UPnP., so it is read again here (#1130). A
-            // failed Set too: save() re-reads the page then, because nobody
-            // knows what landed, and the card must not keep the old value.
-            ref.invalidate(upnpDataProvider);
-          }
+    await ref.read(uspMutationLockProvider).withLock(() async {
+      if (current.upnpEnabled != original.upnpEnabled) {
+        try {
+          await _svc.setUpnpEnabled(current.upnpEnabled);
+        } finally {
+          // The dashboard's Firewall card shows UPnP, and the router pushes
+          // nothing for Device.UPnP., so it is read again here (#1130). A
+          // failed Set too: save() re-reads the page then, because nobody
+          // knows what landed, and the card must not keep the old value.
+          ref.invalidate(upnpDataProvider);
         }
-        if (current.sipAlgEnabled != original.sipAlgEnabled) {
-          await _svc.setSipAlgEnabled(current.sipAlgEnabled);
-        }
-        final managementWifi = current.managementWifiEnabled;
-        if (managementWifi != null &&
-            managementWifi != original.managementWifiEnabled) {
-          await _svc.setManagementWifiEnabled(managementWifi);
-          // The rule is one of Device.Firewall.Chain.1's, which the Firewall
-          // card and the Statistics rule counts read through this provider.
-          ref.invalidate(firewallDataProvider);
-        }
-      });
-    } on TimeoutException catch (e) {
-      // The lock's own window, not a USP error, so the service never maps it.
-      // As a ServiceError it reaches save()'s re-read and is localized as a
-      // timeout; left bare it skipped both. Same fold as
-      // `firmware_auto_update_data_provider.dart`.
-      throw TimeoutError(
-        detail: 'the Administration write was not answered '
-            '(${e.message ?? '30s'})',
-      );
-    }
+      }
+      if (current.sipAlgEnabled != original.sipAlgEnabled) {
+        await _svc.setSipAlgEnabled(current.sipAlgEnabled);
+      }
+      final managementWifi = current.managementWifiEnabled;
+      if (managementWifi != null &&
+          managementWifi != original.managementWifiEnabled) {
+        await _svc.setManagementWifiEnabled(managementWifi);
+        // The rule is one of Device.Firewall.Chain.1's, which the Firewall
+        // card and the Statistics rule counts read through this provider.
+        ref.invalidate(firewallDataProvider);
+      }
+    });
     logger.d('[USP][Administration]: Saved — '
         'upnpEnabled=${current.upnpEnabled}, '
         'sipAlgEnabled=${current.sipAlgEnabled}, '

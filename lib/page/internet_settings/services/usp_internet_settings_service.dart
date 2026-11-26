@@ -633,10 +633,19 @@ class UspInternetSettingsService {
   /// as success.
   ///
   /// This SET is terminal-by-design (see [_bridgeSetTimeout]): the firmware
-  /// applies the change and drops the connection carrying the response, so a
-  /// transport-level timeout/network error on THIS SET is the expected
-  /// signature of success — the SET was received and applied on-device before
-  /// the disconnect. Those two cases are swallowed.
+  /// applies the change and drops the connection carrying the response, so no
+  /// answer within the budget is the expected signature of success — the SET
+  /// was received and applied on-device before the disconnect. That case is
+  /// swallowed.
+  ///
+  /// **A request that fails before the budget is a failure** — a lost
+  /// connection, a 5xx — not a success, though `UspClient` throws it the same
+  /// way as the drop (#1666). `Failed to fetch` does not prove the SET reached
+  /// the router, and reading it as applied tells the user the router is in
+  /// bridge mode when it may not be. Until #1666 the client returned that
+  /// failure in the envelope, `_handleSetResult` made it a
+  /// `UspCompleteFailureError`, and the user saw the failure; that is the
+  /// behaviour #1597 shipped and was measured with, kept here.
   ///
   /// Any error the router actively returns BEFORE the disconnect — a fault code
   /// mapped to a validation / resource / partial / auth / unexpected
@@ -646,7 +655,7 @@ class UspInternetSettingsService {
   /// A disconnect read as success does not mark [progress] applied. That is
   /// safe only because this is [saveAll]'s last step: no later step can fail
   /// and need to say this one landed. A step added after it would have to mark
-  /// [progress] in those two cases too.
+  /// [progress] in that case too.
   Future<void> _setBridgeBoundary(_SaveProgress progress,
       {required bool enable}) async {
     // enable=false enters bridge, enable=true leaves it.
@@ -666,20 +675,11 @@ class UspInternetSettingsService {
           '[USP][WAN]: bridge $direction SET timed out after ${_bridgeSetTimeout.inSeconds}s '
           '— treating as success (firmware dropped the connection applying it)');
     } catch (e) {
-      // Reached when the request fails BEFORE the timeout. A transport /
-      // connectivity error is the same disconnect signature → success. But
-      // anything the router actively rejected — a fault code mapped to
-      // validation/resource/auth, or a partial/complete failure surfaced by
-      // _handleSetResult (already a ServiceError) — propagates, so a genuine
-      // config failure is never swallowed.
+      // Reached when the request fails BEFORE the timeout: a refusal, or a
+      // request that got no answer. Both propagate — see the doc comment for
+      // why an early transport failure is not read as the drop.
       if (e is ServiceError) rethrow;
-      final mapped = mapUspErrorToServiceError(e);
-      if (mapped is NetworkError || mapped is ConnectivityError) {
-        logger.i('[USP][WAN]: bridge $direction SET hit a transport error '
-            '— treating as success (firmware dropped the connection applying it)');
-        return;
-      }
-      throw mapped;
+      throw mapUspErrorToServiceError(e);
     }
   }
 

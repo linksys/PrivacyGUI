@@ -95,10 +95,9 @@ class FirmwareAutoUpdateDataNotifier
   /// rule is the service's mutations are locked by whoever calls them, and this
   /// method is the caller.
   ///
-  /// `TimeoutException` is mapped here for the reason
-  /// `FirmwareRouterOtaInstallService.install` gives at its own `withLock`: the
-  /// lock throws a bare one, deliberately not a [ServiceError], so it would reach
-  /// the switch as `errorUnexpected` instead of as the timeout it is.
+  /// A write the lock gives up on reaches the switch as the lock's
+  /// [TimeoutError] (#1831), so the snackbar says "timed out" rather than
+  /// `errorUnexpected`.
   Future<void> setPolicy(FirmwareAutoUpdatePolicy policy) async {
     // `await future` rather than a fabricated default: a write racing the first
     // read has no status or progress to keep, and inventing them would publish a
@@ -106,18 +105,11 @@ class FirmwareAutoUpdateDataNotifier
     final current = state.valueOrNull ?? await future;
     logger.d('[FirmwareUpdate] autoUpdate: setPolicy '
         '${current.policy.name} → ${policy.name}');
-    try {
-      await ref.read(uspMutationLockProvider).withLock(() async {
-        await ref
-            .read(uspFirmwareUpdateServiceProvider)
-            .setAutoUpdatePolicy(policy);
-      });
-    } on TimeoutException catch (e) {
-      throw TimeoutError(
-        detail: 'another router mutation was still running when the '
-            'auto-update setting was written (${e.message ?? '30s'})',
-      );
-    }
+    await ref.read(uspMutationLockProvider).withLock(() async {
+      await ref
+          .read(uspFirmwareUpdateServiceProvider)
+          .setAutoUpdatePolicy(policy);
+    });
     state = AsyncData(current.withPolicy(policy));
   }
 

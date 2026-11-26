@@ -27,6 +27,7 @@ void main() {
     cpuUsage: 1,
     activeFirmwareImage: 'fw1',
     bootFirmwareImage: 'fw1',
+    temperatureSensors: [],
   );
 
   const mac = '74:12:13:21:55:02';

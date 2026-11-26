@@ -9,6 +9,7 @@ import 'package:privacy_gui/page/dmz/services/usp_dmz_service.dart';
 
 import '../../../mocks/test_data/usp_refusal_test_data.dart';
 import '../../../mocks/test_data/usp_add_refusal_test_data.dart';
+import '../../../mocks/test_data/usp_envelope_test_data.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
@@ -745,6 +746,22 @@ void main() {
             contains(UspRefusalReason.invalidDestinationMacAddress))),
       );
       expect(sets(), hasLength(1));
+    });
+
+    test(
+        'a switch the router never answered is a partial failure too: it may '
+        'hold no host (#1666)', () async {
+      when(() => mockUsp.set(any()))
+          .thenThrow(UspEnvelopeTestData.unansweredWrite('Set'));
+
+      await expectLater(
+        service.update(
+            instancePath: p,
+            savedType: DmzDestinationType.ip,
+            model: model(DmzDestinationType.mac)),
+        throwsA(isA<UspPartialFailureError>()
+            .having((e) => e.summary, 'summary', contains('may hold no host'))),
+      );
     });
 
     test('a refused update that switches nothing is a complete failure',

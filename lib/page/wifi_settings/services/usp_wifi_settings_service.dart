@@ -594,11 +594,11 @@ class UspWifiSettingsService {
   /// one service, so it stays atomic and cannot half-apply. A per-leaf failure
   /// the router does report still throws.
   ///
-  /// Returns [WifiWriteOutcome.unanswered] when every error says the request
-  /// never got an answer ([isUnansweredTransportFailure]) — the reply was lost to
-  /// the reload. A refusal throws: a router that answered applied nothing. The
-  /// message tells them apart; up to usp-client 0.14.0 the WASM client stamped
-  /// `9999` on both, so the `errorCode` could not.
+  /// Returns [WifiWriteOutcome.unanswered] when the request never got an
+  /// answer ([isUnansweredWifiWrite]) — the reply was lost to the reload.
+  /// `UspClient` throws that write (#1666), and its message says so; read from
+  /// the text, not the type, because a 401 is thrown the same way and must
+  /// still fail. A refusal throws: a router that answered applied nothing.
   /// Nothing to write is [WifiWriteOutcome.confirmed] with no SET at all.
   Future<WifiWriteOutcome> _writeOnce(
     Map<String, dynamic> params,
@@ -609,16 +609,15 @@ class UspWifiSettingsService {
     try {
       final result = await _usp.set(params, allowPartial: allowPartial);
       final parsed = UspResultParser.parseSetResult(result);
-      if (parsed is UspFailure &&
-          parsed.errors.every((e) => isUnansweredWifiWrite(e.errorMessage))) {
-        logger.i('[USP][WiFi]: $label unanswered — the WiFi reloaded under '
-            'the request');
-        return WifiWriteOutcome.unanswered;
-      }
       _throwIfParsedNotSuccess(parsed, label);
       return WifiWriteOutcome.confirmed;
     } catch (e) {
       if (e is ServiceError) rethrow;
+      if (isUnansweredWifiWrite(e.toString())) {
+        logger.i('[USP][WiFi]: $label unanswered — the WiFi reloaded under '
+            'the request');
+        return WifiWriteOutcome.unanswered;
+      }
       throw mapUspErrorToServiceError(e);
     }
   }

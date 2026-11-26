@@ -325,13 +325,16 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
   /// the lock does for any hung call. Holding it for the request's full lifetime
   /// (up to 288 s measured) would starve the firmware stage that follows: its
   /// check takes this lock and gives up after 15 s.
+  ///
+  /// The window running out is the lock's [TimeoutError] (#1831). Nothing in
+  /// `saveWifi` raises one of its own, so that arm is "no answer", not a fault.
   Future<PnpWifiWriteOutcome> _writeWifi(PnpWifiWrite write) async {
     try {
       return await ref.read(uspMutationLockProvider).withLock(
             () => _svc.saveWifi(write),
             timeout: ref.read(pnpWifiAnswerWindowProvider),
           );
-    } on TimeoutException {
+    } on TimeoutError {
       logger.i('[PnP] WiFi write not answered within the window — the router '
           'is asked once it is reachable again');
       return PnpWifiWriteOutcome.unanswered;
@@ -653,11 +656,12 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
         firmware.cancel();
       }
     } catch (e, stack) {
-      // One `catch`, not `on ServiceError`, because `UspMutationLock` throws a bare
-      // `TimeoutException` and `.timeout()` below throws another — neither is a
-      // `ServiceError`, and all of them mean the same thing here. Anything else
-      // too, by constitution §13.4.3: the checking and updating screens have no
-      // button, and this stage's failure phase is the completion screen (REQ-B3).
+      // One `catch`, not `on ServiceError`, because `.timeout()` below throws a
+      // bare `TimeoutException`, which is not a `ServiceError` and means the same
+      // thing here as any other failure. (The mutation lock's own timeout is a
+      // `TimeoutError` since #1831.) Anything else too, by constitution §13.4.3:
+      // the checking and updating screens have no button, and this stage's
+      // failure phase is the completion screen (REQ-B3).
       logger.w(
           '[PnP] the firmware stage did not complete — finishing setup '
           'without an update',

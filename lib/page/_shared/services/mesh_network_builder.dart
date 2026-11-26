@@ -51,8 +51,9 @@ import 'package:privacy_gui/validator_rules/lan_host_ipv4.dart';
 /// answers on the LAN before DataElements lists it again (about 50 s after a
 /// clean controller reboot, measured 2026-11-23). In both cases the row is a
 /// node on its way back, not a client, so it reads offline until DataElements
-/// lists it. This departs from the firmware's guidance on PrivacyGUI#1443,
-/// which keeps such a row a client.
+/// lists it. The definition leaves how to show such a row to the app: it
+/// calls it a node on the LAN but not in the mesh, rejoining or removed from
+/// it (linksys/usp_framework#127).
 ///
 /// Known limitation: a former node set up as a router of its own and then
 /// wired behind this network (router behind router, or Bridge Mode) does not

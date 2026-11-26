@@ -330,10 +330,10 @@ void main() {
     test(
         'a mutation timeout reaches the switch as a timeout, not as '
         '"something went wrong"', () async {
-      // `UspMutationLock` throws a bare `TimeoutException`, deliberately not a
-      // `ServiceError` — and `localizeServiceError` renders anything that is not
-      // one as `errorUnexpected`. Mapping it in the notifier is what makes the
-      // snackbar say what actually happened. Fed in at the service the way
+      // `localizeServiceError` renders anything that is not a `ServiceError` as
+      // `errorUnexpected`. The lock raising its timeout — and a
+      // `TimeoutException` thrown inside it — as a `TimeoutError` (#1831) is
+      // what makes the snackbar say what actually happened. Fed in at the service the way
       // `firmware_router_ota_install_service_test` feeds its own, rather than by
       // starving a real lock for 30 s.
       when(() => mockService.fetchAutoUpdate()).thenAnswer(

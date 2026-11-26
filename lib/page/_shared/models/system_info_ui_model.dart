@@ -74,6 +74,12 @@ class SystemInfoUIModel extends Equatable with DiagnosticLoggable {
   /// its model, which every unit of the model shares. Null when unset.
   final String? hostName;
 
+  /// The router's CPU temperature in whole °C, read with the rest of DeviceInfo
+  /// (#1926). The dashboard pushes it as its first snapshot at login and on
+  /// every refresh; what the card shows after that comes from the system
+  /// monitor's poll. Null when the router has no `cpu-top-thermal` reading.
+  final int? cpuTemperatureCelsius;
+
   const SystemInfoUIModel({
     required this.manufacturer,
     required this.modelName,
@@ -89,6 +95,7 @@ class SystemInfoUIModel extends Equatable with DiagnosticLoggable {
     this.userDeviceLocation,
     this.friendlyName,
     this.hostName,
+    this.cpuTemperatureCelsius,
   });
 
   /// Display name for the gateway (router model or fallback).
@@ -145,5 +152,6 @@ class SystemInfoUIModel extends Equatable with DiagnosticLoggable {
         'userDeviceLocation': userDeviceLocation,
         'friendlyName': friendlyName,
         'hostName': hostName,
+        'cpuTemperatureCelsius': cpuTemperatureCelsius,
       };
 }

@@ -305,6 +305,19 @@ final kDefaultFixtureMarkers = <DefaultFixtureMarker>[
         '#1321 shipped at two swept widths',
   ),
   DefaultFixtureMarker(
+      cardId: 'device_info',
+      tab: 0,
+      // Matched by shape: the value is the fixture's latest system monitor
+      // snapshot, not a literal this list should repeat, and the unit follows
+      // the test platform's region (en_US, so °F) unless a test pins it.
+      pattern: RegExp(r'\d+ °[CF]'),
+      expected: 1,
+      why: 'the temperature tag (#1926) renders behind an '
+          '`if (cpuTemperature != null)`, from the latest snapshot of '
+          '`testSystemMonitorWithHistory`. If this fails, the fixture lost '
+          '`cpuTemperatureCelsius` and the sweeps measure the hero\'s '
+          'manufacturer line without the tag beside it'),
+  DefaultFixtureMarker(
     cardId: 'channel_finder',
     tab: 0,
     pattern: 'GHz',

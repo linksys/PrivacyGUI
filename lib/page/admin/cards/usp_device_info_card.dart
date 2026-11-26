@@ -4,6 +4,7 @@ import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
+import 'package:privacy_gui/page/_shared/providers/usp_system_monitor_notifier.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/_shared/components/card_density_scope.dart';
@@ -11,6 +12,9 @@ import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
 import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/models/card_density.dart';
+import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
+import 'package:privacy_gui/providers/app_settings/temperature_unit.dart';
+import 'package:privacy_gui/providers/app_settings/temperature_unit_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -30,6 +34,13 @@ class UspDeviceInfoCard extends ConsumerWidget {
     // device list does, so at login, on every refresh and whenever DataElements
     // has no controller row the node's ID is the literal 'GATEWAY' (#1665).
     final macAddress = info.baseMacAddress;
+
+    // The CPU's temperature from the system monitor's latest poll (#1926), so
+    // it moves while the page is open. `info` is the session-cached SystemInfo,
+    // read at login, and would hold the login-time value.
+    final cpuTemperature = ref.watch(uspSystemMonitorProvider
+        .select((s) => s.latest?.cpuTemperatureCelsius));
+    final temperatureUnit = ref.watch(temperatureUnitProvider);
 
     // Hostname and the detail link still come from the master node: the link
     // needs a node lookup key, and the synthetic master resolves too.
@@ -97,9 +108,22 @@ class UspDeviceInfoCard extends ConsumerWidget {
                 AppText.bodyMedium(info.modelName),
               ],
               AppGap.xs(),
-              AppText.bodySmall(
-                info.manufacturer,
-                color: colorScheme.onSurfaceVariant,
+              // The temperature sits beside the manufacturer, inside the hero,
+              // so it is above the fold at the card's default height (#1926).
+              // A `Wrap`, so a card too narrow for both moves the tag to a
+              // line of its own instead of overflowing.
+              Wrap(
+                spacing: AppSpacing.sm,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  AppText.bodySmall(
+                    info.manufacturer,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  if (cpuTemperature != null)
+                    _temperatureTag(
+                        context, ref, cpuTemperature, temperatureUnit),
+                ],
               ),
             ],
           ),
@@ -144,6 +168,39 @@ class UspDeviceInfoCard extends ConsumerWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  /// The CPU temperature in [unit], as a tag a tap switches between °C and °F.
+  /// The pick is saved with the other app settings, so it outlives the session
+  /// and wins over the browser's region from then on (`temperatureUnitProvider`).
+  Widget _temperatureTag(
+    BuildContext context,
+    WidgetRef ref,
+    int celsius,
+    TemperatureUnit unit,
+  ) {
+    // Named for screen readers, which would otherwise hear a bare number.
+    return Semantics(
+      container: true,
+      label: loc(context).temperature,
+      child: AppTag(
+        label: switch (unit) {
+          TemperatureUnit.celsius => loc(context).temperatureCelsius(celsius),
+          TemperatureUnit.fahrenheit =>
+            loc(context).temperatureFahrenheit(fahrenheitOf(celsius)),
+        },
+        identifier: 'device-info-temperature',
+        onTap: () {
+          final settings = ref.read(appSettingsProvider);
+          ref.read(appSettingsProvider.notifier).update(settings.copyWith(
+                temperatureUnit: () => switch (unit) {
+                  TemperatureUnit.celsius => TemperatureUnit.fahrenheit,
+                  TemperatureUnit.fahrenheit => TemperatureUnit.celsius,
+                },
+              ));
+        },
       ),
     );
   }

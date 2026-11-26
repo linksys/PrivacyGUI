@@ -200,25 +200,12 @@ class FirmwareRouterOtaInstallService {
       // The lock, and only around the dispatch. The poll loop below is `Get`s,
       // which nothing in this codebase locks — and holding the lock across a loop
       // that may run for twenty minutes would block every other mutation in the
-      // app and sit under the lock's own 30 s timeout.
-      final String commandKey;
-      try {
-        commandKey = await _lock.withLock(
-          () => _dispatchInstall(otaInstance: otaInstance),
-        );
-      } on TimeoutException catch (e) {
-        // Mapped here because here is the layer that is allowed to (constitution
-        // Article XIII §13.3), and because nothing above can see it coming:
-        // `UspMutationLock` throws a bare `TimeoutException`, deliberately not a
-        // `ServiceError`, so every `on ServiceError` between this line and the
-        // button was blind to it. The dispatch would appear to do nothing for 30 s,
-        // leave no failure card, and then escape an unawaited `onTap` as an
-        // uncaught async error.
-        throw TimeoutError(
-          detail: 'another router mutation was still running when the firmware '
-              'install was dispatched (${e.message ?? '30s'})',
-        );
-      }
+      // app and sit under the lock's own 30 s timeout — which it raises as a
+      // `TimeoutError` (#1831), so a dispatch it gives up on reaches the
+      // failure card through the callers' `on ServiceError` arms.
+      final String commandKey = await _lock.withLock(
+        () => _dispatchInstall(otaInstance: otaInstance),
+      );
 
       // Raced, not awaited. A refusal usually never comes, so this future is
       // allowed to stay pending for the life of the install and is dropped on
