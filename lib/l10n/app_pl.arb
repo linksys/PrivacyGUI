@@ -713,6 +713,7 @@
   "errorNetwork": "Błąd sieci. Sprawdź połączenie i spróbuj ponownie.",
   "errorNotAuthenticated": "Nie jesteś zalogowany. Zaloguj się i spróbuj ponownie.",
   "errorResourceNotFound": "Nie można znaleźć żądanego ustawienia na routerze.",
+  "errorDeviceNotOnNetwork": "To urządzenie nie jest już w sieci. Odśwież stronę i spróbuj ponownie.",
   "errorServiceNotReady": "Usługa nie jest jeszcze gotowa. Spróbuj ponownie za chwilę.",
   "errorSessionExpired": "Twoja sesja wygasła. Zaloguj się ponownie.",
   "errorTimeout": "Upłynął limit czasu operacji. Spróbuj ponownie.",

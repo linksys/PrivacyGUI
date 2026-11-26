@@ -219,7 +219,9 @@ void main() {
     });
 
     // The pen's save writes the agent's own Hosts row, through the same
-    // updateIdentity a client's rename uses, with no icon (#1688 item 4).
+    // updateIdentity a client's rename uses, with no icon (#1688 item 4). It
+    // passes the agent's MAC, not its row number: rows renumber while a node
+    // rejoins, so the service finds the row when it writes (#1840).
     testWidgets('saving an agent name writes its Hosts row, with no icon',
         (tester) async {
       final notifier = _RecordingDevicesDataNotifier();
@@ -247,7 +249,7 @@ void main() {
 
       // Field by field: a record compares its List by identity.
       final call = notifier.calls.single;
-      expect(call.hostInstancePaths, ['Device.Hosts.Host.3.']);
+      expect(call.macs, [DevicesTestData.slaveMac1]);
       expect(call.name, 'Upstairs');
       expect(call.type, isNull);
     }, semanticsEnabled: true);
@@ -319,8 +321,7 @@ void main() {
 
 /// Records the renames a test triggers, without writing anything.
 class _RecordingDevicesDataNotifier extends DevicesDataNotifier {
-  final calls =
-      <({List<String> hostInstancePaths, String name, String? type})>[];
+  final calls = <({List<String> macs, String name, String? type})>[];
 
   @override
   Future<DevicesData> build() async => DevicesData(
@@ -331,11 +332,10 @@ class _RecordingDevicesDataNotifier extends DevicesDataNotifier {
 
   @override
   Future<void> updateIdentity({
-    required List<String> hostInstancePaths,
+    required List<String> macs,
     required String name,
     String? userTypeCode,
   }) async {
-    calls.add(
-        (hostInstancePaths: hostInstancePaths, name: name, type: userTypeCode));
+    calls.add((macs: macs, name: name, type: userTypeCode));
   }
 }

@@ -715,6 +715,7 @@
   "errorNetwork": "Nätverksfel. Kontrollera din anslutning och försök igen.",
   "errorNotAuthenticated": "Du är inte inloggad. Logga in och försök igen.",
   "errorResourceNotFound": "Den begärda inställningen kunde inte hittas på routern.",
+  "errorDeviceNotOnNetwork": "Den här enheten finns inte längre i nätverket. Uppdatera sidan och försök igen.",
   "errorServiceNotReady": "Tjänsten är inte redo än. Försök igen om en stund.",
   "errorSessionExpired": "Din session har gått ut. Logga in igen.",
   "errorTimeout": "Åtgärden tog för lång tid. Försök igen.",

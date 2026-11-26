@@ -713,6 +713,7 @@
   "errorNetwork": "네트워크 오류입니다. 연결을 확인하고 다시 시도하세요.",
   "errorNotAuthenticated": "로그인되어 있지 않습니다. 로그인 후 다시 시도하세요.",
   "errorResourceNotFound": "요청한 설정을 라우터에서 찾을 수 없습니다.",
+  "errorDeviceNotOnNetwork": "이 기기는 더 이상 네트워크에 없습니다. 페이지를 새로 고친 후 다시 시도하세요.",
   "errorServiceNotReady": "서비스가 아직 준비되지 않았습니다. 잠시 후 다시 시도하세요.",
   "errorSessionExpired": "세션이 만료되었습니다. 다시 로그인하세요.",
   "errorTimeout": "작업 시간이 초과되었습니다. 다시 시도하세요.",

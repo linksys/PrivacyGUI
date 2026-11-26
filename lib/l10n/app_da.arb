@@ -715,6 +715,7 @@
   "errorNetwork": "Netværksfejl. Tjek din forbindelse, og prøv igen.",
   "errorNotAuthenticated": "Du er ikke logget ind. Log ind, og prøv igen.",
   "errorResourceNotFound": "Den ønskede indstilling kunne ikke findes på routeren.",
+  "errorDeviceNotOnNetwork": "Denne enhed er ikke længere på netværket. Opdater siden, og prøv igen.",
   "errorServiceNotReady": "Tjenesten er ikke klar endnu. Prøv igen om et øjeblik.",
   "errorSessionExpired": "Din session er udløbet. Log ind igen.",
   "errorTimeout": "Handlingen fik timeout. Prøv igen.",

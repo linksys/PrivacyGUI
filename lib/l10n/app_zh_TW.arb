@@ -716,6 +716,7 @@
   "errorNetwork": "網路錯誤。請檢查您的連線後再試一次。",
   "errorNotAuthenticated": "您尚未登入。請登入後再試一次。",
   "errorResourceNotFound": "在路由器上找不到要求的設定。",
+  "errorDeviceNotOnNetwork": "這台裝置已不在網路上，請重新整理頁面後再試一次。",
   "errorServiceNotReady": "服務尚未就緒。請稍候再試一次。",
   "errorSessionExpired": "您的工作階段已過期。請重新登入。",
   "errorTimeout": "操作逾時。請再試一次。",

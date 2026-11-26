@@ -110,11 +110,9 @@ void main() {
   });
 
   testWidgets('offers no rename for an offline extender', (tester) async {
-    // A rename writes to the Hosts row index read before the dialog opened,
-    // and rows renumber while a node rejoins (#1840), so the builder gives an
-    // offline extender no row to write to and the page draws no pen. The
-    // router's page, which always has one, is the control that the hook is
-    // what this finder looks for.
+    // The builder gives an offline extender no row to write to, so the page
+    // draws no pen. The router's page, which always has one, is the control
+    // that the hook is what this finder looks for.
     final handle = tester.ensureSemantics();
     await withClock(Clock.fixed(offlineExtenderNow), () async {
       await pumpNodeDetail(tester, masterNodeWithDevices);

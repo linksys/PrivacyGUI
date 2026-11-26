@@ -715,6 +715,7 @@
   "errorNetwork": "Erreur réseau. Veuillez vérifier votre connexion et réessayer.",
   "errorNotAuthenticated": "Vous n'êtes pas connecté. Veuillez vous connecter et réessayer.",
   "errorResourceNotFound": "Le paramètre demandé est introuvable sur le routeur.",
+  "errorDeviceNotOnNetwork": "Cet appareil n'est plus sur le réseau. Actualisez la page et réessayez.",
   "errorServiceNotReady": "Le service n'est pas encore prêt. Veuillez réessayer dans un instant.",
   "errorSessionExpired": "Votre session a expiré. Veuillez vous reconnecter.",
   "errorTimeout": "L'opération a expiré. Veuillez réessayer.",

@@ -713,6 +713,7 @@
   "errorNetwork": "Lỗi mạng. Vui lòng kiểm tra kết nối của bạn và thử lại.",
   "errorNotAuthenticated": "Bạn chưa đăng nhập. Vui lòng đăng nhập và thử lại.",
   "errorResourceNotFound": "Không tìm thấy cài đặt được yêu cầu trên router.",
+  "errorDeviceNotOnNetwork": "Thiết bị này không còn trong mạng. Vui lòng làm mới trang và thử lại.",
   "errorServiceNotReady": "Dịch vụ chưa sẵn sàng. Vui lòng thử lại sau giây lát.",
   "errorSessionExpired": "Phiên của bạn đã hết hạn. Vui lòng đăng nhập lại.",
   "errorTimeout": "Thao tác đã hết thời gian chờ. Vui lòng thử lại.",

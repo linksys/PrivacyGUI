@@ -715,6 +715,7 @@
   "errorNetwork": "Nettverksfeil. Sjekk tilkoblingen din og prøv igjen.",
   "errorNotAuthenticated": "Du er ikke logget inn. Logg inn og prøv igjen.",
   "errorResourceNotFound": "Den forespurte innstillingen ble ikke funnet på ruteren.",
+  "errorDeviceNotOnNetwork": "Denne enheten er ikke lenger på nettverket. Oppdater siden og prøv igjen.",
   "errorServiceNotReady": "Tjenesten er ikke klar ennå. Prøv igjen om et øyeblikk.",
   "errorSessionExpired": "Økten din har utløpt. Logg inn på nytt.",
   "errorTimeout": "Tidsavbrudd for operasjonen. Prøv igjen.",

@@ -716,6 +716,7 @@
   "errorNetwork": "ネットワークエラーです。接続を確認して再度お試しください。",
   "errorNotAuthenticated": "サインインしていません。サインインして再度お試しください。",
   "errorResourceNotFound": "要求された設定がルーター上に見つかりませんでした。",
+  "errorDeviceNotOnNetwork": "このデバイスはもうネットワーク上にありません。ページを更新して、再度お試しください。",
   "errorServiceNotReady": "サービスはまだ準備ができていません。しばらくしてから再度お試しください。",
   "errorSessionExpired": "セッションの有効期限が切れました。再度サインインしてください。",
   "errorTimeout": "操作がタイムアウトしました。再度お試しください。",

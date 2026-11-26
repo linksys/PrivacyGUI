@@ -713,6 +713,7 @@
   "errorNetwork": "Ağ hatası. Lütfen bağlantınızı kontrol edip tekrar deneyin.",
   "errorNotAuthenticated": "Oturum açmadınız. Lütfen oturum açıp tekrar deneyin.",
   "errorResourceNotFound": "İstenen ayar yönlendiricide bulunamadı.",
+  "errorDeviceNotOnNetwork": "Bu cihaz artık ağda değil. Sayfayı yenileyip tekrar deneyin.",
   "errorServiceNotReady": "Hizmet henüz hazır değil. Lütfen birazdan tekrar deneyin.",
   "errorSessionExpired": "Oturumunuzun süresi doldu. Lütfen tekrar oturum açın.",
   "errorTimeout": "İşlem zaman aşımına uğradı. Lütfen tekrar deneyin.",

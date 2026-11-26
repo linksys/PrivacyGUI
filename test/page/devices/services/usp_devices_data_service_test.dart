@@ -742,14 +742,32 @@ void main() {
       expect(laptop.hostInstancePath, 'Device.Hosts.Host.1.');
     });
 
+    // Every row's PhysAddress as the one fresh GET of them returns it. Lower
+    // case, as Hosts reports MACs on FL-WRT 2.0; the app holds them upper case.
+    void stubHostRows(Map<int, String?> macByRow) {
+      when(() => mockUsp.get(any(), fresh: true)).thenAnswer((_) async => {
+            for (final MapEntry(:key, :value) in macByRow.entries)
+              'Device.Hosts.Host.$key.PhysAddress': value,
+          });
+    }
+
+    void stubSetSuccess() {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => setSuccess());
+    }
+
+    const laptopWifi = 'AA:BB:CC:DD:EE:01';
+    const laptopCable = 'AA:BB:CC:DD:EE:02';
+    const tv = 'AA:BB:CC:DD:EE:03';
+
     // A device merged from two rows is named on both, in one Set: devidentd
     // keeps the name per MAC, so naming one row would split the device (#1719).
     test('writes every row of a merged device in one Set', () async {
-      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => setSuccess());
+      stubHostRows({1: 'aa:bb:cc:dd:ee:01', 2: 'aa:bb:cc:dd:ee:02'});
+      stubSetSuccess();
 
       await svc.updateIdentity(
-        hostInstancePaths: ['Device.Hosts.Host.1.', 'Device.Hosts.Host.2.'],
+        macs: [laptopWifi, laptopCable],
         name: 'Work laptop',
         userTypeCode: '3',
       );
@@ -767,11 +785,11 @@ void main() {
 
     // Reset clears the name and the icon (both ''), on every row.
     test('Reset clears the name and the icon on every row', () async {
-      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => setSuccess());
+      stubHostRows({1: 'aa:bb:cc:dd:ee:01', 2: 'aa:bb:cc:dd:ee:02'});
+      stubSetSuccess();
 
       await svc.updateIdentity(
-        hostInstancePaths: ['Device.Hosts.Host.1.', 'Device.Hosts.Host.2.'],
+        macs: [laptopWifi, laptopCable],
         name: '',
         userTypeCode: '',
       );
@@ -788,11 +806,11 @@ void main() {
     });
 
     test('writes the name and the icon code in one Set', () async {
-      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => setSuccess());
+      stubHostRows({3: 'aa:bb:cc:dd:ee:03'});
+      stubSetSuccess();
 
       await svc.updateIdentity(
-        hostInstancePaths: ['Device.Hosts.Host.3.'],
+        macs: [tv],
         name: 'Living room TV',
         userTypeCode: '4',
       );
@@ -809,14 +827,10 @@ void main() {
 
     test('an empty name and an empty code are written, which clears them',
         () async {
-      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => setSuccess());
+      stubHostRows({3: 'aa:bb:cc:dd:ee:03'});
+      stubSetSuccess();
 
-      await svc.updateIdentity(
-        hostInstancePaths: ['Device.Hosts.Host.3.'],
-        name: '',
-        userTypeCode: '',
-      );
+      await svc.updateIdentity(macs: [tv], name: '', userTypeCode: '');
 
       verify(() => mockUsp.set(
             {
@@ -830,13 +844,10 @@ void main() {
     // A name-only edit leaves the stored type alone, so a type another client
     // wrote (a devregex string the app has no code for) is not erased.
     test('with no icon change, only the name is written', () async {
-      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => setSuccess());
+      stubHostRows({3: 'aa:bb:cc:dd:ee:03'});
+      stubSetSuccess();
 
-      await svc.updateIdentity(
-        hostInstancePaths: ['Device.Hosts.Host.3.'],
-        name: 'Kitchen',
-      );
+      await svc.updateIdentity(macs: [tv], name: 'Kitchen');
 
       verify(() => mockUsp.set(
             {'Device.Hosts.Host.3.X_LINKSYS_UserDeviceLocation': 'Kitchen'},
@@ -846,16 +857,18 @@ void main() {
 
     // The generated update answers success without sending a Set when it has
     // no params, so a save of no row would report a name it never wrote.
-    test('no row to write is refused, and nothing is sent', () {
-      expect(
-        () => svc.updateIdentity(hostInstancePaths: [], name: 'x'),
+    test('no MAC to write is refused, and nothing is read or sent', () async {
+      await expectLater(
+        () => svc.updateIdentity(macs: [], name: 'x'),
         throwsA(isA<ResourceNotFoundError>()),
       );
+      verifyNever(() => mockUsp.get(any(), fresh: true));
       verifyNever(
           () => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')));
     });
 
     test('a refused Set throws UspCompleteFailureError', () {
+      stubHostRows({3: 'aa:bb:cc:dd:ee:03'});
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
           .thenAnswer((_) async => UspEnvelopeTestData.parameterErrors(
                 {
@@ -868,27 +881,162 @@ void main() {
               ));
 
       expect(
-        () => svc.updateIdentity(
-          hostInstancePaths: ['Device.Hosts.Host.3.'],
-          name: 'x',
-          userTypeCode: '1',
-        ),
+        () => svc.updateIdentity(macs: [tv], name: 'x', userTypeCode: '1'),
         throwsA(isA<UspCompleteFailureError>()),
       );
     });
 
-    test('a transport error maps to ServiceError', () {
+    test('a transport error on the Set maps to ServiceError', () {
+      stubHostRows({3: 'aa:bb:cc:dd:ee:03'});
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
           .thenThrow('Set failed: Transport error: Connection refused');
 
       expect(
-        () => svc.updateIdentity(
-          hostInstancePaths: ['Device.Hosts.Host.3.'],
-          name: 'x',
-          userTypeCode: '1',
-        ),
+        () => svc.updateIdentity(macs: [tv], name: 'x', userTypeCode: '1'),
         throwsA(isA<ConnectivityError>()),
       );
+    });
+
+    // Hosts rows renumber on FL-WRT 2.0 when a row ahead of them is added or
+    // removed: while an agent rejoins, its backhaul station takes the agent's
+    // index and every later row moves up one (#1840). So the rows are looked
+    // up by MAC when the name is written.
+    group('finds the rows by MAC when it writes (#1840)', () {
+      test('writes the row the MAC is on now, not where it was read', () async {
+        // The TV was read at Host.3; a row inserted ahead moved it to Host.4,
+        // and Host.3 is now another device.
+        stubHostRows({
+          1: 'aa:bb:cc:dd:ee:01',
+          3: '02:00:00:00:00:99',
+          4: 'aa:bb:cc:dd:ee:03',
+        });
+        stubSetSuccess();
+
+        await svc.updateIdentity(macs: [tv], name: 'Living room TV');
+
+        verify(() => mockUsp.set(
+              {
+                'Device.Hosts.Host.4.X_LINKSYS_UserDeviceLocation':
+                    'Living room TV',
+              },
+              allowPartial: false,
+            )).called(1);
+      });
+
+      // One GET, so every row number and MAC is from the same moment, and
+      // fresh, so a renumbering is not hidden behind the 5 s shared-read cache.
+      test('reads every row\'s PhysAddress in one fresh GET', () async {
+        stubHostRows({3: 'aa:bb:cc:dd:ee:03'});
+        stubSetSuccess();
+
+        await svc.updateIdentity(macs: [tv], name: 'x');
+
+        final read = verify(() => mockUsp.get(captureAny(), fresh: true))
+          ..called(1);
+        expect(read.captured.single, ['Device.Hosts.Host.*.PhysAddress']);
+        verifyNever(() => mockUsp.get(any(), priority: any(named: 'priority')));
+      });
+
+      test('matches the lower-case PhysAddress Hosts reports', () async {
+        stubHostRows({3: 'aa:bb:cc:dd:ee:03'});
+        stubSetSuccess();
+
+        await svc.updateIdentity(macs: [tv], name: 'x');
+
+        verify(() => mockUsp.set(
+              {'Device.Hosts.Host.3.X_LINKSYS_UserDeviceLocation': 'x'},
+              allowPartial: false,
+            )).called(1);
+      });
+
+      test(
+          'a MAC with no row now is left out; the device\'s others are '
+          'written', () async {
+        // The laptop's Wi-Fi row is gone; its cable row is still there.
+        stubHostRows({2: 'aa:bb:cc:dd:ee:02', 3: 'aa:bb:cc:dd:ee:03'});
+        stubSetSuccess();
+
+        await svc.updateIdentity(
+            macs: [laptopWifi, laptopCable], name: 'Work laptop');
+
+        verify(() => mockUsp.set(
+              {
+                'Device.Hosts.Host.2.X_LINKSYS_UserDeviceLocation':
+                    'Work laptop',
+              },
+              allowPartial: false,
+            )).called(1);
+      });
+
+      test('a MAC on two rows is written on both', () async {
+        stubHostRows({3: 'aa:bb:cc:dd:ee:03', 7: 'aa:bb:cc:dd:ee:03'});
+        stubSetSuccess();
+
+        await svc.updateIdentity(macs: [tv], name: 'x');
+
+        verify(() => mockUsp.set(
+              {
+                'Device.Hosts.Host.3.X_LINKSYS_UserDeviceLocation': 'x',
+                'Device.Hosts.Host.7.X_LINKSYS_UserDeviceLocation': 'x',
+              },
+              allowPartial: false,
+            )).called(1);
+      });
+
+      test(
+          'no row carrying any of the MACs: the device has left, and nothing '
+          'is written', () async {
+        stubHostRows({1: 'aa:bb:cc:dd:ee:01', 3: '02:00:00:00:00:99'});
+        stubSetSuccess();
+
+        await expectLater(
+          () => svc.updateIdentity(macs: [tv], name: 'x'),
+          throwsA(isA<DeviceNotOnNetworkError>()),
+        );
+        verifyNever(
+            () => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')));
+      });
+
+      // A blank MAC names no row. It must not match a row with no
+      // PhysAddress, and it is not the device leaving the network either.
+      test('only blank MACs are refused, and nothing is read or written',
+          () async {
+        stubHostRows({3: '', 4: null});
+        stubSetSuccess();
+
+        await expectLater(
+          () => svc.updateIdentity(macs: ['', ' '], name: 'x'),
+          throwsA(isA<ResourceNotFoundError>()),
+        );
+        verifyNever(() => mockUsp.get(any(), fresh: true));
+        verifyNever(
+            () => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')));
+      });
+
+      test('a row with no PhysAddress is skipped', () async {
+        stubHostRows({2: null, 3: '', 4: 'aa:bb:cc:dd:ee:03'});
+        stubSetSuccess();
+
+        await svc.updateIdentity(macs: [tv, ''], name: 'x');
+
+        verify(() => mockUsp.set(
+              {'Device.Hosts.Host.4.X_LINKSYS_UserDeviceLocation': 'x'},
+              allowPartial: false,
+            )).called(1);
+      });
+
+      test('a failed read maps to ServiceError, and nothing is written',
+          () async {
+        when(() => mockUsp.get(any(), fresh: true))
+            .thenThrow('Get failed: Transport error: Connection refused');
+
+        await expectLater(
+          () => svc.updateIdentity(macs: [tv], name: 'x'),
+          throwsA(isA<ConnectivityError>()),
+        );
+        verifyNever(
+            () => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')));
+      });
     });
   });
 }
