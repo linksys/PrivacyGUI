@@ -153,7 +153,7 @@ class CoreTransactionData extends Equatable {
 ///
 /// A feature that needs fresh state after each poll does not get called from
 /// here: it listens to [pollCompletedProvider], which says what it can count on
-/// (#1834). Polling itself reads only what lives under lib/core.
+/// (#1834). Polling calls nothing under lib/page.
 class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
   static Timer? _timer;
 

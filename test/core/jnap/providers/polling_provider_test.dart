@@ -1850,6 +1850,27 @@ void main() {
       expect(completed(), 0);
     });
 
+    testWidgets('a poll answered while polling is paused does not move it',
+        (tester) async {
+      // PnP and Remote Assistance pause polling for flows of their own.
+      final onTheWire = Completer<JNAPTransactionSuccessWrap>();
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction((_) => onTheWire.future);
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      notifier.paused = true;
+      onTheWire.complete(transactionSuccess());
+      await tester.pump();
+      await tester.pump();
+
+      expect(completed(), 0);
+
+      notifier.paused = false;
+      await advanceToFirstPoll(tester);
+      await stopAndSettle(tester);
+    });
+
     testWidgets('a client signal merge does not move it', (tester) async {
       final helper = serviceHelper as MockServiceHelper;
       when(helper.isSupportNodesNetworkConnections()).thenReturn(true);
@@ -2167,6 +2188,36 @@ void main() {
 
       expect(sent(JNAPAction.getMACFilterSettings), reads,
           reason: 'nobody is watching this router any more');
+    });
+
+    testWidgets('a poll answered after polling stops makes no read of its own',
+        (tester) async {
+      // Polling's own reads after a poll (the node lights here; Remote
+      // Assistance's session check is compiled out of these tests) would
+      // carry the factory default credential after a logout too.
+      final helper = serviceHelper as MockServiceHelper;
+      when(helper.isSupportLedMode()).thenReturn(true);
+      addTearDown(() => reset(helper));
+      whenRouterAnswers(outputs: {
+        JNAPAction.getLedNightModeSetting: {'Enable': false},
+      });
+      final onTheWire = Completer<JNAPTransactionSuccessWrap>();
+      whenTransaction((_) => onTheWire.future);
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      notifier.stopPolling();
+      onTheWire.complete(JNAPTransactionSuccessWrap(
+        result: 'OK',
+        data: transactions.last.commands
+            .map((command) => MapEntry(
+                command.key, JNAPSuccess(result: 'OK', output: const {})))
+            .toList(),
+      ));
+      await tester.pump();
+      await tester.pump();
+
+      expect(sent(JNAPAction.getLedNightModeSetting), 0);
     });
 
     testWidgets(

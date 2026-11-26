@@ -2,7 +2,7 @@
 //
 // The notifier reads its status when polling signals a completed poll
 // (pollCompletedProvider), instead of being called by polling, and only on a
-// router that supports VPN. The router is a MockRouterRepository, so what the
+// router that supports VPN. The router is a RouterBoundary, so what the
 // notifier sends is observable.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,85 +11,46 @@ import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
-import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/vpn/models/vpn_models.dart';
 import 'package:privacy_gui/page/vpn/providers/vpn_notifier.dart';
+import 'package:privacy_gui/page/vpn/providers/vpn_state.dart';
 
 import '../../../common/di.dart';
+import '../../../common/router_boundary.dart';
 import '../../../mocks/jnap_service_supported_mocks.dart';
-import '../../../mocks/router_repository_mocks.dart';
 import '../../../test_data/vpn_test_state.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   mockDependencyRegister();
 
-  late MockRouterRepository repo;
+  late RouterBoundary router;
   late MockServiceHelper helper;
   late ProviderContainer container;
-  late List<JNAPAction> sends;
-
-  /// What the router answers to getVPNService.
-  late Future<JNAPSuccess> Function() vpnService;
 
   final vpn = VPNTestState.defaultState;
-  JNAPSuccess vpnServiceAnswer(IPsecStatus status) =>
-      JNAPSuccess(result: 'OK', output: {
+  Map<String, dynamic> vpnService(IPsecStatus status) => {
         'settings': VPNServiceSettings(
           enabled: true,
           autoConnect: true,
           statistics: vpn.status.statistics,
           tunnelStatus: status,
         ).toMap(),
-      });
-
-  int reads() =>
-      sends.where((action) => action == JNAPAction.getVPNService).length;
+      };
 
   setUp(() {
     initBetterActions();
-    sends = [];
-    vpnService = () async => vpnServiceAnswer(IPsecStatus.connected);
     helper = serviceHelper as MockServiceHelper;
     when(helper.isSupportVPN()).thenReturn(true);
-    repo = MockRouterRepository();
-    when(repo.transaction(
-      any,
-      fetchRemote: anyNamed('fetchRemote'),
-      cacheLevel: anyNamed('cacheLevel'),
-      timeoutMs: anyNamed('timeoutMs'),
-      retries: anyNamed('retries'),
-      sideEffectOverrides: anyNamed('sideEffectOverrides'),
-    )).thenAnswer(
-        (_) async => JNAPTransactionSuccessWrap(result: 'OK', data: const []));
-    when(repo.send(
-      any,
-      data: anyNamed('data'),
-      extraHeaders: anyNamed('extraHeaders'),
-      auth: anyNamed('auth'),
-      type: anyNamed('type'),
-      fetchRemote: anyNamed('fetchRemote'),
-      cacheLevel: anyNamed('cacheLevel'),
-      timeoutMs: anyNamed('timeoutMs'),
-      retries: anyNamed('retries'),
-      sideEffectOverrides: anyNamed('sideEffectOverrides'),
-    )).thenAnswer((invocation) {
-      final action = invocation.positionalArguments.first as JNAPAction;
-      sends.add(action);
-      return switch (action) {
-        JNAPAction.getVPNService => vpnService(),
-        JNAPAction.getVPNUser => Future.value(JNAPSuccess(
-            result: 'OK',
-            output: {'credentials': vpn.settings.userCredentials!.toMap()})),
-        JNAPAction.getVPNGateway => Future.value(JNAPSuccess(
-            result: 'OK',
-            output: {'settings': vpn.settings.gatewaySettings!.toMap()})),
-        _ => Future.error(const JNAPError(result: '_ErrorUnknownAction')),
-      };
-    });
+    router = RouterBoundary()
+      ..holds(JNAPAction.getVPNUser,
+          {'credentials': vpn.settings.userCredentials!.toMap()})
+      ..holds(JNAPAction.getVPNGateway,
+          {'settings': vpn.settings.gatewaySettings!.toMap()})
+      ..holds(JNAPAction.getVPNService, vpnService(IPsecStatus.connected));
     container = ProviderContainer(overrides: [
-      routerRepositoryProvider.overrideWithValue(repo),
+      routerRepositoryProvider.overrideWithValue(router.repo),
     ]);
   });
 
@@ -104,7 +65,7 @@ void main() {
     container.read(pollCompletedProvider.notifier).state++;
     await pumpEventQueue();
 
-    expect(reads(), 1);
+    expect(router.actions, contains(JNAPAction.getVPNService));
     expect(container.read(vpnProvider).status.tunnelStatus,
         IPsecStatus.connected);
   });
@@ -116,18 +77,21 @@ void main() {
     container.read(pollCompletedProvider.notifier).state++;
     await pumpEventQueue();
 
-    expect(sends, isEmpty);
+    expect(router.actions, isEmpty);
   });
 
   test('a failed read after a poll stays with VPN', () async {
     // An error that escaped the listener would fail this test as an uncaught
     // error, and in the app it would never reach polling either way.
     container.read(vpnProvider);
-    vpnService = () async => throw const JNAPError(result: '_ErrorUnexpected');
+    router.refuses(JNAPAction.getVPNService, result: '_ErrorUnexpected');
 
     container.read(pollCompletedProvider.notifier).state++;
     await pumpEventQueue();
 
-    expect(reads(), 1);
+    expect(router.actions, contains(JNAPAction.getVPNService));
+    expect(container.read(vpnProvider).status.tunnelStatus,
+        const VPNState.init().status.tunnelStatus,
+        reason: 'the status it had');
   });
 }
