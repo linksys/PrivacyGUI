@@ -17,3 +17,17 @@ class SessionTokenExpiredException extends AuthException {
   SessionTokenExpiredException()
       : super(message: 'token expired! logging out!');
 }
+
+/// Ends work that belonged to a login once that login has ended (#1904):
+/// a [RouterRepository.scheduledCommand] loop given the login's
+/// `AuthNotifier.logoutGeneration`, and the flow it belongs to.
+///
+/// It lives here, with the other login exceptions, so that a page can catch
+/// it without importing the data layer (constitution 1.2).
+class LoggedOutException implements Exception {
+  const LoggedOutException();
+
+  @override
+  String toString() =>
+      'LoggedOutException: the login this work belonged to has ended';
+}

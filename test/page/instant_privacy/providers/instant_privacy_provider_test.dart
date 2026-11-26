@@ -2,8 +2,9 @@
 // it, against the router behind RouterRepository and a device list built
 // from a poll.
 //
-// #1834 moves who calls fetch() - polling calls it today - so these tests call
-// it themselves and never assert that polling does.
+// Since #1834 the notifier also reads its status when polling signals a
+// completed poll (pollCompletedProvider): "after a poll" covers that. The other
+// tests call fetch() themselves and never assert that polling does.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -304,5 +305,37 @@ void main() {
     await notifier().doPolling();
 
     expect(polling.forced, 1);
+  });
+
+  group('after a poll (#1834)', () {
+    // The notifier reads its status when polling signals a completed poll,
+    // instead of being called by polling.
+    int reads() => router.actions
+        .where((action) => action == JNAPAction.getMACFilterSettings)
+        .length;
+
+    test('a completed poll reads the status', () async {
+      router.holds(JNAPAction.getMACFilterSettings, _filter('Disabled', []));
+
+      container.read(pollCompletedProvider.notifier).state++;
+      await pumpEventQueue();
+
+      expect(reads(), 1);
+      expect(page().status.mode, MacFilterMode.disabled);
+    });
+
+    test('a failed read after a poll stays with Instant Privacy', () async {
+      // An error that escaped the listener would fail this test as an uncaught
+      // error, and in the app it would never reach polling either way.
+      router.refuses(JNAPAction.getMACFilterSettings,
+          result: '_ErrorUnexpected');
+
+      container.read(pollCompletedProvider.notifier).state++;
+      await pumpEventQueue();
+
+      expect(reads(), 1);
+      expect(page().status.mode, MacFilterMode.allow,
+          reason: 'the status it had');
+    });
   });
 }

@@ -33,7 +33,7 @@ class _FirmwareStub extends FirmwareUpdateNotifier {
   FirmwareUpdateState build() => FirmwareUpdateState.empty();
 
   @override
-  Future fetchAvailableFirmwareUpdates() async {}
+  Future fetchAvailableFirmwareUpdates({int? logoutGeneration}) async {}
 
   @override
   bool isFailedCheckFirmwareUpdate() => false;

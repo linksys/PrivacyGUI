@@ -8,7 +8,12 @@ import 'package:privacy_gui/core/cache/utility.dart';
 import 'package:privacy_gui/core/jnap/access/access_policy.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
+import 'package:privacy_gui/providers/auth/auth_exception.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
+
+// Where the loops tied to a login end, for this file's importers.
+export 'package:privacy_gui/providers/auth/auth_exception.dart'
+    show LoggedOutException;
 import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
 import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/constants/jnap_const.dart';
@@ -51,13 +56,18 @@ class CommandWrap {
 
 const defaultAdminPassword = 'admin';
 
-/// Ends a [RouterRepository.scheduledCommand] loop whose login has ended.
-class LoggedOutException implements Exception {
-  const LoggedOutException();
-
-  @override
-  String toString() =>
-      'LoggedOutException: the login this work belonged to has ended';
+/// For a stream handed to a page: a logout ends it quietly.
+///
+/// A [RouterRepository.scheduledCommand] loop tied to a login ends with a
+/// [LoggedOutException]. A page that listens without `onError` would take
+/// that as an uncaught error, and the page is gone by then anyway. Here the
+/// stream simply ends, after [onLoggedOut], which puts the owner's state back
+/// where nothing is running. Any other error passes through.
+extension EndAtLogout<T> on Stream<T> {
+  Stream<T> endAtLogout([void Function()? onLoggedOut]) => handleError(
+        (Object _) => onLoggedOut?.call(),
+        test: (error) => error is LoggedOutException,
+      );
 }
 
 final routerRepositoryProvider = Provider((ref) {
@@ -242,10 +252,11 @@ class RouterRepository {
   ///
   /// [logoutGeneration] ties the loop to a login. Pass
   /// [AuthNotifier.logoutGeneration] as it was when the work this loop belongs
-  /// to began. Once a logout has moved it on, the loop sends nothing more and
-  /// ends with a [LoggedOutException], and [onCompleted] is not called: the
-  /// condition did not hold, and the retries did not run out. Left null, the
-  /// loop goes on across a logout (#1904).
+  /// to began. Once a logout has moved it on, the loop sends nothing more,
+  /// hands on no answer that came back after it, and ends with a
+  /// [LoggedOutException]. [onCompleted] is not called: the condition did not
+  /// hold, and the retries did not run out. Left null, the loop goes on across
+  /// a logout (#1904).
   Stream<JNAPResult> scheduledCommand({
     required JNAPAction action,
     int retryDelayInMilliSec = 5000,
@@ -260,6 +271,14 @@ class RouterRepository {
   }) async* {
     int retry = 0;
     bool exceedMaxRetry = true;
+    void endIfLoggedOut() {
+      if (logoutGeneration != null &&
+          ref.read(authProvider.notifier).loggedOutSince(logoutGeneration)) {
+        logger.d('SCHEDULED COMMAND: command {$action}: logged out, STOP!');
+        throw const LoggedOutException();
+      }
+    }
+
     while (++retry <= maxRetry || maxRetry == -1) {
       logger.d('SCHEDULED COMMAND: publish command {$action}: $retry times');
       if (retry <= 1) {
@@ -267,12 +286,7 @@ class RouterRepository {
       }
       // After the delay and before the request, so that a logout during the
       // delay stops the request it was waiting to send.
-      if (logoutGeneration != null &&
-          ref.read(authProvider.notifier).logoutGeneration !=
-              logoutGeneration) {
-        logger.d('SCHEDULED COMMAND: command {$action}: logged out, STOP!');
-        throw const LoggedOutException();
-      }
+      endIfLoggedOut();
       late JNAPResult result;
       try {
         result = await send(
@@ -298,6 +312,10 @@ class RouterRepository {
           error: e.runtimeType.toString(),
         );
       }
+      // And once the answer is in: a request that was out at the logout
+      // answers for a login that has ended, and a caller handed its answer
+      // would act on it, as the firmware install's completion did.
+      endIfLoggedOut();
       yield result;
 
       if (condition?.call(result) ?? false) {

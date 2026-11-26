@@ -9,6 +9,7 @@ import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -218,6 +219,8 @@ class InstantTopologyNotifier extends Notifier<InstantTopologyState> {
   }
 
   Future reboot([List<String> deviceUUIDs = const []]) {
+    // The wait that follows belongs to this login (#1904).
+    final logoutGeneration = ref.read(authProvider.notifier).logoutGeneration;
     final routerRepository = ref.read(routerRepositoryProvider);
     final builder = JNAPTransactionBuilder(
         commands: deviceUUIDs.reversed
@@ -238,7 +241,7 @@ class InstantTopologyNotifier extends Notifier<InstantTopologyState> {
             fetchRemote: true,
             cacheLevel: CacheLevel.noCache,
           )
-          .then((_) => _waitForNodesOffline(deviceUUIDs));
+          .then((_) => _waitForNodesOffline(deviceUUIDs, logoutGeneration));
     }
   }
 
@@ -283,6 +286,8 @@ class InstantTopologyNotifier extends Notifier<InstantTopologyState> {
   }
 
   Future<dynamic> factoryReset(List<String> deviceUUIDs) {
+    // The wait that follows belongs to this login (#1904).
+    final logoutGeneration = ref.read(authProvider.notifier).logoutGeneration;
     final routerRepository = ref.read(routerRepositoryProvider);
     final builder = JNAPTransactionBuilder(
       // Start doing factory reset from the nodes of the bottom level
@@ -310,12 +315,18 @@ class InstantTopologyNotifier extends Notifier<InstantTopologyState> {
           // After factory resetting a child node, we need to wait for them
           // being offline for subsequent Delete actions
           .then(
-            (_) => _waitForNodesOffline(deviceUUIDs),
+            (_) => _waitForNodesOffline(deviceUUIDs, logoutGeneration),
           );
     }
   }
 
-  Future<void> _waitForNodesOffline(List<String> deviceUUIDs) async {
+  /// Waits for the nodes to go offline after a reboot or a factory reset.
+  ///
+  /// A logout ends the wait with a [LoggedOutException], which ends the reboot
+  /// or the reset with it: what its page does next, a forced poll and polling
+  /// started again, must not happen on the login screen (#1904).
+  Future<void> _waitForNodesOffline(
+      List<String> deviceUUIDs, int logoutGeneration) async {
     final waitingStream = ref.read(routerRepositoryProvider).scheduledCommand(
           action: JNAPAction.getDevices,
           retryDelayInMilliSec: 3000,
@@ -333,6 +344,7 @@ class InstantTopologyNotifier extends Notifier<InstantTopologyState> {
             return false;
           },
           auth: true,
+          logoutGeneration: logoutGeneration,
         );
     await for (final result in waitingStream) {
       logger.d('[Reboot/FactoryReset]: Waiting for all nodes offline');

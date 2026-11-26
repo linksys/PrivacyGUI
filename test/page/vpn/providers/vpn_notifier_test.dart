@@ -2,21 +2,26 @@
 // behind RouterRepository.
 //
 // No 1.x firmware implements the VPN actions (they are plans), so the router
-// here answers with the shapes VPNService reads. #1834 moves who calls
-// fetch() - polling calls it today - so these tests call it themselves and
-// never assert that polling does.
+// here answers with the shapes VPNService reads. Since #1834 the notifier also
+// reads its status when polling signals a completed poll
+// (pollCompletedProvider), on a router with VPN: "after a poll" covers that.
+// The other tests call fetch() themselves and never assert that polling does.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
+import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/vpn/models/vpn_models.dart';
 import 'package:privacy_gui/page/vpn/providers/vpn_notifier.dart';
 import 'package:privacy_gui/page/vpn/providers/vpn_state.dart';
 
+import '../../../common/di.dart';
 import '../../../common/router_boundary.dart';
+import '../../../mocks/jnap_service_supported_mocks.dart';
 
 const _credentials = <String, dynamic>{
   'username': 'alice@example.com',
@@ -59,6 +64,9 @@ Map<String, dynamic> _service({
     };
 
 void main() {
+  // The listener asks serviceHelper whether the router has VPN.
+  mockDependencyRegister();
+
   late RouterBoundary router;
   late ProviderContainer container;
   late VPNNotifier notifier;
@@ -347,6 +355,51 @@ void main() {
           notifier.testVPNConnection(), throwsA(isA<JNAPError>()));
 
       expect(page().status.testResult, isNull);
+    });
+  });
+
+  group('after a poll (#1834)', () {
+    // The notifier reads its status when polling signals a completed poll,
+    // instead of being called by polling, and only on a router with VPN.
+    late MockServiceHelper services;
+
+    setUp(() {
+      services = serviceHelper as MockServiceHelper;
+      when(services.isSupportVPN()).thenReturn(true);
+    });
+
+    tearDown(() => reset(services));
+
+    void signalPoll() => container.read(pollCompletedProvider.notifier).state++;
+
+    test('a completed poll reads the status, on a router with VPN', () async {
+      signalPoll();
+      await pumpEventQueue();
+
+      expect(router.actions, contains(JNAPAction.getVPNService));
+      expect(page().status.tunnelStatus, IPsecStatus.connected);
+    });
+
+    test('a completed poll reads nothing on a router without VPN', () async {
+      when(services.isSupportVPN()).thenReturn(false);
+
+      signalPoll();
+      await pumpEventQueue();
+
+      expect(router.sent, isEmpty);
+    });
+
+    test('a failed read after a poll stays with VPN', () async {
+      // An error that escaped the listener would fail this test as an uncaught
+      // error, and in the app it would never reach polling either way.
+      router.refuses(JNAPAction.getVPNService, result: '_ErrorUnexpected');
+
+      signalPoll();
+      await pumpEventQueue();
+
+      expect(router.actions, contains(JNAPAction.getVPNService));
+      expect(page().status.tunnelStatus, IPsecStatus.disconnected,
+          reason: 'the status it had');
     });
   });
 }
