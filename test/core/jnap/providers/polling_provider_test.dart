@@ -1871,6 +1871,27 @@ void main() {
       await stopAndSettle(tester);
     });
 
+    testWidgets('a poll made while polling is paused moves it',
+        (tester) async {
+      // A flow that pauses polling and then polls on purpose, as a Wi-Fi
+      // save's read-back does inside holdWhile, wants that poll whole.
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction((_) => transactionSuccess());
+      notifier.paused = true;
+
+      final done = notifier.forcePolling();
+      await tester.pump();
+      await tester.pump();
+      await done;
+
+      expect(transactions, hasLength(1));
+      expect(completed(), 1);
+
+      notifier.paused = false;
+      await advanceToFirstPoll(tester);
+      await stopAndSettle(tester);
+    });
+
     testWidgets('a client signal merge does not move it', (tester) async {
       final helper = serviceHelper as MockServiceHelper;
       when(helper.isSupportNodesNetworkConnections()).thenReturn(true);
@@ -2218,6 +2239,31 @@ void main() {
       await tester.pump();
 
       expect(sent(JNAPAction.getLedNightModeSetting), 0);
+    });
+
+    testWidgets('a poll made while polling is paused makes its own reads',
+        (tester) async {
+      // The pausing flow's own poll, such as the first login's firmware
+      // finish, still reads the node lights.
+      final helper = serviceHelper as MockServiceHelper;
+      when(helper.isSupportLedMode()).thenReturn(true);
+      addTearDown(() => reset(helper));
+      whenRouterAnswers(outputs: {
+        JNAPAction.getLedNightModeSetting: {'Enable': false},
+      });
+      notifier.paused = true;
+
+      final done = notifier.forcePolling();
+      await tester.pump();
+      await tester.pump();
+      await done;
+
+      expect(polls(), 1);
+      expect(sent(JNAPAction.getLedNightModeSetting), 1);
+
+      notifier.paused = false;
+      await advanceToFirstPoll(tester);
+      await stopAndSettle(tester);
     });
 
     testWidgets(

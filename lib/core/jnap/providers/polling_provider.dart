@@ -114,8 +114,9 @@ final routerUnreachableProvider = StateProvider<int>((ref) => 0);
 /// has published that poll's result. It promises three things:
 /// - **Once per successful poll.** A failed poll does not move it, nor does a
 ///   client signal merge into the poll's data, nor a poll that outlived its run
-///   (polling was stopped or paused while it was on the wire, as a logout
-///   does).
+///   (polling was stopped since it began, as a logout does, or paused while it
+///   was on the wire). A poll that a flow makes while it holds polling paused,
+///   such as a Wi-Fi save's read-back, does move it.
 /// - **`isReady` does not wait for its listeners.** A poll is ready once the
 ///   core transaction and polling's own reads are in.
 /// - **A listener's failure stays with the listener.** It never reaches
@@ -339,6 +340,12 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     // answer comes back - or fails to - polling may have been stopped on purpose,
     // and this poll then speaks for a router nobody is watching any more.
     final generation = _generation;
+    // Whether polling was already paused when this poll began. A flow that
+    // pauses polling and then polls on purpose - a Wi-Fi save's read-back
+    // inside holdWhile, PnP, the first login's firmware finish - wants that
+    // poll whole; only a pause that lands while a poll is on the wire ends it.
+    // See [_outlived].
+    final startedPaused = _paused;
 
     // Repair a start-up whose device-mode read failed, rather than polling in a
     // degraded shape until the next login. Once the router has answered once,
@@ -427,7 +434,7 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
           // Polling's own reads, under lib/core. The features read when the
           // poll completes (pollCompletedProvider), and a poll that outlived
           // its run reads nothing: its session may be gone (#1834).
-          if (!_isCancelled(generation)) {
+          if (!_outlived(generation, startedPaused)) {
             await _additionalPolling();
           }
           return result.copyWith(isReady: true);
@@ -457,9 +464,9 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
       } else {
         _recordPollFailure(repository);
       }
-      if (!result.hasError) {
-        ref.read(pollCompletedProvider.notifier).state++;
-      }
+    }
+    if (!result.hasError && !_outlived(generation, startedPaused)) {
+      ref.read(pollCompletedProvider.notifier).state++;
     }
 
     benchMark.end();
@@ -542,6 +549,15 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
   /// pauses it. Anything still in flight across that boundary has to notice, or it
   /// polls a router nobody is watching and reports on its silence.
   bool _isCancelled(int generation) => _paused || generation != _generation;
+
+  /// Whether a poll that began in [generation], with polling then paused or
+  /// not as [startedPaused] says, speaks for a run that has ended: polling was
+  /// stopped since it began (a logout among the reasons), or paused while it
+  /// was on the wire. A poll that a paused flow makes itself is not ended by
+  /// that pause. Such a poll makes no reads after it answers, and does not
+  /// signal [pollCompletedProvider] (#1834).
+  bool _outlived(int generation, bool startedPaused) =>
+      generation != _generation || (_paused && !startedPaused);
 
   /// Whether the router rejected our credential, as opposed to never having
   /// answered. Only the former means the session is really gone.
