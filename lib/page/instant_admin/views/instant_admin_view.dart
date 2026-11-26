@@ -293,14 +293,14 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView>
               hoverColor:
                   Theme.of(context).colorScheme.background.withOpacity(.5),
               title: Semantics(
-                identifier: 'now-locale-item-${country.name}',
+                identifier: 'region-item-${country.name}',
                 child: AppText.labelLarge(
                   country.resolveDisplayText(context),
                 ),
               ),
               trailing: selected == country
                   ? Semantics(
-                      identifier: 'now-country-item-checked',
+                      identifier: 'region-item-checked',
                       label: 'checked',
                       child: const Icon(LinksysIcons.check))
                   : null,

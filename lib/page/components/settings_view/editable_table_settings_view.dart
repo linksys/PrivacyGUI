@@ -37,6 +37,15 @@ class AppEditableTableSettingsView<T> extends ConsumerStatefulWidget {
   final bool addEnabled;
   final String? Function(int index)? onValidate;
 
+  /// The prefix of the table's identifiers (constitution 11.3): the add button
+  /// is `{identifier}-add`, and a row's actions are `{identifier}-edit-{key}`,
+  /// `-delete-`, `-save-` and `-cancel-`.
+  final String? identifier;
+
+  /// A row's key, from its data: never its position or translated text. It is
+  /// required with [identifier].
+  final String Function(T item)? rowKey;
+
   const AppEditableTableSettingsView({
     super.key,
     this.title,
@@ -60,7 +69,10 @@ class AppEditableTableSettingsView<T> extends ConsumerStatefulWidget {
     this.emptyMessage,
     this.addEnabled = true,
     this.onValidate,
-  });
+    this.identifier,
+    this.rowKey,
+  }) : assert(identifier == null || rowKey != null,
+            'A table with an identifier needs a rowKey.');
 
   @override
   ConsumerState<AppEditableTableSettingsView<T>> createState() =>
@@ -107,12 +119,14 @@ class _AppEditableTableSettingsViewState<T>
               children: [
                 AppIconButton(
                     icon: LinksysIcons.edit,
+                    identifier: _rowIdentifier('edit', data),
                     onTap: () {
                       _editItem(widget.dataList.indexOf(data), data);
                     }),
                 AppIconButton(
                   icon: LinksysIcons.delete,
                   color: Theme.of(context).colorScheme.error,
+                  identifier: _rowIdentifier('delete', data),
                   onTap: () {
                     widget.onDeleted?.call(index, data);
                   },
@@ -128,6 +142,7 @@ class _AppEditableTableSettingsViewState<T>
                   color: (widget.isEditingDataValid ?? true)
                       ? Theme.of(context).colorSchemeExt.green
                       : Theme.of(context).colorScheme.outline,
+                  identifier: _rowIdentifier('save', data, editing: true),
                   onTap: (widget.isEditingDataValid ?? true)
                       ? () {
                           widget.onSaved?.call(isNew() ? null : _editRow, data);
@@ -137,6 +152,7 @@ class _AppEditableTableSettingsViewState<T>
                 ),
                 AppIconButton(
                   icon: LinksysIcons.close,
+                  identifier: _rowIdentifier('cancel', data, editing: true),
                   onTap: () {
                     _editItem(null, null);
                   },
@@ -178,6 +194,8 @@ class _AppEditableTableSettingsViewState<T>
       bottomWidget: AppTextButton(
         widget.addLabel,
         icon: widget.addIcon ?? LinksysIcons.add,
+        identifier:
+            widget.identifier == null ? null : '${widget.identifier}-add',
         onTap: widget.addEnabled
             ? () {
                 final newItem = widget.createNewItem.call();
@@ -237,6 +255,17 @@ class _AppEditableTableSettingsViewState<T>
   }
 
   bool isNew() => widget.dataList.length == _editRow;
+
+  /// The identifier of [item]'s [action], `{identifier}-{action}-{key}`. The
+  /// row being added, which is the row [editing] when [isNew], has no data
+  /// yet, so its key is `new`.
+  String? _rowIdentifier(String action, T item, {bool editing = false}) {
+    final identifier = widget.identifier;
+    final rowKey = widget.rowKey;
+    if (identifier == null || rowKey == null) return null;
+    final key = editing && isNew() ? 'new' : rowKey(item);
+    return '$identifier-$action-$key';
+  }
 
   @override
   void validate([int? index]) {

@@ -204,7 +204,7 @@ The table lists the pages that have no case, and each row says why the page need
 | `lib/page/components/picker/number_picker_view.dart` | `NumberPickerView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/components/picker/time_picker_view.dart` | `TimePickerView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/components/settings_view/editable_card_list_edit_view.dart` | `EditableCardListEditView` | Permanent while unreachable: nothing navigates to its route, `cardListEdit`, and opened without the route's arguments it throws. Give it a case once something does. |
-| `lib/page/components/settings_view/editable_card_list_settings_view.dart` | `EditableCardListsettingsView` | Permanent: a component, not a page. The advanced settings lists build it; the IPv6 port service and static routing cases sweep it. |
+| `lib/page/components/settings_view/editable_card_list_settings_view.dart` | `AppEditableCardListSettingsView` | Permanent: a component, not a page. The advanced settings lists build it; the IPv6 port service and static routing cases sweep it. |
 | `lib/page/components/settings_view/editable_table_settings_view.dart` | `AppEditableTableSettingsView` | Permanent: a component, not a page. The advanced settings lists build it; the IPv6 port service and static routing cases sweep it. |
 | `lib/page/components/styled/styled_tab_page_view.dart` | `StyledAppTabPageView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/components/views/arguments_view.dart` | `ArgumentsBaseConsumerStatefulView` | Permanent: a base class for views, not a page. |
@@ -616,18 +616,18 @@ Unlike 2.x 16.2, the rule applies to the calls that predate it. Those are rows i
 | `lib/page/advanced_settings/apps_and_gaming/ddns/views/dyn_ddns_form.dart` | `7` |
 | `lib/page/advanced_settings/apps_and_gaming/ddns/views/no_ip_ddns_form.dart` | `3` |
 | `lib/page/advanced_settings/apps_and_gaming/ddns/views/tzo_ddns_form.dart` | `3` |
-| `lib/page/advanced_settings/apps_and_gaming/ports/views/port_range_forwarding_list_view.dart` | `6` |
+| `lib/page/advanced_settings/apps_and_gaming/ports/views/port_range_forwarding_list_view.dart` | `7` |
 | `lib/page/advanced_settings/apps_and_gaming/ports/views/port_range_forwarding_rule_view.dart` | `7` |
-| `lib/page/advanced_settings/apps_and_gaming/ports/views/port_range_triggering_list_view.dart` | `6` |
+| `lib/page/advanced_settings/apps_and_gaming/ports/views/port_range_triggering_list_view.dart` | `7` |
 | `lib/page/advanced_settings/apps_and_gaming/ports/views/port_range_triggering_rule_view.dart` | `6` |
-| `lib/page/advanced_settings/apps_and_gaming/ports/views/single_port_forwarding_list_view.dart` | `6` |
+| `lib/page/advanced_settings/apps_and_gaming/ports/views/single_port_forwarding_list_view.dart` | `7` |
 | `lib/page/advanced_settings/apps_and_gaming/ports/views/single_port_forwarding_rule_view.dart` | `8` |
 | `lib/page/advanced_settings/apps_and_gaming/ports/views/widgets/add_rule_card.dart` | `1` |
 | `lib/page/advanced_settings/apps_and_gaming/ports/views/widgets/protocol_utils.dart` | `3` |
 | `lib/page/advanced_settings/apps_and_gaming/ports/views/widgets/rule_item_card.dart` | `1` |
 | `lib/page/advanced_settings/dmz/views/dmz_settings_view.dart` | `8` |
 | `lib/page/advanced_settings/firewall/views/firewall_view.dart` | `9` |
-| `lib/page/advanced_settings/firewall/views/ipv6_port_service_list_view.dart` | `7` |
+| `lib/page/advanced_settings/firewall/views/ipv6_port_service_list_view.dart` | `8` |
 | `lib/page/advanced_settings/firewall/views/ipv6_port_service_rule_view.dart` | `7` |
 | `lib/page/advanced_settings/internet_settings/views/auto_ipoe_section.dart` | `4` |
 | `lib/page/advanced_settings/internet_settings/views/internet_settings_view.dart` | `40` |
@@ -637,7 +637,7 @@ Unlike 2.x 16.2, the rule applies to the calls that predate it. Those are rows i
 | `lib/page/advanced_settings/local_network_settings/views/local_network_settings_view.dart` | `3` |
 | `lib/page/advanced_settings/static_routing/static_routing_list_view.dart` | `2` |
 | `lib/page/advanced_settings/static_routing/static_routing_rule_view.dart` | `5` |
-| `lib/page/advanced_settings/static_routing/static_routing_view.dart` | `7` |
+| `lib/page/advanced_settings/static_routing/static_routing_view.dart` | `8` |
 | `lib/page/advanced_settings/widgets/internet_setting_card.dart` | `1` |
 | `lib/page/auto_ipoe/views/auto_ipoe_optional_pane.dart` | `1` |
 | `lib/page/auto_ipoe/views/auto_ipoe_recovery_ui.dart` | `6` |
@@ -645,17 +645,12 @@ Unlike 2.x 16.2, the rule applies to the calls that predate it. Those are rows i
 | `lib/page/components/pwa/install_prompt_banner.dart` | `2` |
 | `lib/page/components/pwa/ios_install_instruction_sheet.dart` | `1` |
 | `lib/page/components/pwa/mac_safari_install_instruction_sheet.dart` | `1` |
-| `lib/page/components/settings_view/editable_card_list_settings_view.dart` | `3` |
-| `lib/page/components/settings_view/editable_table_settings_view.dart` | `5` |
 | `lib/page/components/shortcuts/dialogs.dart` | `16` |
-| `lib/page/components/styled/bottom_bar.dart` | `5` |
-| `lib/page/components/styled/general_settings_widget/general_settings_widget.dart` | `9` |
-| `lib/page/components/styled/general_settings_widget/language_tile.dart` | `4` |
+| `lib/page/components/styled/general_settings_widget/general_settings_widget.dart` | `6` |
 | `lib/page/components/styled/remote_assistance/remote_assistance_dialog.dart` | `1` |
-| `lib/page/components/styled/styled_page_view.dart` | `13` |
-| `lib/page/components/styled/styled_tab_page_view.dart` | `4` |
+| `lib/page/components/styled/styled_page_view.dart` | `3` |
+| `lib/page/components/styled/styled_tab_page_view.dart` | `2` |
 | `lib/page/components/styled/top_bar.dart` | `2` |
-| `lib/page/components/widgets/read_only_banner.dart` | `1` |
 | `lib/page/components/widgets/wifi_qr/wifi_qr_cards.dart` | `6` |
 | `lib/page/components/widgets/wifi_qr/wifi_qr_warning_card.dart` | `2` |
 | `lib/page/dashboard/views/components/home_title.dart` | `1` |
@@ -664,11 +659,11 @@ Unlike 2.x 16.2, the rule applies to the calls that predate it. Those are rows i
 | `lib/page/dashboard/views/components/port_and_speed.dart` | `5` |
 | `lib/page/dashboard/views/components/quick_panel.dart` | `1` |
 | `lib/page/dashboard/views/components/wifi_grid.dart` | `7` |
-| `lib/page/dashboard/views/dashboard_menu_view.dart` | `15` |
+| `lib/page/dashboard/views/dashboard_menu_view.dart` | `2` |
 | `lib/page/firmware_update/views/firmware_update_detail_view.dart` | `1` |
 | `lib/page/health_check/views/speed_test_external.dart` | `4` |
 | `lib/page/health_check/views/speed_test_view.dart` | `2` |
-| `lib/page/instant_admin/views/instant_admin_view.dart` | `12` |
+| `lib/page/instant_admin/views/instant_admin_view.dart` | `10` |
 | `lib/page/instant_admin/views/manual_firmware_update_view.dart` | `2` |
 | `lib/page/instant_admin/views/timezone_view.dart` | `4` |
 | `lib/page/instant_device/views/device_detail_view.dart` | `6` |
@@ -718,7 +713,6 @@ Unlike 2.x 16.2, the rule applies to the calls that predate it. Those are rows i
 | `lib/page/nodes/views/node_detail_view.dart` | `13` |
 | `lib/page/nodes/views/node_name_edit_view.dart` | `1` |
 | `lib/page/nodes/views/node_restart_view.dart` | `2` |
-| `lib/page/support/faq_list_view.dart` | `4` |
 | `lib/page/troubleshooting/views/troubleshooting_ping_view.dart` | `2` |
 | `lib/page/troubleshooting/views/troubleshooting_view.dart` | `12` |
 | `lib/page/vpn/views/vpn_settings_page.dart` | `17` |

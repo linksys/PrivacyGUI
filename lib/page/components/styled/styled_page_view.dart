@@ -15,7 +15,6 @@ import 'package:privacygui_widgets/widgets/page/base_page_view.dart';
 import 'package:privacygui_widgets/widgets/page/layout/fill_column.dart';
 import 'package:privacygui_widgets/widgets/page/layout/fit_or_grow.dart';
 import 'package:collection/collection.dart';
-import 'package:privacy_gui/core/utils/extension.dart';
 
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/widgets/write_guard.dart';
@@ -47,6 +46,13 @@ class PageBottomBar extends Equatable {
   /// page that opened it - a rule editor, a picker - and nothing is sent.
   final bool isWrite;
 
+  /// The identifiers of the two buttons (constitution 11.2). The defaults
+  /// stand for the default labels, `loc(context).save` and
+  /// `loc(context).cancel`: a bar that passes another label passes its own
+  /// identifier with it, such as `speed-test-again`.
+  final String positiveIdentifier;
+  final String negativeIdentifier;
+
   const PageBottomBar({
     required this.isPositiveEnabled,
     this.isNegitiveEnabled,
@@ -55,6 +61,8 @@ class PageBottomBar extends Equatable {
     required this.onPositiveTap,
     this.onNegitiveTap,
     this.isWrite = true,
+    this.positiveIdentifier = 'page-save',
+    this.negativeIdentifier = 'page-cancel',
   });
 
   PageBottomBar copyWith({
@@ -65,6 +73,8 @@ class PageBottomBar extends Equatable {
     void Function()? onPositiveTap,
     void Function()? onNegitiveTap,
     bool? isWrite,
+    String? positiveIdentifier,
+    String? negativeIdentifier,
   }) {
     return PageBottomBar(
       isPositiveEnabled: isPositiveEnabled ?? this.isPositiveEnabled,
@@ -74,6 +84,8 @@ class PageBottomBar extends Equatable {
       onPositiveTap: onPositiveTap ?? this.onPositiveTap,
       onNegitiveTap: onNegitiveTap ?? this.onNegitiveTap,
       isWrite: isWrite ?? this.isWrite,
+      positiveIdentifier: positiveIdentifier ?? this.positiveIdentifier,
+      negativeIdentifier: negativeIdentifier ?? this.negativeIdentifier,
     );
   }
 
@@ -87,6 +99,8 @@ class PageBottomBar extends Equatable {
       onPositiveTap,
       onNegitiveTap,
       isWrite,
+      positiveIdentifier,
+      negativeIdentifier,
     ];
   }
 }
@@ -100,6 +114,8 @@ class InversePageBottomBar extends PageBottomBar {
     required super.onPositiveTap,
     super.onNegitiveTap,
     super.isWrite,
+    super.positiveIdentifier,
+    super.negativeIdentifier,
   });
 }
 
@@ -121,11 +137,16 @@ class PageMenuItem {
   /// that may not write. Unlike [PageBottomBar.isWrite] this defaults to false:
   /// most menu items only navigate.
   final bool isWrite;
+
+  /// The item's identifier (constitution 11.2). It never comes from [label],
+  /// which is translated.
+  final String identifier;
   PageMenuItem({
     required this.label,
     required this.icon,
     this.onTap,
     this.isWrite = false,
+    required this.identifier,
   });
 }
 
@@ -527,7 +548,7 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
                   Padding(
                     padding: const EdgeInsets.only(top: 16.0),
                     child: Semantics(
-                      identifier: 'now-page-bottom-container',
+                      identifier: 'page-bottom-bar',
                       child: Padding(
                         padding: EdgeInsets.symmetric(
                             horizontal: ResponsiveLayout.pageHorizontalPadding(
@@ -552,7 +573,7 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
                                     color:
                                         Theme.of(context).colorScheme.outline,
                                     identifier:
-                                        'now-page-bottom-button-negitive',
+                                        widget.bottomBar?.negativeIdentifier,
                                   ),
                                 ),
                                 const AppGap.medium(),
@@ -566,7 +587,8 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
                                       widget.bottomBar is InversePageBottomBar
                                           ? Theme.of(context).colorScheme.error
                                           : null,
-                                  identifier: 'now-page-bottom-button-positive',
+                                  identifier:
+                                      widget.bottomBar?.positiveIdentifier,
                                 )),
                               ),
                             ],
@@ -577,7 +599,8 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
                                   widget.bottomBar?.negitiveLable ??
                                       loc(context).cancel,
                                   color: Theme.of(context).colorScheme.outline,
-                                  identifier: 'now-page-bottom-button-negitice',
+                                  identifier:
+                                      widget.bottomBar?.negativeIdentifier,
                                   onTap: widget.bottomBar?.isNegitiveEnabled ==
                                           true
                                       ? () {
@@ -591,7 +614,8 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
                               guardPositive(AppFilledButton(
                                 widget.bottomBar?.positiveLabel ??
                                     loc(context).save,
-                                identifier: 'now-page-bottom-button-positive',
+                                identifier:
+                                    widget.bottomBar?.positiveIdentifier,
                                 onTap: onPositiveTap,
                                 color: widget.bottomBar is InversePageBottomBar
                                     ? Theme.of(context).colorScheme.error
@@ -630,7 +654,7 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
   Widget _createMenuWidget(BuildContext context, [double? maxWidth]) {
     return Semantics(
       explicitChildNodes: true,
-      identifier: 'now-page-menu-container',
+      identifier: 'page-menu',
       child: Container(
         constraints:
             maxWidth != null ? BoxConstraints(maxWidth: maxWidth) : null,
@@ -644,7 +668,7 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
                   padding: const EdgeInsets.only(
                       left: 24.0, right: 24.0, top: 24.0, bottom: 0.0),
                   child: Semantics(
-                      identifier: 'now-page-menu-title',
+                      identifier: 'page-menu-title',
                       child: AppText.titleSmall(widget.menu?.title ?? '')),
                 ),
                 const AppGap.medium(),
@@ -665,7 +689,7 @@ Widget pageMenuItemTile(PageMenuItem e) {
     leading: e.icon != null ? Icon(e.icon) : null,
     title: Semantics(
       // excludeSemantics: true,
-      identifier: 'now-page-menu-${e.label.kebab()}',
+      identifier: e.identifier,
       child: AppText.bodySmall(e.label),
     ),
     onTap: e.onTap,

@@ -33,7 +33,7 @@ const _readOnly = AccessPolicy(canWrite: false);
 /// view stamps on it rather than by its label, which differs per page.
 final _positive = find.byWidgetPredicate((w) =>
     (w is AppFilledButton || w is AppFilledButtonWithLoading) &&
-    (w as dynamic).identifier == 'now-page-bottom-button-positive');
+    (w as dynamic).identifier == 'page-save');
 
 // #1637: a bar that writes is guarded in read-only mode. These bars only hand a
 // value back to the page that opened them - a rule editor, a picker - and that

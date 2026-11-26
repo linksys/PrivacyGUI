@@ -96,6 +96,39 @@ void main() {
     expect(menuItems(tester).every((e) => e.onTap != null), isTrue);
   });
 
+  // E2E tests locate the menu by these (constitution 11.2, 11.3): they come
+  // from each item, never from its translated title.
+  testWidgets('the cards and page actions have stable identifiers',
+      (tester) async {
+    final semantics = tester.ensureSemantics();
+    await pump(tester);
+
+    const ids = [
+      'menu-incredible-wifi',
+      'menu-instant-admin',
+      'menu-instant-topology',
+      'menu-instant-safety',
+      'menu-instant-privacy',
+      'menu-instant-devices',
+      'menu-advanced-settings',
+      'menu-instant-verify',
+      'menu-restart-network',
+      'menu-setup-new-product',
+    ];
+    final found = {
+      for (final id in ids) id: find.bySemanticsIdentifier(id).evaluate().length
+    };
+    await tester.tap(find.bySemanticsIdentifier('menu-restart-network'));
+    await tester.pumpAndSettle();
+    final confirms = find.text('Ok').evaluate().length;
+    // Before any expect: flutter_test checks for a live handle before
+    // tear-down runs.
+    semantics.dispose();
+
+    expect(found, {for (final id in ids) id: 1});
+    expect(confirms, 1);
+  });
+
   testWidgets('restart network asks first, then reboots', (tester) async {
     await pump(tester);
 

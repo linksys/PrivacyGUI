@@ -123,7 +123,7 @@ class _SinglePortForwardingContentViewState
   Widget _mobildSettingsView(SinglePortForwardingListState state,
       List<String> submaskToken, String prefixIP) {
     // return Center();
-    return EditableCardListsettingsView<SinglePortForwardingRule>(
+    return AppEditableCardListSettingsView<SinglePortForwardingRule>(
         title: loc(context).singlePortForwarding,
         emptyMessage: loc(context).noSinglePortForwarding,
         addLabel: loc(context).add,

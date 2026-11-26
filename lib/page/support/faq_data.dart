@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:privacy_gui/constants/url_links.dart';
+import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 
 // TODO: This is unused now since the Contact Linksys Support is removed
@@ -66,6 +67,12 @@ enum FaqItem {
         faqListEthernetPortNotWorking => linkHardwareEthernetPortNotWorking,
         faqListCheckIfFirmwareAutoUpdate => linkCheckIfAutoFirmwareOn,
       };
+
+  /// The key of the item's identifiers (constitution 11.3): its name without
+  /// the `faq` or `faqList` prefix, in kebab case, such as `device-no-wi-fi`.
+  /// It never comes from the translated text.
+  String get identifierKey =>
+      name.replaceFirst(RegExp(r'^faq(List)?'), '').kebab();
 }
 
 sealed class FaqCategory {
@@ -79,6 +86,10 @@ sealed class FaqCategory {
         FaqPasswordCategory() => loc(context).passwordAndAccess,
         FaqHardwareCategory() => loc(context).hardware,
       };
+
+  /// The key of the category's identifiers (constitution 11.3), such as
+  /// `password-and-access`.
+  String get identifierKey => titleKey.kebab();
 }
 
 class FaqSetupCategory extends FaqCategory {
