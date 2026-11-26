@@ -37,16 +37,21 @@ import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
+import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
+import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
+import 'package:privacy_gui/page/vpn/models/vpn_models.dart';
+import 'package:privacy_gui/page/vpn/providers/vpn_notifier.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 
 import '../../../common/di.dart';
 import '../../../mocks/instant_privacy_provider_mocks.dart';
 import '../../../mocks/jnap_service_supported_mocks.dart';
 import '../../../mocks/router_repository_mocks.dart';
+import '../../../test_data/vpn_test_state.dart';
 
 /// An [AuthNotifier] that reports a local login and records logouts instead of
 /// performing one.
@@ -1780,6 +1785,275 @@ void main() {
 
       notifier.paused = false;
       await advanceToFirstPoll(tester);
+      await stopAndSettle(tester);
+    });
+  });
+
+  group("the features' reads after a poll (#1834 P0)", () {
+    // The net for #1834, which moves these reads out of polling and into the
+    // features, as listeners of a "poll completed" signal. Each test goes
+    // through the router repository, the seam that move leaves in place: what
+    // reaches the router, and what the dashboard is told. Instant Privacy is the
+    // real notifier, built before polling starts, as the dashboard's quick panel
+    // builds it.
+
+    const wanConnected = {
+      'macAddress': '00:00:00:00:00:01',
+      'detectedWANType': 'DHCP',
+      'wanStatus': 'Connected',
+      'wanIPv6Status': 'Disconnected',
+      'supportedWANTypes': ['DHCP'],
+    };
+
+    /// What Instant Privacy's next read of its settings answers.
+    late Future<JNAPSuccess> Function() macFilterSettings;
+
+    JNAPSuccess macFilter(String mode) => JNAPSuccess(result: 'OK', output: {
+          'macFilterMode': mode,
+          'maxMACAddresses': 32,
+          'macAddresses': const <String>[],
+        });
+
+    int sent(JNAPAction action) => sends.where((a) => a == action).length;
+
+    /// The polls: core transactions, told apart from a feature's own
+    /// transaction by the getDeviceInfo every poll carries.
+    int polls() => transactions
+        .where((t) =>
+            t.commands.any((command) => command.key == JNAPAction.getDeviceInfo))
+        .length;
+
+    /// Every request answers OK, the WAN is connected, and Instant Privacy's
+    /// read answers [macFilterSettings]. [outputs] gives other actions theirs.
+    void whenRouterAnswers(
+        {Map<JNAPAction, Map<String, dynamic>> outputs = const {}}) {
+      whenSend((action) {
+        if (action == JNAPAction.getMACFilterSettings) {
+          return macFilterSettings();
+        }
+        if (action == JNAPAction.getDeviceMode) {
+          return Future.value(deviceMode('Master'));
+        }
+        return Future.value(
+            JNAPSuccess(result: 'OK', output: outputs[action] ?? const {}));
+      });
+      whenTransaction((_) async => JNAPTransactionSuccessWrap(
+            result: 'OK',
+            data: transactions.last.commands
+                .map((command) => MapEntry(
+                    command.key,
+                    JNAPSuccess(
+                        result: 'OK',
+                        output: command.key == JNAPAction.getWANStatus
+                            ? wanConnected
+                            : outputs[command.key] ?? const {})))
+                .toList(),
+          ));
+    }
+
+    /// Builds Instant Privacy, as the dashboard does, and lets its own first
+    /// read finish.
+    Future<void> buildInstantPrivacy(WidgetTester tester) async {
+      container.read(instantPrivacyProvider);
+      await tester.pump();
+      await tester.pump();
+    }
+
+    setUp(() {
+      // The real Instant Privacy notifier: no override for it here.
+      container.dispose();
+      container = ProviderContainer(overrides: [
+        routerRepositoryProvider.overrideWithValue(mockRepo),
+        authProvider.overrideWith(() => auth),
+      ]);
+      notifier = container.read(pollingProvider.notifier);
+      macFilterSettings = () async => macFilter('Disabled');
+    });
+
+    testWidgets('isReady waits for Instant Privacy to read its status',
+        (tester) async {
+      // Today a poll is published as ready only once the features have read.
+      // #1834 P1 changes this on purpose (decided 2026-11-26): the features
+      // will read after the poll completes, and isReady will not wait for them.
+      whenRouterAnswers();
+      await buildInstantPrivacy(tester);
+      final status = Completer<JNAPSuccess>();
+      macFilterSettings = () => status.future;
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      expect(polls(), 1, reason: 'the poll has answered');
+      expect(container.read(pollingProvider).value?.isReady ?? false, isFalse,
+          reason: 'Instant Privacy has not');
+
+      status.complete(macFilter('Allow'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(container.read(pollingProvider).value?.isReady, isTrue);
+      expect(container.read(instantPrivacyProvider).status.mode,
+          MacFilterMode.allow);
+
+      await stopAndSettle(tester);
+    });
+
+    testWidgets(
+        'a failed Instant Privacy read fails the poll, and the internet shows '
+        'offline', (tester) async {
+      // #1834 P1 changes this on purpose (decided 2026-11-26, as a bug): a
+      // feature's failed read will no longer fail the poll.
+      whenRouterAnswers();
+      await buildInstantPrivacy(tester);
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      expect(container.read(internetStatusProvider), InternetStatus.online,
+          reason: 'the WAN is connected');
+
+      macFilterSettings =
+          () async => throw const JNAPError(result: '_ErrorUnexpected');
+      await advanceOneTick(tester);
+
+      expect(polls(), 2);
+      expect(container.read(pollingProvider).hasError, isTrue,
+          reason: 'the transaction itself answered OK');
+      expect(container.read(internetStatusProvider), InternetStatus.offline);
+
+      await stopAndSettle(tester);
+    });
+
+    testWidgets('a timed-out Instant Privacy read counts towards silence',
+        (tester) async {
+      // #1834 P1 changes this on purpose as well (decided 2026-11-26): a
+      // feature's failure will not count towards the router's silence.
+      whenRouterAnswers();
+      await buildInstantPrivacy(tester);
+      macFilterSettings = () async => throw TimeoutException('no answer');
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      await advanceToUnreachable(tester);
+
+      expect(container.read(routerUnreachableProvider), greaterThan(0),
+          reason: 'every transaction was answered, yet the router is reported');
+
+      await stopAndSettle(tester);
+    });
+
+    testWidgets('each completed poll reads each feature once', (tester) async {
+      final helper = serviceHelper as MockServiceHelper;
+      when(helper.isSupportLedMode()).thenReturn(true);
+      when(helper.isSupportVPN()).thenReturn(true);
+      addTearDown(() => reset(helper));
+      final vpn = VPNTestState.defaultState;
+      whenRouterAnswers(outputs: {
+        JNAPAction.getLedNightModeSetting: {'Enable': false},
+        JNAPAction.getVPNUser: {
+          'credentials': vpn.settings.userCredentials!.toMap(),
+        },
+        JNAPAction.getVPNGateway: {
+          'settings': vpn.settings.gatewaySettings!.toMap(),
+        },
+        JNAPAction.getVPNService: {
+          'settings': VPNServiceSettings(
+            enabled: true,
+            autoConnect: true,
+            statistics: vpn.status.statistics,
+            tunnelStatus: vpn.status.tunnelStatus,
+          ).toMap(),
+        },
+      });
+      // Every screen that shows a feature builds its notifier; VPN's tile and
+      // page build vpnProvider.
+      await buildInstantPrivacy(tester);
+      container.read(vpnProvider);
+      sends.clear();
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      await advanceOneTick(tester);
+
+      expect(polls(), 2);
+      expect(container.read(pollingProvider).hasError, isFalse);
+      expect(sent(JNAPAction.getMACFilterSettings), 2,
+          reason: 'Instant Privacy, once a poll');
+      expect(sent(JNAPAction.getLedNightModeSetting), 2,
+          reason: 'the node lights, once a poll');
+      expect(sent(JNAPAction.getVPNService), 2, reason: 'VPN, once a poll');
+
+      await stopAndSettle(tester);
+    });
+
+    testWidgets(
+        'a client signal refresh merges into the poll and reads no feature',
+        (tester) async {
+      // Each merge publishes the poll's value again, up to twice a tick. A
+      // feature that read on every published value would read up to three
+      // times a tick while a page shows client signals.
+      final helper = serviceHelper as MockServiceHelper;
+      when(helper.isSupportNodesNetworkConnections()).thenReturn(true);
+      addTearDown(() => reset(helper));
+      whenRouterAnswers(outputs: {
+        JNAPAction.getNodesWirelessNetworkConnections: {
+          'nodeWirelessConnections': [
+            {
+              'deviceID': 'node',
+              'connections': [
+                {'macAddress': 'AA:BB:CC:DD:EE:FF', 'signal': -60}
+              ],
+            }
+          ],
+        },
+      });
+      await buildInstantPrivacy(tester);
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      final reads = sent(JNAPAction.getMACFilterSettings);
+      final rereads = sent(JNAPAction.getNodesWirelessNetworkConnections);
+
+      final done = notifier.refreshClientSignals();
+      await advance(
+          tester,
+          const Duration(
+              seconds:
+                  clientSignalRereadDelayInSec * clientSignalRereadCount + 1));
+      await done;
+
+      expect(sent(JNAPAction.getNodesWirelessNetworkConnections),
+          rereads + clientSignalRereadCount,
+          reason: 'the re-reads went out and were merged');
+      expect(sent(JNAPAction.getMACFilterSettings), reads,
+          reason: 'a merge is not a completed poll');
+
+      // The client signal cooldown outlives a stop on purpose; init clears it.
+      notifier.stopPolling();
+      notifier.init();
+      await tester.pump();
+    });
+
+    testWidgets(
+        "Instant Privacy's doPolling brings one poll and one read, then stops",
+        (tester) async {
+      // InstantPrivacyNotifier.doPolling() -> forcePolling() -> the read. The
+      // read must not start another poll, or the two would loop.
+      whenRouterAnswers();
+      await buildInstantPrivacy(tester);
+      final reads = sent(JNAPAction.getMACFilterSettings);
+
+      final done = container.read(instantPrivacyProvider.notifier).doPolling();
+      await tester.pump();
+      await tester.pump();
+      await done;
+
+      expect(polls(), 1);
+      expect(sent(JNAPAction.getMACFilterSettings), reads + 1);
+
+      await advance(tester,
+          const Duration(seconds: BuildConfig.refreshTimeInterval - 1));
+      expect(polls(), 1, reason: 'nothing comes round again before the tick');
+      expect(sent(JNAPAction.getMACFilterSettings), reads + 1);
+
       await stopAndSettle(tester);
     });
   });
