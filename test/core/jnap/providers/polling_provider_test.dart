@@ -73,6 +73,11 @@ class _RecordingAuthNotifier extends AuthNotifier {
   }
 }
 
+/// Skipped until #1834 P1, whose "poll completed" signal stays silent for a
+/// poll that outlived its run. Today such a poll still runs the features'
+/// reads (#1904).
+const _redUntil1834P1 = true;
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -2030,6 +2035,37 @@ void main() {
       notifier.stopPolling();
       notifier.init();
       await tester.pump();
+    });
+
+    testWidgets('a poll answered after polling stops reads no feature',
+        skip: _redUntil1834P1, (tester) async {
+      // A logout stops polling while a poll may still be on the wire. When that
+      // poll answers, the features must not read: the session that asked is
+      // gone, and their reads would carry the factory default credential
+      // (#1904).
+      whenRouterAnswers();
+      await buildInstantPrivacy(tester);
+      final onTheWire = Completer<JNAPTransactionSuccessWrap>();
+      whenTransaction((_) => onTheWire.future);
+      final reads = sent(JNAPAction.getMACFilterSettings);
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      expect(polls(), 1, reason: 'the poll is on the wire');
+
+      notifier.stopPolling();
+      onTheWire.complete(JNAPTransactionSuccessWrap(
+        result: 'OK',
+        data: transactions.last.commands
+            .map((command) => MapEntry(
+                command.key, JNAPSuccess(result: 'OK', output: const {})))
+            .toList(),
+      ));
+      await tester.pump();
+      await tester.pump();
+
+      expect(sent(JNAPAction.getMACFilterSettings), reads,
+          reason: 'nobody is watching this router any more');
     });
 
     testWidgets(
