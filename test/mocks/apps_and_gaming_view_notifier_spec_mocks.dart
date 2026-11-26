@@ -132,6 +132,13 @@ class MockAppsAndGamingViewNotifier
       ) as bool);
 
   @override
+  bool isReadComplete() => (super.noSuchMethod(
+        Invocation.method(#isReadComplete, []),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
   bool isDataValid() => (super.noSuchMethod(
         Invocation.method(#isDataValid, []),
         returnValue: false,
