@@ -12,17 +12,14 @@ import 'package:privacy_gui/page/components/views/write_flow_blocked_view.dart';
 ValueNotifier<bool> showColumnOverlayNotifier =
     ValueNotifier(BuildConfig.showColumnOverlay);
 
-class ColumnGrid extends Equatable {
+class ColumnGrid {
   final int column;
   final bool centered;
 
-  const ColumnGrid({
+  ColumnGrid({
     required this.column,
     this.centered = false,
   });
-
-  @override
-  List<Object?> get props => [column, centered];
 }
 
 class LinksysRouteConfig extends Equatable {

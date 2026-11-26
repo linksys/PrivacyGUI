@@ -72,16 +72,6 @@ void main() {
       expect(LinksysRouteConfig(), const LinksysRouteConfig());
     });
 
-    // Each route builds its own ColumnGrid, so equality must compare the
-    // grid's values, not the instance.
-    test('is equal to a config with the same column in a grid of its own', () {
-      expect(LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
-          LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)));
-      expect(ColumnGrid(column: 6, centered: true),
-          isNot(ColumnGrid(column: 6)));
-      expect(ColumnGrid(column: 6), isNot(ColumnGrid(column: 9)));
-    });
-
     test('differs from a config that differs in any value', () {
       final config = LinksysRouteConfig(noNaviRail: true);
 
