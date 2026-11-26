@@ -58,6 +58,16 @@ jobs:
           mkdir -p reports
           bash run_coverage.sh reports
 
+      # The Router AI build's auth tests (#1904 P0). They are skipped unless the
+      # run passes the define, so the step above never runs them, and a logout
+      # change could break that build unseen. No coverage: the step above
+      # measures the default build.
+      - name: Auth tests, Router AI build
+        run: >-
+          flutter test test/providers/auth/
+          --dart-define=enable_router_ai=true
+          --exclude-tags="golden||loc"
+
       # #1803's table: all of lib/, then logic and UI. Written when the tests
       # fail too, as long as the run got as far as lcov.info.
       - name: Write the coverage to the job summary
