@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/cloud_const.dart';
 import 'package:privacy_gui/core/mode/app_mode_profile.dart';
+import 'package:privacy_gui/core/usp/providers/sse_providers.dart'
+    show sessionAuthGateProvider;
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
@@ -236,6 +238,14 @@ class RemoteAssistanceNotifier extends Notifier<RemoteAssistanceState> {
           pendingFacade = null;
           logger.i('[RA] Guardian-proxied UspClient registered');
         }
+
+        // A new credential, so a new session (#1666) — here, beside the swap,
+        // with no await between them. From this line every request, refresh
+        // and poll taken for the previous Guardian token is superseded, so a
+        // 401 from the old connection, or from the old bridge's dispose, cannot
+        // end the session that replaced it. `remote_assistance_swap_guard_test`
+        // keeps it here.
+        ref.read(sessionAuthGateProvider).begin();
 
         // Invalidated in the same critical section as the swap, so "connection
         // changed" and "cache dropped" can never drift apart.

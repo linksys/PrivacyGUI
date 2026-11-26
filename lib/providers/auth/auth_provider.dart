@@ -31,6 +31,16 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   /// The teardown in flight, if any; see [logout].
   Future<void>? _logoutInProgress;
 
+  /// Why the most recent session ended: the [EndCause] of the [logout] that
+  /// ran its teardown (the first caller's, when others joined it). Set when the
+  /// teardown starts and kept after it, until the next one.
+  ///
+  /// For a surface that must tell "the session was lost" from "the user left"
+  /// once the state reads signed out — the PnP shell, whose routes the login
+  /// redirect passes through (#1666).
+  EndCause? get lastEndCause => _lastEndCause;
+  EndCause? _lastEndCause;
+
   @override
   Future<AuthState> build() => Future.value(AuthState.empty());
 
@@ -51,11 +61,8 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       // cause a !_dirty assertion in ProviderScope.
       state = await AsyncValue.guard(() async {
         // Try to restore USP session from stored token (sessionStorage).
-        // Note: restoreSession() may call onForceLogout on failure, but at this
-        // point sseManagerProvider hasn't been watched yet, so onForceLogout is
-        // null and the call is a no-op. This is safe but relies on init order —
-        // if SSE initialization ever moves earlier, consider passing
-        // isRecovering: true here to explicitly suppress force logout.
+        // restoreSession() ends nothing (#1666): a token it cannot restore
+        // leaves the user signed out, which is the answer below.
         final coordinator = ref.read(uspAuthCoordinatorProvider);
         await coordinator.restoreSession();
 
@@ -66,6 +73,17 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
         logger.d('[Auth]init: isAuthenticated=$isAuthenticated, '
             'loginType=$loginType');
+
+        // A restored session begins — but only if none is live. `init()` also
+        // runs from the `/` and `/localLoginPassword` redirects and from the
+        // login view, so a user who presses Back to the login URL reaches here
+        // in the middle of a session, with the same token: beginning again
+        // would make every request already in flight read as a superseded
+        // session's, its 401 neither retried nor ending anything.
+        if (loginType == LoginType.local) {
+          final gate = ref.read(sessionAuthGateProvider);
+          if (!gate.isLive) gate.begin();
+        }
 
         return AuthState(
           localPasswordHint: state.value?.localPasswordHint,
@@ -132,6 +150,10 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     try {
       await openSession(OwnCredentialsRequest(password));
 
+      // A new credential: a new session, even if one was live — the requests
+      // still in flight carry the old token, and their 401s must not end this
+      // one (#1666).
+      ref.read(sessionAuthGateProvider).begin();
       state = AsyncValue.data(previousState.copyWith(
         loginType: LoginType.local,
       ));
@@ -184,18 +206,6 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       detail: errorUnexpected,
       originalError: error,
     );
-  }
-
-  /// Sets auth state to local login without attempting USP login.
-  ///
-  /// Use this when the USP session is already established (e.g., PnP flow).
-  /// Token persistence is handled by [UspAuthCoordinator] automatically.
-  void markAsLocalLogin() {
-    final previousState = state.value ?? AuthState.empty();
-    state = AsyncValue.data(previousState.copyWith(
-      loginType: LoginType.local,
-    ));
-    logger.d('[Auth]: markAsLocalLogin: done');
   }
 
   /// Sets the login type directly without performing login.
@@ -251,13 +261,22 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   /// 401 asked for another logout, 770 times in four minutes. The first
   /// caller's [cause] stands, because it is the one that decided whether
   /// Guardian was told the session ended.
+  ///
+  /// **The session is marked ended first, for every cause (#1666).** From then
+  /// on a 401 on any request for it — the teardown's own, a fire-and-forget
+  /// cleanup that outlives it — is ignored by [sessionAuthGateProvider] until
+  /// the next session begins. That is the guard against a second logout from a
+  /// 401; [_logoutInProgress] below only lets a concurrent caller await the
+  /// teardown already running.
   Future logout({EndCause cause = EndCause.sessionLost}) {
+    ref.read(sessionAuthGateProvider).markEnded();
     final running = _logoutInProgress;
     if (running != null) {
       logger.d('[Auth]: logout: already in progress (cause: ${cause.name}) '
           '— joining it');
       return running;
     }
+    _lastEndCause = cause;
     final teardown = _logout(cause);
     _logoutInProgress = teardown;
     return teardown.whenComplete(() => _logoutInProgress = null);

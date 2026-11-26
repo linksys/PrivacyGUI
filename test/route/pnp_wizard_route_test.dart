@@ -58,6 +58,9 @@ class _Auth extends AuthNotifier {
       : AuthState.empty();
 
   @override
+  EndCause? get lastEndCause => cause;
+
+  @override
   Future<void> logout({EndCause cause = EndCause.sessionLost}) async {
     logouts++;
     this.cause = cause;
@@ -701,6 +704,82 @@ void main() {
       router.go(RoutePath.pnp);
       await settle(tester);
       expect(find.text(unsaved), findsOneWidget);
+    });
+  });
+
+  // #1666: a session the router stops accepting during setup used to leave the
+  // user on the wizard, signed out — `/pnp*` passes every location through, and
+  // nothing else sent them to the login page.
+  group('a session lost during setup goes to the login page (#1666)', () {
+    testWidgets('from a step', (tester) async {
+      await pumpApp(tester);
+      await enterWizard(tester);
+
+      await auth.logout(cause: EndCause.sessionLost);
+      await settle(tester);
+
+      expect(location(), RoutePath.localLoginPassword);
+    });
+
+    testWidgets('mid-save, which the user could not leave', (tester) async {
+      await pumpApp(tester);
+      await enterWizard(tester);
+      router.go('/pnp/pnpConfig/guest');
+      await settle(tester);
+      pnp.moveTo(const WizardSaving());
+      await settle(tester);
+
+      await auth.logout(cause: EndCause.sessionLost);
+      await settle(tester);
+
+      expect(location(), RoutePath.localLoginPassword);
+    });
+
+    testWidgets('before the wizard', (tester) async {
+      await pumpApp(tester);
+      expect(location(), RoutePath.pnp);
+
+      await auth.logout(cause: EndCause.sessionLost);
+      await settle(tester);
+
+      expect(location(), RoutePath.localLoginPassword);
+    });
+
+    for (final phase in const <PnpPhase>[
+      WizardCheckingFirmware(),
+      WizardUpdatingFirmware(version: '1.0.17'),
+    ]) {
+      testWidgets('${phase.runtimeType}: only once the stage is over (REQ-B2)',
+          (tester) async {
+        await pumpApp(tester);
+        await enterWizard(tester);
+        router.go('/pnp/pnpConfig/guest');
+        await settle(tester);
+        await saveLands(tester);
+        pnp.moveTo(phase);
+        await settle(tester);
+
+        await auth.logout(cause: EndCause.sessionLost);
+        await settle(tester);
+        expect(location(), '/pnp/pnpConfig/network');
+
+        pnp.moveTo(ready);
+        await settle(tester);
+        expect(location(), RoutePath.localLoginPassword);
+      });
+    }
+
+    // The setup's own ways out end the session as `userRequested` and go to the
+    // login page themselves; acting on those too would race their `go`.
+    testWidgets('a logout the user asked for is left to its own way out',
+        (tester) async {
+      await pumpApp(tester);
+      await enterWizard(tester);
+
+      await auth.logout(cause: EndCause.userRequested);
+      await settle(tester);
+
+      expect(location(), '/pnp/pnpConfig/wifi');
     });
   });
 

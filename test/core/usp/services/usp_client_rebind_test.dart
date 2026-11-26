@@ -41,6 +41,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/usp/services/bridge_request_throttler.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/usp/transport/usp_transport.dart';
+import 'package:privacy_gui/core/usp/services/session_auth_gate.dart';
+import 'package:privacy_gui/core/usp/services/session_restore_outcome.dart';
+import 'package:privacy_gui/core/usp/services/sse_operation_strategy.dart';
 
 /// A [UspTransport] that records what it was asked to do and, once disposed,
 /// fails every call the way a freed wasm-bindgen object does.
@@ -311,7 +314,10 @@ void main() {
       var relogins = 0;
       client.onRefreshTokenSuccess = () => refreshSuccesses++;
       client.onTokenRefreshed = () => sseReconnects++;
-      client.onReauthRequired = () async => relogins++;
+      client.onReauthRequired = () async {
+        relogins++;
+        return SessionRestoreOutcome.restored;
+      };
 
       await client.reauth();
 
@@ -330,7 +336,10 @@ void main() {
       var sseReconnects = 0;
       var relogins = 0;
       client.onTokenRefreshed = () => sseReconnects++;
-      client.onReauthRequired = () async => relogins++;
+      client.onReauthRequired = () async {
+        relogins++;
+        return SessionRestoreOutcome.restored;
+      };
 
       await client.reauth();
 
@@ -340,19 +349,76 @@ void main() {
       expect(client.isReauthInProgress, isFalse);
     });
 
-    test('both stages failing forces logout and rethrows', () async {
+    // Before #1666 `restoreSession` returned nothing, so a Stage 2 that found
+    // nothing counted as a re-login: the request was sent again and SSE
+    // reconnected while the session was ending. Its outcome now decides.
+    test('a Stage 2 the router refuses ends the session, once, and rethrows',
+        () async {
       final client = UspClient.withTransport(
           _RecordingTransport('session-1')..failRefresh = true,
           baseUrl: 'https://one');
 
       var forcedLogouts = 0;
-      client.onForceLogout = () => forcedLogouts++;
-      client.onReauthRequired = () async => throw StateError('no stored token');
+      var sseReconnects = 0;
+      client.attachAuthGate(SessionAuthGate(
+        authBehavior: AuthBehavior.local,
+        endSession: () => forcedLogouts++,
+      )..begin());
+      client.onTokenRefreshed = () => sseReconnects++;
+      client.onReauthRequired = () async => SessionRestoreOutcome.rejected;
 
-      await expectLater(client.reauth(), throwsA(isA<StateError>()));
+      await expectLater(client.reauth(), throwsA(anything));
 
       expect(forcedLogouts, 1);
+      expect(sseReconnects, 0, reason: 'nothing was restored');
       expect(client.isReauthInProgress, isFalse);
+    });
+
+    test('a Stage 2 that cannot reach the router rethrows and ends nothing',
+        () async {
+      final client = UspClient.withTransport(
+          _RecordingTransport('session-1')..failRefresh = true,
+          baseUrl: 'https://one');
+
+      var forcedLogouts = 0;
+      var sseReconnects = 0;
+      client.attachAuthGate(SessionAuthGate(
+        authBehavior: AuthBehavior.local,
+        endSession: () => forcedLogouts++,
+      )..begin());
+      client.onTokenRefreshed = () => sseReconnects++;
+      client.onReauthRequired = () async => SessionRestoreOutcome.unreachable;
+
+      await expectLater(client.reauth(), throwsA(anything));
+
+      expect(forcedLogouts, 0,
+          reason: 'a router that could not be asked says nothing about the '
+              'credential');
+      expect(sseReconnects, 0);
+    });
+
+    test('a restore that lands after the session ended does not reconnect SSE',
+        () async {
+      final client = UspClient.withTransport(
+          _RecordingTransport('session-1')..failRefresh = true,
+          baseUrl: 'https://one');
+
+      final gate =
+          SessionAuthGate(authBehavior: AuthBehavior.local, endSession: () {})
+            ..begin();
+      client.attachAuthGate(gate);
+      var sseReconnects = 0;
+      client.onTokenRefreshed = () => sseReconnects++;
+      client.onReauthRequired = () async {
+        gate.markEnded(); // a logout landed while the restore ran
+        return SessionRestoreOutcome.restored;
+      };
+
+      await client.reauth();
+
+      expect(sseReconnects, 0,
+          reason: '`connect()` clears the intentional-disconnect flag, so a '
+              'reconnect during a logout reopens a stream nobody closes');
     });
 
     test('concurrent callers share one attempt', () async {
@@ -387,8 +453,8 @@ void main() {
           baseUrl: 'https://two');
 
       // Left set, a later 401 on the NEW session would await the OLD session's
-      // completer, and the old reauth's eventual failure would call
-      // onForceLogout — logging the agent out of a session that is fine.
+      // completer, and the old reauth's eventual failure would end the
+      // session — logging the agent out of one that is fine.
       expect(client.isReauthInProgress, isFalse);
 
       // The parked reauth must not escape as an unhandled error either.
@@ -408,7 +474,10 @@ void main() {
       var relogins = 0;
       var refreshSuccesses = 0;
       var sseReconnects = 0;
-      client.onReauthRequired = () async => relogins++;
+      client.onReauthRequired = () async {
+        relogins++;
+        return SessionRestoreOutcome.restored;
+      };
       client.onRefreshTokenSuccess = () => refreshSuccesses++;
       client.onTokenRefreshed = () => sseReconnects++;
 
@@ -445,7 +514,10 @@ void main() {
       final client = UspClient.withTransport(first, baseUrl: 'https://one');
 
       var relogins = 0;
-      client.onReauthRequired = () async => relogins++;
+      client.onReauthRequired = () async {
+        relogins++;
+        return SessionRestoreOutcome.restored;
+      };
 
       final pending = client.reauth();
       await Future<void>.delayed(Duration.zero);
@@ -469,10 +541,13 @@ void main() {
 
       final reloginGate = Completer<void>();
       var forcedLogouts = 0;
-      client.onForceLogout = () => forcedLogouts++;
+      client.attachAuthGate(SessionAuthGate(
+        authBehavior: AuthBehavior.local,
+        endSession: () => forcedLogouts++,
+      )..begin());
       client.onReauthRequired = () async {
         await reloginGate.future;
-        throw StateError('no stored token');
+        return SessionRestoreOutcome.rejected;
       };
 
       final pending = client.reauth();
@@ -482,11 +557,11 @@ void main() {
           baseUrl: 'https://two');
       reloginGate.complete(); // the parked re-login now fails
 
-      await expectLater(pending, throwsA(isA<StateError>()));
+      await expectLater(pending, throwsA(anything));
 
       // The worst outcome available here: an unrecoverable *old* session drags
-      // the user out of a *new* one that is working. `onForceLogout` navigates to
-      // the login screen, so in RA this ends a live Guardian session.
+      // the user out of a *new* one that is working. Ending the session navigates
+      // to the login screen, so in RA this ends a live Guardian session.
       expect(forcedLogouts, 0);
     });
 
@@ -499,7 +574,7 @@ void main() {
       final first = _RecordingTransport('session-1')..failRefresh = true;
       final client = UspClient.withTransport(first, baseUrl: 'https://one');
 
-      final reloginGate = Completer<void>();
+      final reloginGate = Completer<SessionRestoreOutcome>();
       var sseReconnects = 0;
       client.onTokenRefreshed = () => sseReconnects++;
       client.onReauthRequired = () => reloginGate.future;
@@ -509,7 +584,7 @@ void main() {
 
       client.rebindTransport(_RecordingTransport('session-2'),
           baseUrl: 'https://two');
-      reloginGate.complete();
+      reloginGate.complete(SessionRestoreOutcome.restored);
       await pending;
 
       expect(sseReconnects, 1);

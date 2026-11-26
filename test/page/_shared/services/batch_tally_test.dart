@@ -57,12 +57,15 @@ void main() {
       expect(tally.throwIfAnyFailed, throwsA(isA<UspPartialFailureError>()));
     });
 
-    test('a 401 is recorded the same way, as it was before', () async {
-      final raw = await writeOrUnanswered(() async =>
-          throw UspEnvelopeTestData.unansweredWrite('Set',
-              errorMessage: 'Transport error: HTTP error: HTTP 401'));
+    // `UspClient` has decided a 401 before it gets here (#1666): the session
+    // has ended, or its reauth failed. A save that kept going met it again on
+    // every later step.
+    test('a 401 stops the save instead of being recorded as a step', () async {
+      final unauthorized = UspEnvelopeTestData.unansweredWrite('Set',
+          errorMessage: 'Transport error: HTTP error: HTTP 401');
 
-      expect(UspResultParser.parseSetResult(raw), isA<UspFailure<dynamic>>());
+      await expectLater(writeOrUnanswered(() async => throw unauthorized),
+          throwsA(same(unauthorized)));
     });
 
     test('a ServiceError, a refusal and a bug propagate unchanged', () async {

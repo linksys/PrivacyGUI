@@ -21,13 +21,23 @@ import 'package:privacy_gui/page/_shared/services/refused_add_service.dart';
 ///
 /// For the writes of [BatchTally] and the other multi-step saves that decide
 /// "landed in part" from a failed envelope. Every other throw propagates.
+///
+/// **A 401 propagates too (#1666).** By the time one reaches here,
+/// `UspClient` has already decided it: under Remote Assistance the session has
+/// ended, and locally the reauth and its retry have failed. Recorded as one
+/// failed step, the save went on writing, and every later step met the same 401
+/// and the same session check again — under Remote Assistance four writes and
+/// four session ends for a three-delete, one-add Port Forwarding save. So the
+/// save stops at the first one.
 Future<Map<String, dynamic>> writeOrUnanswered(
     Future<Map<String, dynamic>> Function() write) async {
   try {
     return await write();
   } catch (e) {
     final parsed = e is ServiceError ? null : parseUspError(e);
-    if (parsed == null || parsed.category != UspErrorCategory.transport) {
+    if (parsed == null ||
+        parsed.category != UspErrorCategory.transport ||
+        parsed.httpStatus == 401) {
       rethrow;
     }
     return {

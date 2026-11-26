@@ -378,12 +378,12 @@ void main() {
   // sseManagerProvider — what a 401 does under each profile (#1627)
   // ---------------------------------------------------------------------------
   //
-  // The real provider, not an override, on a real `UspClient` over a transport
+  // The real providers, not overrides, on a real `UspClient` over a transport
   // that answers 401: this is the only test that sees the whole chain — the
-  // profile's `AuthBehavior` reaching the client, the client's gate, and the
-  // gate's `onForceLogout` reaching `authProvider`. The client's own suite pins
-  // the gate with the behaviour assigned by hand, so it stays green if nothing
-  // in the app ever assigns it.
+  // profile's `AuthBehavior` reaching `sessionAuthGateProvider`, the coordinator
+  // attaching that gate to the client, and the gate's end reaching
+  // `authProvider` (#1666). The client's own suite attaches a gate by hand, so
+  // it stays green if nothing in the app ever attaches one.
   group('sseManagerProvider - a 401 under each profile (#1627)', () {
     const path = 'Device.DeviceInfo.SerialNumber';
     late UnauthenticatedTransport transport;
@@ -415,8 +415,17 @@ void main() {
       ]);
       addTearDown(container.dispose);
       expect(container.read(sseManagerProvider), isNotNull);
+      // A session is live, as a login or a Remote Assistance activation leaves
+      // it: before one begins, a 401 ends nothing.
+      container.read(sessionAuthGateProvider).begin();
       return container;
     }
+
+    test('the coordinator attaches the app\'s gate to the client', () {
+      final container = wire(const LocalModeProfile());
+
+      expect(client.authGate, same(container.read(sessionAuthGateProvider)));
+    });
 
     test('remote: the session ends as a lost one, with no refresh or retry',
         () async {
@@ -433,7 +442,8 @@ void main() {
     // The client outlives the manager: it is a stable singleton, and a Remote
     // Assistance re-activation disposes the manager before the new one is
     // built. A command that 401s in that gap must still not reach the local
-    // reauth, which is why the provider sets the value without resetting it.
+    // reauth: the gate that holds the answer is attached to the client, not to
+    // the manager.
     test('remote: the answer outlives the manager that set it', () async {
       wire(const RemoteModeProfile()).dispose();
 
@@ -443,6 +453,22 @@ void main() {
       expect(transport.refreshCalls, 0,
           reason: 'a reset on dispose would put the default, local, back');
       expect(transport.requests, 1);
+    });
+
+    // Locally the manager is built once per tab: nothing in a logout or a
+    // login rebuilds it. The guard it used to hold (`logoutTriggered`) lived as
+    // long as that build, so every forced logout after the first one in a tab
+    // did nothing (red on `cf3303d78`: 1 logout, not 2). The session epoch is
+    // per session instead.
+    test('local: a second forced logout in the same tab still logs out',
+        () async {
+      final gate = wire(const LocalModeProfile()).read(sessionAuthGateProvider);
+
+      gate.end(gate.ticket); // the first session's credential is rejected
+      gate.begin(); // the user logs in again; nothing rebuilds the manager
+      gate.end(gate.ticket); // and later the new session's is too
+
+      verify(() => auth.logout(cause: EndCause.sessionLost)).called(2);
     });
 
     test('local: the token is refreshed, the call retried, the session kept',

@@ -30,6 +30,7 @@ import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/framework/mode/disruption_class.dart';
 import 'package:privacy_gui/framework/mode/recovery_plan.dart';
+import 'package:privacy_gui/core/usp/services/session_restore_outcome.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
@@ -202,8 +203,8 @@ void main() {
 
     test('reestablishAfterOutage restores the session then compares the serial',
         () async {
-      when(() => mockAuth.restoreSession(isRecovering: true))
-          .thenAnswer((_) async {});
+      when(() => mockAuth.restoreSession())
+          .thenAnswer((_) async => SessionRestoreOutcome.restored);
       when(() => mockAuth.getSerialNumber()).thenAnswer((_) async => 'ABC123');
       when(() => mockFingerprint.matches('ABC123'))
           .thenAnswer((_) async => true);
@@ -216,7 +217,7 @@ void main() {
       // restored yet reads the *old* connection, which after a factory reset is
       // the one whose credentials no longer exist.
       verifyInOrder([
-        () => mockAuth.restoreSession(isRecovering: true),
+        () => mockAuth.restoreSession(),
         () => mockAuth.getSerialNumber(),
         () => mockFingerprint.matches('ABC123'),
       ]);
@@ -224,8 +225,8 @@ void main() {
 
     test('reestablishAfterOutage reports false when the serial changed',
         () async {
-      when(() => mockAuth.restoreSession(isRecovering: true))
-          .thenAnswer((_) async {});
+      when(() => mockAuth.restoreSession())
+          .thenAnswer((_) async => SessionRestoreOutcome.restored);
       when(() => mockAuth.getSerialNumber()).thenAnswer((_) async => 'XYZ789');
       when(() => mockFingerprint.matches('XYZ789'))
           .thenAnswer((_) async => false);

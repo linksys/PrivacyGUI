@@ -23,6 +23,7 @@ import 'package:privacy_gui/core/usp/services/bridge_request_throttler.dart';
 import 'package:privacy_gui/core/usp/services/sse_operation_strategy.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/usp/transport/usp_transport.dart';
+import 'package:privacy_gui/core/usp/services/session_auth_gate.dart';
 
 import '../../../mocks/test_data/usp_envelope_test_data.dart';
 
@@ -108,9 +109,11 @@ void main() {
     });
 
     test('remote: ends the session, and the read fails', () async {
-      client.authBehavior = AuthBehavior.remote;
       var forcedLogouts = 0;
-      client.onForceLogout = () => forcedLogouts++;
+      client.attachAuthGate(SessionAuthGate(
+        authBehavior: AuthBehavior.remote,
+        endSession: () => forcedLogouts++,
+      )..begin());
       when(() => transport.get(any()))
           .thenAnswer((_) async => _transportFailure(unauthorized));
 
