@@ -1250,14 +1250,16 @@ void main() {
     });
 
     test(
-        'entering bridge treats a transport error on the bridge SET as success',
-        () async {
-      // The firmware applies bridge mode and drops this connection ~2s after
-      // receiving the SET, so its response never arrives — the request fails
-      // with a transport error. That is the expected signature of success, so
-      // saveAll must complete normally (no throw), not surface a spurious error.
+        'entering bridge reports a bridge SET that failed before the budget '
+        '(#1666)', () async {
+      // Only no answer within the budget is the firmware dropping the
+      // connection it applied the change on (the Dart-timeout test below). A
+      // request that fails early — `Failed to fetch` — does not prove the SET
+      // reached the router, so it is reported: the behaviour #1597 shipped,
+      // when the client still returned this failure in the envelope. Since
+      // #1666 `UspClient` throws it.
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenThrow('Set failed: Transport error: Request timeout');
+          .thenThrow(UspEnvelopeTestData.unansweredWrite('Set'));
 
       final original = UspInternetSettingsForm(
         connectionType: UspWanConnectionType.dhcp,
@@ -1266,7 +1268,8 @@ void main() {
         connectionType: UspWanConnectionType.bridge,
       );
 
-      await expectLater(service.saveAll(original, edited), completes);
+      await expectLater(
+          service.saveAll(original, edited), throwsA(isA<NetworkError>()));
     });
 
     test('entering bridge swallows a Dart timeout on the bridge SET', () {
@@ -1567,12 +1570,14 @@ void main() {
           reason: 'Enable=true must be the last SET');
     });
 
-    test('leaving bridge treats a transport error on the exit SET as success',
+    test('leaving bridge reports an exit SET that failed before the budget',
         () async {
-      // Same disconnect signature as entering: the exit script bounces the
-      // ports and restarts lighttpd, so the response never arrives.
+      // As entering: only no answer within the budget counts as the drop.
+      // The target mode was written before the exit SET, so the save says it
+      // landed in part — as it did while the client still returned this
+      // failure in the envelope.
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenThrow('Set failed: Transport error: Request timeout');
+          .thenThrow(UspEnvelopeTestData.unansweredWrite('Set'));
 
       final original = UspInternetSettingsForm(
         connectionType: UspWanConnectionType.bridge,
@@ -1581,7 +1586,8 @@ void main() {
         connectionType: UspWanConnectionType.dhcp,
       );
 
-      await expectLater(service.saveAll(original, edited), completes);
+      await expectLater(service.saveAll(original, edited),
+          throwsA(isA<SavePartlyAppliedError>()));
     });
 
     test('leaving bridge rethrows a real fault on the exit SET', () async {
