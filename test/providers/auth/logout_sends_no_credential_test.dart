@@ -41,6 +41,7 @@ import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/i
 import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_troubleshooter_provider.dart';
 import 'package:privacy_gui/page/instant_topology/providers/instant_topology_provider.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_provider.dart';
+import 'package:privacy_gui/page/nodes/providers/add_nodes_provider.dart';
 import 'package:privacy_gui/page/troubleshooting/providers/troubleshooting_provider.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
@@ -702,6 +703,44 @@ void main() {
     expect(after.where((r) => r.carriesCredential), isEmpty);
     expect(completed, isFalse,
         reason: "the page's next steps do not run on the login screen");
+  });
+
+  netTest(
+      'Bluetooth onboarding under way at the logout sends nothing after it, '
+      'and does not start polling again', (tester) async {
+    // It reads the onboarding status every 10 s, up to 18 times, then the
+    // devices and the backhaul. Its finally block used to start polling again.
+    await logIn();
+    router.answer(JNAPAction.getBluetoothAutoOnboardingStatus, const {
+      'autoOnboardingStatus': 'Onboarding',
+      'deviceOnboardingStatus': <Object>[],
+    });
+    // The notifier is autoDispose; the page keeps it alive.
+    container.listen(addNodesProvider, (_, __) {});
+    var done = false;
+    Object? failed;
+    container
+        .read(addNodesProvider.notifier)
+        .startAutoOnboarding()
+        .then((_) => done = true, onError: (Object e) {
+      failed = e;
+    });
+    // The first status read goes out 3 s in, the next 10 s after it.
+    await tester.pump(const Duration(seconds: 5));
+    expect(
+        router.received.where((r) =>
+            r.action ==
+            JNAPAction.getBluetoothAutoOnboardingStatus.actionValue),
+        isNotEmpty,
+        reason: 'the onboarding is under way');
+
+    final after = await logOut(tester);
+
+    expect(after.where((r) => r.carriesCredential), isEmpty);
+    expect(failed, isNull, reason: 'it ends quietly');
+    expect(done, isTrue);
+    expect(container.read(pollingProvider).value?.lastUpdate, 0,
+        reason: 'polling has not run since the logout reset it');
   });
 
   netTest(
