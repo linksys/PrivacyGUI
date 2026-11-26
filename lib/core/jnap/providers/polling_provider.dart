@@ -340,7 +340,9 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     // A stop that landed while the device mode was being read ends this poll.
     // Polling was stopped on purpose, a logout among the reasons, and the
     // transaction below would go out for a login that has ended (#1904).
-    if (_isCancelled(generation)) {
+    // A pause is not a stop: a forced poll while paused still reads, as
+    // holdWhile's flows, PnP and the auto-parent first login rely on.
+    if (generation != _generation) {
       logger.d('polling was called off while the device mode was read');
       return;
     }

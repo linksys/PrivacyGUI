@@ -25,6 +25,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart';
 import 'package:privacy_gui/constants/jnap_const.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
+import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
 import 'package:privacy_gui/core/http/linksys_http_client.dart';
 import 'package:privacy_gui/core/jnap/access/access_policy.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
@@ -337,6 +338,24 @@ void main() {
     expect(after.where((r) => r.carriesCredential), isEmpty);
   });
 
+  netTest(
+      'a forced poll while polling is paused still reads, its device mode '
+      'first', (tester) async {
+    // The counterpart of the case above (#1964 review): a pause is not a stop.
+    // Saving Wi-Fi settings, PnP and the auto-parent first login force a poll
+    // while polling is paused, and it must still reach the router.
+    await logIn();
+    final polling = container.read(pollingProvider.notifier);
+    polling.paused = true;
+
+    final polled = polling.forcePolling();
+    await drainQueue(tester);
+    await polled;
+
+    expect(router.received.map((r) => r.action),
+        contains(JNAPAction.transaction.actionValue));
+  });
+
   netTest('a firmware check started before the logout sends nothing after it',
       (tester) async {
     // The bug: the dashboard starts the check as it opens, and a logout in the
@@ -481,22 +500,89 @@ void main() {
         reason: 'polling has not run since the logout reset it');
   });
 
-  netTest('a check ended by a logout leaves the status it had', (tester) async {
-    // It has nothing to report. Writing an empty list would tell PnP and the
-    // auto-parent first login that no update was found (#1956 review).
+  netTest(
+      'a check ended by a logout reports no update, so nothing goes on to '
+      'install one', (tester) async {
+    // PnP and the auto-parent first login install whatever the check leaves
+    // available (#1964 review). An update found before the logout must not
+    // still be there for them once a later check ends with the logout.
     await logIn();
+    router.answer(
+        JNAPAction.getFirmwareUpdateStatus, _firmwareStatus(update: true));
     final firmware = container.read(firmwareUpdateProvider.notifier);
     firmware.fetchAvailableFirmwareUpdates();
     for (var i = 0; i < 4; i++) {
       await tester.pump(const Duration(seconds: 2));
     }
-    expect(container.read(firmwareUpdateProvider).nodesStatus, hasLength(1));
+    expect(firmware.getAvailableUpdateNumber(), 1);
 
     firmware.fetchAvailableFirmwareUpdates();
     await tester.pump(const Duration(milliseconds: 200));
     await logOut(tester);
 
-    expect(container.read(firmwareUpdateProvider).nodesStatus, hasLength(1));
+    expect(firmware.getAvailableUpdateNumber(), 0);
+  });
+
+  netTest(
+      'a completion that finds its login ended records the install and '
+      'asks nothing', (tester) async {
+    // finishFirmwareUpdate's early return (#1964 review): the install is done,
+    // so it is recorded, but the router is not asked anything more.
+    await logIn();
+    final generation = auth().logoutGeneration;
+    await auth().logout();
+    final mark = router.received.length;
+
+    final finished = container
+        .read(firmwareUpdateProvider.notifier)
+        .finishFirmwareUpdate(logoutGeneration: generation);
+    await drainQueue(tester);
+    await finished;
+
+    expect(router.received.sublist(mark), isEmpty);
+    expect(container.read(firmwareUpdateProvider).isUpdating, isFalse);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getBool(pFWUpdated), isTrue);
+  });
+
+  netTest(
+      'a completion asked for with no login generation still ends at a '
+      'logout', (tester) async {
+    // The firmware page's own call, after its router-not-found alert, passes
+    // none (#1964 review). It is tied to the login current at its start.
+    //
+    // The command cache's expiry reads the real clock, so here every entry
+    // expires at once, as it would by then in real time. A poll started again
+    // after the logout then reaches the router instead of the cache.
+    final cache = LinksysCacheManager();
+    final expiry = cache.defaultCacheExpiration;
+    cache.defaultCacheExpiration = 0;
+    addTearDown(() => cache.defaultCacheExpiration = expiry);
+    await logIn();
+    router.answerAfter(JNAPAction.transaction, const Duration(seconds: 1));
+    container.read(firmwareUpdateProvider.notifier).finishFirmwareUpdate();
+    // Its forced poll reads the device mode first, then sends the slow
+    // transaction.
+    for (var i = 0;
+        i < 40 &&
+            !router.received
+                .any((r) => r.action == JNAPAction.transaction.actionValue);
+        i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+
+    final after = await logOut(tester);
+
+    // Its fresh check would have sent UpdateFirmwareNow with the default
+    // password, and polling started again would have polled. The forced poll
+    // itself answers after the logout and still reads the features that follow
+    // a poll, with the default password: that is #1834 P1's to stop, so it is
+    // left out here.
+    expect(
+        after.where((r) =>
+            r.action == JNAPAction.updateFirmwareNow.actionValue ||
+            r.action == JNAPAction.transaction.actionValue),
+        isEmpty);
   });
 
   netTest('a check that continues work from an ended login sends nothing',
