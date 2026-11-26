@@ -37,6 +37,8 @@ import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/jnap/spec/jnap_spec.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
+import 'package:privacy_gui/page/instant_verify/providers/instant_verify_provider.dart';
+import 'package:privacy_gui/page/troubleshooting/providers/troubleshooting_provider.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -554,6 +556,70 @@ void main() {
     expect(after.where((r) => r.carriesCredential), isEmpty);
     // Nothing follows the run any more, so the page must not open on it.
     expect(container.read(healthCheckProvider).status, isNot('RUNNING'));
+  });
+
+  /// Logs in, starts a status stream the way its page does, and logs out
+  /// while it still reads. Returns what the router received after the logout.
+  Future<List<_Received>> logOutDuring(WidgetTester tester, JNAPAction action,
+      Map<String, dynamic> running, Stream<Object?> Function() start) async {
+    await logIn();
+    router.answer(action, running);
+    // Not cancelled: cancelling an async* loop waits for its next yield,
+    // which this test's fake clock would never reach after the case ends. The
+    // loop runs out on its own within the time logOut lets pass.
+    start().listen((_) {});
+    // The first status read goes out 3 s after the stream starts, the next one
+    // a second later. Logging out between them keeps a read that is queued at
+    // the very moment of the logout out of the count: such a read was built
+    // with the user's own credential, and the queue sends it 50 ms later.
+    await tester.pump(const Duration(milliseconds: 3500));
+    expect(router.received.where((r) => r.action == action.actionValue),
+        isNotEmpty,
+        reason: 'the status reads are going on');
+    return logOut(tester);
+  }
+
+  netTest(
+      'an Instant Verify ping started before the logout sends nothing '
+      'after it', (tester) async {
+    final verify = container.read(instantVerifyProvider.notifier);
+    final after = await logOutDuring(tester, JNAPAction.getPingStatus,
+        const {'isRunning': true, 'pingLog': 'PING 8.8.8.8'}, () {
+      verify.ping(host: '8.8.8.8', pingCount: 5);
+      return verify.getPingStatus();
+    });
+
+    expect(after.where((r) => r.carriesCredential), isEmpty);
+    // The run is over, so the page's Execute button is not left disabled.
+    expect(container.read(instantVerifyProvider).isRunning, isFalse);
+  });
+
+  netTest(
+      'an Instant Verify traceroute started before the logout sends '
+      'nothing after it', (tester) async {
+    final verify = container.read(instantVerifyProvider.notifier);
+    final after = await logOutDuring(tester, JNAPAction.getTracerouteStatus,
+        const {'isRunning': true, 'tracerouteLog': 'traceroute to 8.8.8.8'},
+        () {
+      verify.traceroute(host: '8.8.8.8', pingCount: null);
+      return verify.getTracerouteStatus();
+    });
+
+    expect(after.where((r) => r.carriesCredential), isEmpty);
+    expect(container.read(instantVerifyProvider).isRunning, isFalse);
+  });
+
+  netTest(
+      'a troubleshooting ping started before the logout sends nothing '
+      'after it', (tester) async {
+    final troubleshooting = container.read(troubleshootingProvider.notifier);
+    final after = await logOutDuring(
+        tester,
+        JNAPAction.getPingStatus,
+        const {'isRunning': true, 'pingLog': 'PING 8.8.8.8'},
+        troubleshooting.getPingStatus);
+
+    expect(after.where((r) => r.carriesCredential), isEmpty);
   });
 
   netTest(

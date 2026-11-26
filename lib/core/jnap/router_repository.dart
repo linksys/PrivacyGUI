@@ -60,6 +60,20 @@ class LoggedOutException implements Exception {
       'LoggedOutException: the login this work belonged to has ended';
 }
 
+/// For a stream handed to a page: a logout ends it quietly.
+///
+/// A [RouterRepository.scheduledCommand] loop tied to a login ends with a
+/// [LoggedOutException]. A page that listens without `onError` would take
+/// that as an uncaught error, and the page is gone by then anyway. Here the
+/// stream simply ends, after [onLoggedOut], which puts the owner's state back
+/// where nothing is running. Any other error passes through.
+extension EndAtLogout<T> on Stream<T> {
+  Stream<T> endAtLogout([void Function()? onLoggedOut]) => handleError(
+        (Object _) => onLoggedOut?.call(),
+        test: (error) => error is LoggedOutException,
+      );
+}
+
 final routerRepositoryProvider = Provider((ref) {
   return RouterRepository(ref);
 });
