@@ -88,6 +88,34 @@ void main() {
     expect(find.textContaining('Remaining attempts: 4'), findsOneWidget);
   });
 
+  // E2E tests locate the login controls by these (constitution 11.2, 11.3).
+  testWidgets('a test logs in by identifiers alone', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await pumpLoginLocal(tester, null);
+
+    const ids = [
+      'login-password',
+      'login-password-visibility',
+      'login-hint',
+      'login-forgot-password',
+      'login-submit',
+    ];
+    final found = {
+      for (final id in ids) id: find.bySemanticsIdentifier(id).evaluate().length
+    };
+    await tester.enterText(
+        find.bySemanticsIdentifier('login-password'), 'admin123');
+    await tester.pump();
+    await tester.tap(find.bySemanticsIdentifier('login-submit'));
+    await tester.pump();
+    // Before any expect: flutter_test checks for a live handle before
+    // tear-down runs.
+    semantics.dispose();
+
+    expect(found.values, everyElement(1), reason: '$found');
+    verify(mockAuthNotifier.localLogin('admin123')).called(1);
+  });
+
   testWidgets('a router with nothing to report is left alone', (tester) async {
     // getAdminPasswordAuthStatus is a core7 service; an older router answers
     // null, and an unexplained warning would be worse than none.

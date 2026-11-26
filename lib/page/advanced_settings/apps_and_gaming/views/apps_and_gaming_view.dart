@@ -46,19 +46,37 @@ class _AppsGamingSettingsViewState extends ConsumerState<AppsGamingSettingsView>
     ref.watch(portRangeForwardingListProvider);
     ref.watch(portRangeTriggeringListProvider);
     ref.watch(ddnsProvider);
+    // A raw Tab takes no identifier, so each is put on a node of its own
+    // (constitution 11.1.2).
     final tabs = [
-      Tab(
-        text: loc(context).ddns,
+      Semantics(
+        container: true,
+        identifier: 'apps-gaming-tab-ddns',
+        child: Tab(
+          text: loc(context).ddns,
+        ),
       ),
-      Tab(
-        text: loc(context).singlePortForwarding,
+      Semantics(
+        container: true,
+        identifier: 'apps-gaming-tab-single-port',
+        child: Tab(
+          text: loc(context).singlePortForwarding,
+        ),
       ),
-      Tab(
-        text: loc(context).portRangeForwarding,
+      Semantics(
+        container: true,
+        identifier: 'apps-gaming-tab-port-range',
+        child: Tab(
+          text: loc(context).portRangeForwarding,
+        ),
       ),
-      Tab(
-        key: Key('portRangeTriggering'),
-        text: loc(context).portRangeTriggering,
+      Semantics(
+        container: true,
+        identifier: 'apps-gaming-tab-port-triggering',
+        child: Tab(
+          key: Key('portRangeTriggering'),
+          text: loc(context).portRangeTriggering,
+        ),
       ),
     ];
     final tabContents = [

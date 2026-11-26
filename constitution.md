@@ -618,8 +618,6 @@ Unlike 2.x 16.2, the rule applies to the calls that predate it. Those are rows i
 | `lib/page/advanced_settings/apps_and_gaming/ports/views/port_range_forwarding_rule_view.dart` | `7` |
 | `lib/page/advanced_settings/apps_and_gaming/ports/views/port_range_triggering_list_view.dart` | `7` |
 | `lib/page/advanced_settings/apps_and_gaming/ports/views/port_range_triggering_rule_view.dart` | `6` |
-| `lib/page/advanced_settings/apps_and_gaming/ports/views/single_port_forwarding_list_view.dart` | `7` |
-| `lib/page/advanced_settings/apps_and_gaming/ports/views/single_port_forwarding_rule_view.dart` | `8` |
 | `lib/page/advanced_settings/apps_and_gaming/ports/views/widgets/add_rule_card.dart` | `1` |
 | `lib/page/advanced_settings/apps_and_gaming/ports/views/widgets/protocol_utils.dart` | `3` |
 | `lib/page/advanced_settings/apps_and_gaming/ports/views/widgets/rule_item_card.dart` | `1` |
@@ -704,7 +702,6 @@ Unlike 2.x 16.2, the rule applies to the calls that predate it. Those are rows i
 | `lib/page/login/views/local_reset_router_password_view.dart` | `5` |
 | `lib/page/login/views/local_router_recovery_view.dart` | `2` |
 | `lib/page/login/views/login_cloud_auth_view.dart` | `3` |
-| `lib/page/login/views/login_local_view.dart` | `3` |
 | `lib/page/nodes/views/add_nodes_view.dart` | `7` |
 | `lib/page/nodes/views/blink_node_light_widget.dart` | `1` |
 | `lib/page/nodes/views/change_node_name_view.dart` | `2` |

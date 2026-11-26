@@ -19,6 +19,14 @@ import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 
+/// The key of [rule]'s identifiers in the list (constitution 11.3), such as
+/// `3074-tcp`: its external port and protocol. No two rules the page saves
+/// share both, as it refuses a rule whose external port overlaps another's on
+/// a shared protocol (`isPortConflict`). The name is left out: two rules may
+/// have one, and a name in another script has no kebab-case letters.
+String singlePortForwardingRuleKey(SinglePortForwardingRule rule) =>
+    '${rule.externalPort}-${protocolIdentifierKey(rule.protocol)}';
+
 class SinglePortForwardingListView extends ArgumentsConsumerStatelessView {
   const SinglePortForwardingListView({super.key, super.args});
 
@@ -124,6 +132,8 @@ class _SinglePortForwardingContentViewState
       List<String> submaskToken, String prefixIP) {
     // return Center();
     return AppEditableCardListSettingsView<SinglePortForwardingRule>(
+        identifier: 'pf-single',
+        rowKey: singlePortForwardingRuleKey,
         title: loc(context).singlePortForwarding,
         emptyMessage: loc(context).noSinglePortForwarding,
         addLabel: loc(context).add,
@@ -180,6 +190,8 @@ class _SinglePortForwardingContentViewState
   Widget _desktopSettingsView(SinglePortForwardingListState state,
       List<String> submaskToken, String prefixIP) {
     return AppEditableTableSettingsView<SinglePortForwardingRule>(
+      identifier: 'pf-single',
+      rowKey: singlePortForwardingRuleKey,
       title: loc(context).singlePortForwarding,
       emptyMessage: loc(context).noSinglePortForwarding,
       addEnabled: !_notifier.isExceedMax(),
@@ -236,6 +248,7 @@ class _SinglePortForwardingContentViewState
 
         return switch (index) {
           0 => AppTextField.outline(
+              identifier: 'pf-single-description',
               controller: applicationTextController,
               onChanged: (value) {
                 ref
@@ -251,6 +264,7 @@ class _SinglePortForwardingContentViewState
           1 => AppTextField.minMaxNumber(
               min: 0,
               max: 65535,
+              identifier: 'pf-single-internal-port',
               border: OutlineInputBorder(),
               controller: internalPortTextController,
               onChanged: (value) {
@@ -267,6 +281,7 @@ class _SinglePortForwardingContentViewState
           2 => AppTextField.minMaxNumber(
               min: 0,
               max: 65535,
+              identifier: 'pf-single-external-port',
               border: OutlineInputBorder(),
               controller: externalPortTextController,
               onChanged: (value) {
@@ -281,6 +296,8 @@ class _SinglePortForwardingContentViewState
               },
             ),
           3 => AppDropdownButton(
+              identifier: 'pf-single-protocol',
+              itemKey: protocolIdentifierKey,
               initial: stateRule?.protocol,
               items: const ['TCP', 'UDP', 'Both'],
               label: (e) => getProtocolTitle(context, e),
@@ -296,6 +313,7 @@ class _SinglePortForwardingContentViewState
               },
             ),
           4 => AppIPFormField(
+              identifier: 'pf-single-internal-ip',
               controller: ipAddressTextController,
               border: const OutlineInputBorder(),
               octet1ReadOnly: submaskToken[0] == '255',
