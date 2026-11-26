@@ -54,6 +54,7 @@ void main() {
         const InvalidSessionTokenError(): l.errorInvalidSessionToken,
         const UnauthorizedError(): l.errorUnauthorized,
         const ResourceNotFoundError(): l.errorResourceNotFound,
+        const DeviceNotOnNetworkError(): l.errorDeviceNotOnNetwork,
         const InvalidInputError(): l.errorInvalidInput,
         const NetworkError(): l.errorNetwork,
         const ConnectivityError(): l.errorConnectivity,

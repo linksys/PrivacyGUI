@@ -692,6 +692,7 @@
   "errorNetwork": "Errore di rete. Controlla la tua connessione e riprova.",
   "errorNotAuthenticated": "Non hai effettuato l'accesso. Accedi e riprova.",
   "errorResourceNotFound": "Impossibile trovare l'impostazione richiesta sul router.",
+  "errorDeviceNotOnNetwork": "Questo dispositivo non è più nella rete. Aggiorna la pagina e riprova.",
   "errorServiceNotReady": "Il servizio non è ancora pronto. Riprova tra un momento.",
   "errorSessionExpired": "La tua sessione è scaduta. Accedi di nuovo.",
   "errorTimeout": "L'operazione è scaduta. Riprova.",

@@ -692,6 +692,7 @@
   "errorNetwork": "Error de red. Compruebe su conexión e inténtelo de nuevo.",
   "errorNotAuthenticated": "No ha iniciado sesión. Inicie sesión e inténtelo de nuevo.",
   "errorResourceNotFound": "No se ha podido encontrar la configuración solicitada en el router.",
+  "errorDeviceNotOnNetwork": "Este dispositivo ya no está en la red. Actualice la página e inténtelo de nuevo.",
   "errorServiceNotReady": "El servicio aún no está listo. Inténtelo de nuevo en un momento.",
   "errorSessionExpired": "Su sesión ha caducado. Inicie sesión de nuevo.",
   "errorTimeout": "Se agotó el tiempo de la operación. Inténtelo de nuevo.",

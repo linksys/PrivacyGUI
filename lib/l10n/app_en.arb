@@ -777,6 +777,7 @@
   "errorInvalidSessionToken": "Your session is invalid. Please sign in again.",
   "errorUnauthorized": "You do not have permission to perform this action.",
   "errorResourceNotFound": "The requested setting could not be found on the router.",
+  "errorDeviceNotOnNetwork": "This device is no longer on the network. Refresh the page and try again.",
   "errorInvalidInput": "The value entered is not valid. Please check and try again.",
   "errorNetwork": "Network error. Please check your connection and try again.",
   "errorConnectivity": "Cannot reach the router. Please check your connection.",
