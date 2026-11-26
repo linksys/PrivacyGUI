@@ -235,6 +235,11 @@ void main() {
     buildBetterActions(JNAPService.values.map((s) => s.value).toList());
     router = _RecordingRouter()
       ..answer(JNAPAction.getFirmwareUpdateStatus, _firmwareStatus())
+      // Polled with the status, and parsed by the firmware notifier's build.
+      ..answer(JNAPAction.getFirmwareUpdateSettings, const {
+        'updatePolicy': 'AutomaticallyCheckAndInstall',
+        'autoUpdateWindow': {'startMinute': 120, 'durationMinutes': 180},
+      })
       // Read after every poll (polling_provider.dart, _additionalPolling).
       ..answer(JNAPAction.getMACFilterSettings, const {
         'macFilterMode': 'Disabled',
@@ -378,6 +383,117 @@ void main() {
 
     expect(after.where((r) => r.carriesCredential), isEmpty);
     expect(container.read(firmwareUpdateProvider).isUpdating, isFalse);
+  });
+
+  /// Logged in, with one update found and its install started. The router
+  /// reports the install done at its next status read.
+  Future<void> startAnInstallAboutToFinish(WidgetTester tester) async {
+    await logIn();
+    router.answer(
+        JNAPAction.getFirmwareUpdateStatus, _firmwareStatus(update: true));
+    final firmware = container.read(firmwareUpdateProvider.notifier);
+    firmware.fetchAvailableFirmwareUpdates();
+    for (var i = 0; i < 4; i++) {
+      await tester.pump(const Duration(seconds: 2));
+    }
+    expect(firmware.getAvailableUpdateNumber(), 1);
+    final started = firmware.updateFirmware();
+    await tester.pump(const Duration(milliseconds: 200));
+    await started;
+    expect(router.received.where(_isInstallRequest), hasLength(1),
+        reason: 'the install did start while logged in');
+  }
+
+  netTest(
+      'an install whose last status read is out at the logout, and reports '
+      'it done, starts nothing after it', (tester) async {
+    // From the review of #1956 (W1). The read went out before the logout and
+    // comes back after it. Its "done" must not start the install's
+    // completion: a forced poll, a fresh check and polling again, all sent
+    // with no login.
+    await startAnInstallAboutToFinish(tester);
+    router.answerAfter(
+        JNAPAction.getFirmwareUpdateStatus, const Duration(seconds: 1));
+    // The install's first status read goes out 3 s after it starts.
+    await tester.pump(const Duration(milliseconds: 3000));
+    expect(
+        router.received.where(
+            (r) => r.action == JNAPAction.getFirmwareUpdateStatus.actionValue),
+        isNotEmpty,
+        reason: 'the last status read is out');
+
+    final after = await logOut(tester);
+
+    expect(after.where((r) => r.carriesCredential), isEmpty);
+    expect(container.read(firmwareUpdateProvider).isUpdating, isFalse);
+  });
+
+  netTest(
+      'an install that finishes just before the logout does not start polling '
+      'again after it', (tester) async {
+    // The narrower window from the same review. The install's completion is
+    // already under way when the logout lands, here in its fresh check. What
+    // comes after, polling started again, belongs to the login that ended.
+    await startAnInstallAboutToFinish(tester);
+    // The completion's fresh check: its first request is slow to answer.
+    router.answerAfter(
+        JNAPAction.updateFirmwareNow, const Duration(seconds: 1));
+    bool checkIsOut() => router.received.any((r) =>
+        r.action == JNAPAction.updateFirmwareNow.actionValue &&
+        r.data['onlyCheck'] == true &&
+        router.received.indexOf(r) >
+            router.received.lastIndexWhere(_isInstallRequest));
+    // The install's first status read, 3 s in, reports it done.
+    for (var i = 0; i < 100 && !checkIsOut(); i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    expect(checkIsOut(), isTrue, reason: "the completion's check is out");
+
+    final after = await logOut(tester);
+
+    expect(after.where((r) => r.carriesCredential), isEmpty);
+    expect(container.read(firmwareUpdateProvider).isUpdating, isFalse);
+    // Polling started again would not show at the router here: its polls are
+    // answered from the command cache, whose expiry reads the real clock. Its
+    // state would, since logout() reset it and any poll writes it again.
+    expect(container.read(pollingProvider).value?.lastUpdate, 0,
+        reason: 'polling has not run since the logout reset it');
+  });
+
+  netTest('a check ended by a logout leaves the status it had', (tester) async {
+    // It has nothing to report. Writing an empty list would tell PnP and the
+    // auto-parent first login that no update was found (#1956 review).
+    await logIn();
+    final firmware = container.read(firmwareUpdateProvider.notifier);
+    firmware.fetchAvailableFirmwareUpdates();
+    for (var i = 0; i < 4; i++) {
+      await tester.pump(const Duration(seconds: 2));
+    }
+    expect(container.read(firmwareUpdateProvider).nodesStatus, hasLength(1));
+
+    firmware.fetchAvailableFirmwareUpdates();
+    await tester.pump(const Duration(milliseconds: 200));
+    await logOut(tester);
+
+    expect(container.read(firmwareUpdateProvider).nodesStatus, hasLength(1));
+  });
+
+  netTest('a check that continues work from an ended login sends nothing',
+      (tester) async {
+    // How the install's completion asks for its fresh check: with the
+    // install's login. Once that has ended, the check asks the router nothing.
+    await logIn();
+    final generation = auth().logoutGeneration;
+    await auth().logout();
+    final mark = router.received.length;
+
+    final checked = container
+        .read(firmwareUpdateProvider.notifier)
+        .fetchAvailableFirmwareUpdates(logoutGeneration: generation);
+    await drainQueue(tester);
+    await checked;
+
+    expect(router.received.sublist(mark), isEmpty);
   });
 
   netTest(

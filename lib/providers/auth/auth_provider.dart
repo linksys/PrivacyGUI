@@ -101,8 +101,8 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   ///
   /// Work that belongs to a login reads it when the work begins, and stops
   /// once it has moved on (#1904). [RouterRepository.scheduledCommand] does
-  /// this for the loops it is given it for; in Router AI builds, a bootstrap
-  /// that began before a logout never shows the widget after it.
+  /// this for each loop that is given a generation. In Router AI builds, a
+  /// bootstrap that began before a logout never shows the widget after it.
   int get logoutGeneration => _logoutGeneration;
 
   AuthNotifier() : super() {
