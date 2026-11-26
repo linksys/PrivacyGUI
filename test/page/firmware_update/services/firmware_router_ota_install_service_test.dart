@@ -33,6 +33,7 @@ import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_res
 import 'package:privacy_gui/page/firmware_update/services/firmware_router_ota_install_service.dart';
 import 'package:privacy_gui/page/firmware_update/services/usp_firmware_update_service.dart';
 
+import '../../../mocks/short_window_lock.dart';
 import '../../../mocks/test_data/firmware_update_test_data.dart';
 
 class MockUspFirmwareUpdateService extends Mock
@@ -216,9 +217,9 @@ void main() {
       // (#1831), for its own timeout and for a `TimeoutException` thrown inside
       // it; this pins that the dispatch's reaches the caller as one.
       //
-      // Thrown from the dispatcher, inside the real lock, rather than by letting
-      // the lock time out: its timeout is 30s and is not injectable from here,
-      // and a suite that waits it out is a suite nobody runs.
+      // Thrown from the dispatcher, inside the real lock: the half where a
+      // `TimeoutException` comes out of the action. The lock's own window running
+      // out is the next test.
       when(() => firmware.requestOtaInstall(
               otaInstance: any(named: 'otaInstance')))
           .thenThrow(TimeoutException(
@@ -235,6 +236,26 @@ void main() {
       // `checking` phase, so a `verifyNever` here would forbid the thing this
       // service is now required to do.
       verify(() => firmware.fetchAutoUpdate()).called(1);
+    });
+
+    test('the lock giving up on the dispatch leaves as a TimeoutError',
+        () async {
+      // The other half: the dispatch never answers and the lock's own window
+      // runs out. The real lock with its window shortened, so what reaches the
+      // caller is what production throws.
+      lock = ShortWindowLock();
+      when(() => firmware.requestOtaInstall(
+              otaInstance: any(named: 'otaInstance')))
+          .thenAnswer((_) => Completer<String>().future);
+      feed([_at('0')]);
+
+      await expectLater(
+        buildService().install(otaInstance: 3),
+        throwsA(isA<TimeoutError>()),
+      );
+      // The baseline read only, as above: the poll loop is never reached.
+      verify(() => firmware.fetchAutoUpdate()).called(1);
+      expect(lock.isLocked, isFalse);
     });
 
     test('a dispatch with no commandKey never reaches the poll loop', () async {

@@ -656,11 +656,12 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
         firmware.cancel();
       }
     } catch (e, stack) {
-      // One `catch`, not `on ServiceError`, because `UspMutationLock` throws a bare
-      // `TimeoutException` and `.timeout()` below throws another — neither is a
-      // `ServiceError`, and all of them mean the same thing here. Anything else
-      // too, by constitution §13.4.3: the checking and updating screens have no
-      // button, and this stage's failure phase is the completion screen (REQ-B3).
+      // One `catch`, not `on ServiceError`, because `.timeout()` below throws a
+      // bare `TimeoutException`, which is not a `ServiceError` and means the same
+      // thing here as any other failure. (The mutation lock's own timeout is a
+      // `TimeoutError` since #1831.) Anything else too, by constitution §13.4.3:
+      // the checking and updating screens have no button, and this stage's
+      // failure phase is the completion screen (REQ-B3).
       logger.w(
           '[PnP] the firmware stage did not complete — finishing setup '
           'without an update',

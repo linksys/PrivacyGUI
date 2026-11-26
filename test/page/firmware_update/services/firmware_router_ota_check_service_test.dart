@@ -25,6 +25,7 @@ import 'package:privacy_gui/page/firmware_update/models/firmware_ota_check_resul
 import 'package:privacy_gui/page/firmware_update/services/firmware_router_ota_check_service.dart';
 import 'package:privacy_gui/page/firmware_update/services/usp_firmware_update_service.dart';
 
+import '../../../mocks/short_window_lock.dart';
 import '../../../mocks/test_data/firmware_update_test_data.dart';
 
 class MockUspFirmwareUpdateService extends Mock
@@ -220,9 +221,9 @@ void main() {
       // (#1831), for its own timeout and for a `TimeoutException` thrown inside
       // it; this pins that the dispatch's reaches the caller as one.
       //
-      // Thrown from the dispatcher, inside the real lock, rather than by letting
-      // the lock time out: its timeout is 30s and is not injectable from here,
-      // and a suite that waits it out is a suite nobody runs.
+      // Thrown from the dispatcher, inside the real lock: the half where a
+      // `TimeoutException` comes out of the action. The lock's own window running
+      // out is the next test.
       when(() =>
               firmware.requestOtaCheck(otaInstance: any(named: 'otaInstance')))
           .thenThrow(TimeoutException(
@@ -238,6 +239,24 @@ void main() {
       // reading banks and could still return `noUpdateFound` — the one answer
       // this service exists never to invent.
       verifyNever(() => firmware.fetchAllBanks());
+    });
+
+    test('the lock giving up on the dispatch leaves as a TimeoutError',
+        () async {
+      // The other half: the dispatch never answers and the lock's own window
+      // runs out. The real lock with its window shortened, so what reaches the
+      // caller is what production throws.
+      lock = ShortWindowLock();
+      when(() =>
+              firmware.requestOtaCheck(otaInstance: any(named: 'otaInstance')))
+          .thenAnswer((_) => Completer<String>().future);
+
+      await expectLater(
+        buildService().check(otaInstance: 3),
+        throwsA(isA<TimeoutError>()),
+      );
+      verifyNever(() => firmware.fetchAllBanks());
+      expect(lock.isLocked, isFalse);
     });
 
     test('runs without an awaiter at all', () async {

@@ -703,8 +703,8 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
       return result;
     } catch (e) {
       // `catch`, not `on ServiceError` — same argument as [loadBanks]: the two
-      // reads share one field and one card, and a `TimeoutException` out of the
-      // mutation lock leaves the page exactly as unreadable.
+      // reads share one field and one card, and a throw that is not a
+      // `ServiceError` leaves the page exactly as unreadable.
       logger.w('[FirmwareUpdate] could not read the router firmware state',
           error: e);
       if (!_disposed) {

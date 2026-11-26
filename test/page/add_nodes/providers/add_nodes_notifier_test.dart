@@ -14,19 +14,9 @@ import 'package:privacy_gui/page/add_nodes/providers/add_nodes_state.dart';
 import 'package:privacy_gui/page/add_nodes/services/add_nodes_service.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 
-class MockAddNodesService extends Mock implements AddNodesService {}
+import '../../../mocks/short_window_lock.dart';
 
-/// The real [UspMutationLock], with every window shortened to a few
-/// milliseconds, so it runs out for real — what it throws then is
-/// production's — without the 30 s wait.
-class _ShortWindowLock extends UspMutationLock {
-  @override
-  Future<T> withLock<T>(
-    Future<T> Function() action, {
-    Duration timeout = UspMutationLock.defaultTimeout,
-  }) =>
-      super.withLock(action, timeout: const Duration(milliseconds: 20));
-}
+class MockAddNodesService extends Mock implements AddNodesService {}
 
 /// Records the refreshes the flow asks of the topology, and does nothing else.
 class _RecordingDevicesDataNotifier extends DevicesDataNotifier {
@@ -292,7 +282,7 @@ void main() {
       // on the `on ServiceError` arm with every other failure. The router may
       // have started a session, and no Stop() goes out for it: with no answer
       // it cannot be told from one the pairing button started.
-      final container = await readyContainer(lock: _ShortWindowLock());
+      final container = await readyContainer(lock: ShortWindowLock());
       when(() => service.start())
           .thenAnswer((_) => Completer<OnboardingStartResult>().future);
 

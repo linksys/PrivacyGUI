@@ -33,6 +33,7 @@ import 'package:privacy_gui/page/firmware_update/services/firmware_router_ota_in
 import 'package:privacy_gui/page/firmware_update/services/usp_firmware_update_service.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
+import '../../../mocks/short_window_lock.dart';
 import '../../../mocks/test_data/firmware_update_test_data.dart';
 
 class MockFirmwareRouterOtaCheckService extends Mock
@@ -157,21 +158,6 @@ class _TimingOutBanksNotifier extends FirmwareBanksDataNotifier {
   @override
   Future<FirmwareBanksData> refresh() async =>
       throw TimeoutException('banks read', const Duration(seconds: 30));
-}
-
-/// The real [UspMutationLock], with every window shortened to a few
-/// milliseconds.
-///
-/// For a test that needs the lock to run out for real — what it throws then is
-/// production's, not a stand-in's — without waiting the 30 s (or the upload's
-/// 60 s per chunk) it would take.
-class _ShortWindowLock extends UspMutationLock {
-  @override
-  Future<T> withLock<T>(
-    Future<T> Function() action, {
-    Duration timeout = UspMutationLock.defaultTimeout,
-  }) =>
-      super.withLock(action, timeout: const Duration(milliseconds: 20));
 }
 
 /// A router that answers the first read and then stops answering.
@@ -711,7 +697,7 @@ void main() {
       final bytes = validImage();
       when(() => mockUsp.operate(any(), args: any(named: 'args')))
           .thenAnswer((_) => Completer<Map<String, dynamic>>().future);
-      final lock = _ShortWindowLock();
+      final lock = ShortWindowLock();
       final container = createContainer(
         picker: _StubPickerService(
           FirmwarePickedFile(name: 'fw.img', size: bytes.length, bytes: bytes),
@@ -787,7 +773,7 @@ void main() {
             targetInstance: any(named: 'targetInstance'),
           )).thenAnswer((_) => Completer<void>().future);
       final container = createContainer(
-        extra: [uspMutationLockProvider.overrideWithValue(_ShortWindowLock())],
+        extra: [uspMutationLockProvider.overrideWithValue(ShortWindowLock())],
       );
       addTearDown(container.dispose);
 
@@ -2241,16 +2227,16 @@ void main() {
         // the browser Back button for the rest of the session, with no card on
         // screen saying why.
         //
-        // Any throw that is not a `ServiceError`. A `TimeoutException` because the
-        // mutation lock raised exactly that until #1831, and one from outside the
-        // lock still can.
+        // Any throw that is not a `ServiceError`. A `TimeoutException`, because one
+        // raised outside the mutation lock still arrives bare (the lock's own has
+        // been a `TimeoutError` since #1831).
         when(() => mockOtaInstaller.install(
                   otaInstance: any(named: 'otaInstance'),
                   onProgress: any(named: 'onProgress'),
                   isCancelled: any(named: 'isCancelled'),
                 ))
-            .thenThrow(
-                TimeoutException('mutation lock', const Duration(seconds: 30)));
+            .thenThrow(TimeoutException(
+                'outside the lock', const Duration(seconds: 30)));
         final container = createContainer();
         addTearDown(container.dispose);
 
@@ -2726,8 +2712,8 @@ void main() {
                   onProgress: any(named: 'onProgress'),
                   isCancelled: any(named: 'isCancelled'),
                 ))
-            .thenThrow(
-                TimeoutException('mutation lock', const Duration(seconds: 30)));
+            .thenThrow(TimeoutException(
+                'outside the lock', const Duration(seconds: 30)));
         final container = createContainer();
         addTearDown(container.dispose);
 
