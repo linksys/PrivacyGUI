@@ -24,7 +24,7 @@ class TracerouteStatus extends Equatable {
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'isRunning': isRunning,
-      'pingLog': tracerouteLog,
+      'tracerouteLog': tracerouteLog,
     };
   }
 

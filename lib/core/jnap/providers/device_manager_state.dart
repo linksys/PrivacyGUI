@@ -134,7 +134,7 @@ class LinksysDevice extends RawDevice {
             )
           : null,
       knownMACAddresses: map['knownMACAddresses'] != null
-          ? List<String>.from((map['knownMACAddresses'] as List<String>))
+          ? List<String>.from(map['knownMACAddresses'] as List)
           : null,
       nodeType: map['nodeType'] != null ? map['nodeType'] as String : null,
       connectedDevices: map['connectedDevices'] != null
@@ -156,7 +156,7 @@ class LinksysDevice extends RawDevice {
           ? WirelessConnectionInfo.fromMap(map['wirelessConnectionInfo'])
           : null,
       speedMbps: map['speedMbps'] ?? '--',
-      mloList: map['mloList'] ?? [],
+      mloList: List<String>.from(map['mloList'] ?? []),
     );
   }
 
@@ -313,6 +313,7 @@ class DeviceManagerState extends Equatable {
     return [
       wirelessConnections,
       radioInfos,
+      guestRadioSettings,
       deviceList,
       wanStatus,
       backhaulInfoData,

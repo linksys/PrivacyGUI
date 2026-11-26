@@ -207,9 +207,9 @@ class DeviceListItem extends Equatable {
       signalStrength: map['signalStrength'] as int,
       isOnline: map['isOnline'] as bool,
       isWired: map['isWired'] as bool,
-      type:
-          WifiConnectionType.values.firstWhereOrNull((e) => e == map['type']) ??
-              WifiConnectionType.main,
+      type: WifiConnectionType.values
+              .firstWhereOrNull((e) => e.value == map['type']) ??
+          WifiConnectionType.main,
       ssid: map['ssid'] as String,
       isMLO: map['isMLO'] ?? false,
     );

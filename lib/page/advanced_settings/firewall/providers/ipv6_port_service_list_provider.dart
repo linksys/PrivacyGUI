@@ -32,16 +32,13 @@ class Ipv6PortServiceListNotifier extends Notifier<Ipv6PortServiceListState> {
     final rules = List<IPv6FirewallRule>.from(state.rules);
 
     final repo = ref.read(routerRepositoryProvider);
-    await repo
-        .send(
-          JNAPAction.setIPv6FirewallRules,
-          auth: true,
-          data: {
-            'rules': rules.map((e) => e.toMap()).toList(),
-          },
-        )
-        .then((value) => true)
-        .onError((error, stackTrace) => false);
+    await repo.send(
+      JNAPAction.setIPv6FirewallRules,
+      auth: true,
+      data: {
+        'rules': rules.map((e) => e.toMap()).toList(),
+      },
+    );
 
     await fetch(true);
     return state;

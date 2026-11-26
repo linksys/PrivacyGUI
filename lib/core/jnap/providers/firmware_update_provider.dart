@@ -104,15 +104,30 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     });
   }
 
-  Future fetchAvailableFirmwareUpdates() {
+  /// [logoutGeneration] is the login the check belongs to, when the check
+  /// continues work begun earlier; left null, it is the current one (#1904).
+  Future fetchAvailableFirmwareUpdates({int? logoutGeneration}) {
     logger.i('[FIRMWARE]: Examine if there are firmware updates available');
     final benchmark = BenchMarkLogger(name: 'FirmwareUpdate');
     benchmark.start();
-    return fetchFirmwareUpdateStream(force: true, retry: 2)
+    return fetchFirmwareUpdateStream(
+            force: true, retry: 2, logoutGeneration: logoutGeneration)
         .last
+        .then<List<FirmwareUpdateStatus>?>((resultList) => resultList)
+        .onError<LoggedOutException>((error, stackTrace) => null)
         .onError((error, stackTrace) => [])
         .then((resultList) {
       benchmark.end();
+      if (resultList == null) {
+        // Ended by a logout: it reports no update, so no caller goes on to
+        // install one after the logout, as PnP and the auto-parent first
+        // login would. The state is written directly, not through
+        // _examineStatusResult, whose ref.read a debug build refuses once the
+        // logout's reset of polling has changed what this notifier watches.
+        state = state.copyWith(
+            nodesStatus: const [], isWaitingChildrenAfterUpdating: false);
+        return;
+      }
       // In addition to the build function, state updates here should also be examined
       final statusRecord = _examineStatusResult(resultList);
       logger.d(
@@ -125,10 +140,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
   }
 
   Stream<List<FirmwareUpdateStatus>> fetchFirmwareUpdateStream(
-      {bool force = false, int retry = 3}) async* {
-    // Read as the check begins, so that a logout before its status reads, even
-    // one while the first request is still out, ends them (#1904).
-    final logoutGeneration = ref.read(authProvider.notifier).logoutGeneration;
+      {bool force = false, int retry = 3, int? logoutGeneration}) async* {
     final lastCheckTime =
         (state.nodesStatus?.map((e) => e.lastSuccessfulCheckTime).toList() ??
                     [])
@@ -136,6 +148,16 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
                 .map((e) => e?.millisecondsSinceEpoch ?? 0)
                 .maxOrNull ??
             0;
+    // Read as the check begins, so that a logout before its status reads, even
+    // one while the first request is still out, ends them (#1904). Read after
+    // `state`, which rebuilds this notifier when a poll has changed what it
+    // watches: in a debug build, Riverpod refuses a `ref.read` from a notifier
+    // that has not rebuilt yet.
+    final auth = ref.read(authProvider.notifier);
+    final generation = logoutGeneration ?? auth.logoutGeneration;
+    // Read before the first await for the same reason: a poll, or a logout's
+    // reset of polling, may land while the first request is out.
+    final repository = ref.read(routerRepositoryProvider);
     if (!_isNeedDoFetch(lastCheckTime: lastCheckTime) && !force) {
       logger.i(
           '[FIRMWARE]: Skip checking firmware update avaliable: last check time {${DateTime.fromMillisecondsSinceEpoch(lastCheckTime)}}');
@@ -144,8 +166,12 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
       final action = serviceHelper.isSupportNodeFirmwareUpdate()
           ? JNAPAction.nodesUpdateFirmwareNow
           : JNAPAction.updateFirmwareNow;
-      await ref
-          .read(routerRepositoryProvider)
+      // A check that continues an install the user has logged out of since
+      // asks nothing.
+      if (auth.loggedOutSince(generation)) {
+        throw const LoggedOutException();
+      }
+      await repository
           .send(
             action,
             data: {'onlyCheck': true},
@@ -158,7 +184,8 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
       yield* _startCheckFirmwareUpdateStatus(
           retryTimes: retry,
           onCompleted: (_) {},
-          logoutGeneration: logoutGeneration);
+          logoutGeneration: generation,
+          repository: repository);
     }
   }
 
@@ -230,7 +257,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
           benchmark.end();
         } else {
           logger.i('[FIRMWARE]: Firmware update: Done!');
-          finishFirmwareUpdate().then((_) {
+          finishFirmwareUpdate(logoutGeneration: logoutGeneration).then((_) {
             _sub?.cancel();
             benchmark.end();
           });
@@ -262,17 +289,36 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     );
   }
 
-  Future finishFirmwareUpdate() {
+  /// [logoutGeneration] is the login of the install this finishes; left null,
+  /// it is the current one, as for [fetchAvailableFirmwareUpdates]. Once a
+  /// logout has ended it, nothing more is asked of the router and polling is
+  /// not started on the login screen (#1904). The install itself is done, so
+  /// it is recorded as such either way.
+  Future finishFirmwareUpdate({int? logoutGeneration}) {
+    // Read now: the forced poll below changes what this notifier watches, and
+    // a debug build refuses a `ref.read` from it until it has rebuilt.
+    final auth = ref.read(authProvider.notifier);
+    final generation = logoutGeneration ?? auth.logoutGeneration;
+    bool loggedOut() => auth.loggedOutSince(generation);
+    void recordDone() => SharedPreferences.getInstance().then((pref) {
+          pref.setBool(pFWUpdated, true);
+        });
     final polling = ref.read(pollingProvider.notifier);
+    if (loggedOut()) {
+      state = state.copyWith(isUpdating: false);
+      recordDone();
+      return Future.value();
+    }
     return polling
         .forcePolling()
-        .then((_) => fetchAvailableFirmwareUpdates())
+        .then((_) => loggedOut()
+            ? null
+            : fetchAvailableFirmwareUpdates(logoutGeneration: generation))
         .then((_) {
       state = state.copyWith(isUpdating: false);
-      SharedPreferences.getInstance().then((pref) {
-        pref.setBool(pFWUpdated, true);
-      });
+      recordDone();
 
+      if (loggedOut()) return;
       polling.startPolling();
     });
   }
@@ -391,22 +437,24 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     bool Function(JNAPResult)? stopCondition,
     Function(bool exceedMaxRetry)? onCompleted,
     required int logoutGeneration,
+    RouterRepository? repository,
   }) {
     final action = serviceHelper.isSupportNodeFirmwareUpdate()
         ? JNAPAction.getNodesFirmwareUpdateStatus
         : JNAPAction.getFirmwareUpdateStatus;
-    return ref
-        .read(routerRepositoryProvider)
+    final RouterRepository repo =
+        repository ?? ref.read(routerRepositoryProvider);
+    return repo
         .scheduledCommand(
-          action: action,
-          maxRetry: retryTimes ?? -1,
-          retryDelayInMilliSec: retryDelayInMilliSec ?? 2000,
-          condition: stopCondition,
-          onCompleted: onCompleted,
-          requestTimeoutOverride: 3000,
-          auth: true,
-          logoutGeneration: logoutGeneration,
-        )
+      action: action,
+      maxRetry: retryTimes ?? -1,
+      retryDelayInMilliSec: retryDelayInMilliSec ?? 2000,
+      condition: stopCondition,
+      onCompleted: onCompleted,
+      requestTimeoutOverride: 3000,
+      auth: true,
+      logoutGeneration: logoutGeneration,
+    )
         .map((result) {
       if (result is! JNAPSuccess) {
         throw result;

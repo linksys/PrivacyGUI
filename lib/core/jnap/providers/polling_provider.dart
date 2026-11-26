@@ -15,9 +15,7 @@ import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/bench_mark.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/page/vpn/providers/vpn_notifier.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
-import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
 import 'package:privacy_gui/core/utils/fernet_manager.dart';
 import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_provider.dart';
 
@@ -109,6 +107,22 @@ final pollingProvider =
 /// raise it again once that route is gone - which a settled flag could not.
 final routerUnreachableProvider = StateProvider<int>((ref) => 0);
 
+/// "A poll completed": what a feature that reads after each poll listens to,
+/// with `ref.listen`, instead of being called by polling (#1834).
+///
+/// It counts up once for each successful poll, right after [pollingProvider]
+/// has published that poll's result. It promises three things:
+/// - **Once per successful poll.** A failed poll does not move it, nor does a
+///   client signal merge into the poll's data, nor a poll that outlived its run
+///   (polling was stopped since it began, as a logout does, or paused while it
+///   was on the wire). A poll that a flow makes while it holds polling paused,
+///   such as a Wi-Fi save's read-back, does move it.
+/// - **`isReady` does not wait for its listeners.** A poll is ready once the
+///   core transaction and polling's own reads are in.
+/// - **A listener's failure stays with the listener.** It never reaches
+///   polling's error state, nor its count towards the router's silence.
+final pollCompletedProvider = StateProvider<int>((ref) => 0);
+
 class CoreTransactionData extends Equatable {
   final int lastUpdate;
   final bool isReady;
@@ -136,6 +150,11 @@ class CoreTransactionData extends Equatable {
   }
 }
 
+/// The core poll loop behind the dashboard.
+///
+/// A feature that needs fresh state after each poll does not get called from
+/// here: it listens to [pollCompletedProvider], which says what it can count on
+/// (#1834). Polling calls nothing under lib/page.
 class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
   static Timer? _timer;
 
@@ -321,6 +340,12 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     // answer comes back - or fails to - polling may have been stopped on purpose,
     // and this poll then speaks for a router nobody is watching any more.
     final generation = _generation;
+    // Whether polling was already paused when this poll began. A flow that
+    // pauses polling and then polls on purpose - a Wi-Fi save's read-back
+    // inside holdWhile, PnP, the first login's firmware finish - wants that
+    // poll whole; only a pause that lands while a poll is on the wire ends it.
+    // See [_outlived].
+    final startedPaused = _paused;
 
     // Repair a start-up whose device-mode read failed, rather than polling in a
     // degraded shape until the next login. Once the router has answered once,
@@ -336,6 +361,15 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
       // unknown when it was built. See [_maxModeRetries] for why this is counted.
       _modeRetriesLeft--;
       await _resolveCoreTransaction();
+    }
+    // A stop that landed while the device mode was being read ends this poll.
+    // Polling was stopped on purpose, a logout among the reasons, and the
+    // transaction below would go out for a login that has ended (#1904).
+    // A pause is not a stop: a forced poll while paused still reads, as
+    // holdWhile's flows, PnP and the auto-parent first login rely on.
+    if (generation != _generation) {
+      logger.d('polling was called off while the device mode was read');
+      return;
     }
 
     // Starts the clock on the router's silence, before the request that may go
@@ -406,7 +440,12 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
             refreshBetterActions(services.whereType<String>().toList());
           }
 
-          await _additionalPolling();
+          // Polling's own reads, under lib/core. The features read when the
+          // poll completes (pollCompletedProvider), and a poll that outlived
+          // its run reads nothing: its session may be gone (#1834).
+          if (!_outlived(generation, startedPaused)) {
+            await _additionalPolling();
+          }
           return result.copyWith(isReady: true);
         },
       ).onError((e, stackTrace) {
@@ -434,6 +473,9 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
       } else {
         _recordPollFailure(repository);
       }
+    }
+    if (!result.hasError && !_outlived(generation, startedPaused)) {
+      ref.read(pollCompletedProvider.notifier).state++;
     }
 
     benchMark.end();
@@ -517,6 +559,15 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
   /// polls a router nobody is watching and reports on its silence.
   bool _isCancelled(int generation) => _paused || generation != _generation;
 
+  /// Whether a poll that began in [generation], with polling then paused or
+  /// not as [startedPaused] says, speaks for a run that has ended: polling was
+  /// stopped since it began (a logout among the reasons), or paused while it
+  /// was on the wire. A poll that a paused flow makes itself is not ended by
+  /// that pause. Such a poll makes no reads after it answers, and does not
+  /// signal [pollCompletedProvider] (#1834).
+  bool _outlived(int generation, bool startedPaused) =>
+      generation != _generation || (_paused && !startedPaused);
+
   /// Whether the router rejected our credential, as opposed to never having
   /// answered. Only the former means the session is really gone.
   ///
@@ -554,12 +605,6 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     if (serviceHelper.isSupportLedMode()) {
       await ref.read(nodeLightSettingsProvider.notifier).fetch();
     }
-    if (serviceHelper.isSupportVPN()) {
-      await ref.read(vpnProvider.notifier).fetch(false, true);
-    }
-
-    await ref.read(instantPrivacyProvider.notifier).fetch(statusOnly: true);
-
     if (BuildConfig.enableRemoteAssistance) {
       final loginType = ref.read(authProvider).value?.loginType;
       logger.i('[Polling]: _additionalPolling loginType: $loginType');
