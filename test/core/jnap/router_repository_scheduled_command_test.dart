@@ -63,10 +63,15 @@ class _ScriptedExecutor with JNAPCommandExecutor<Response> {
   /// The executor's timeout and retries as each request saw them.
   final List<(int timeoutMs, int retries)> settings = [];
 
+  /// How long the router takes to answer each request. A request counts as
+  /// received when it arrives, before the wait.
+  Duration answerDelay = Duration.zero;
+
   @override
   Future<Response> execute(BaseCommand command) async {
     requests.add(command as JNAPHttpCommand);
     settings.add((timeoutMs, retries));
+    if (answerDelay > Duration.zero) await Future.delayed(answerDelay);
     return answers.isEmpty ? _ok() : answers.removeAt(0)();
   }
 
@@ -392,6 +397,29 @@ void main() {
           reason: 'neither did the condition hold, nor did the retries run '
               'out, so the caller is told neither');
       expect(loop.done.isCompleted, isTrue);
+    });
+
+    queueTest('drops the answer to a request that was out at the logout',
+        (tester) async {
+      // The request went out before the logout, but its answer belongs to a
+      // login that has ended. Handing it on would let the caller act on it,
+      // as the firmware install's completion did (#1956 review).
+      executor.answerDelay = const Duration(seconds: 1);
+      final loop = run(
+        firstDelay: 0,
+        retryDelay: 2000,
+        logoutGeneration: auth().logoutGeneration,
+      );
+      await advance(tester, 200);
+      expect(executor.requests, hasLength(1), reason: 'the request is out');
+
+      await auth().logout();
+      await drainQueue(tester);
+
+      expect(executor.requests, hasLength(1));
+      expect(loop.results, isEmpty, reason: 'its answer is not handed on');
+      expect(loop.errors.single, isA<LoggedOutException>());
+      expect(loop.completed, isEmpty);
     });
 
     queueTest('started after the logout it belongs to, sends nothing',

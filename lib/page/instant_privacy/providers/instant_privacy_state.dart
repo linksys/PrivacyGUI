@@ -169,7 +169,7 @@ class InstantPrivacyState extends Equatable {
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
-      'status': status.mode.name,
+      'status': status.toMap(),
       'settings': settings.toMap(),
     };
   }

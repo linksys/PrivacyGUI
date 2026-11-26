@@ -20,6 +20,14 @@ final instantPrivacyProvider =
 class InstantPrivacyNotifier extends Notifier<InstantPrivacyState> {
   @override
   InstantPrivacyState build() {
+    // Reads the status after each completed poll (#1834). A failed read stays
+    // here: polling never hears of it.
+    ref.listen(pollCompletedProvider, (_, __) {
+      fetch(statusOnly: true).onError((error, _) {
+        logger.d('[instantPrivacy]: status read after a poll failed: $error');
+        return state;
+      });
+    });
     fetch(fetchRemote: true);
     return InstantPrivacyState.init();
   }

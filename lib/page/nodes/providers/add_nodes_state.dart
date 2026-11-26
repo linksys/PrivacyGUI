@@ -103,9 +103,11 @@ class AddNodesState extends Equatable {
               ),
             )
           : null,
-      isLoading: map['isLoading'],
+      isLoading: map['isLoading'] ?? false,
       loadingMessage: map['loadingMessage'],
-      onboardedMACList: map['onboardedMACList'],
+      onboardedMACList: map['onboardedMACList'] != null
+          ? List<String>.from(map['onboardedMACList'])
+          : null,
     );
   }
 

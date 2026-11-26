@@ -675,7 +675,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
   String _getTestResultDate(String? timestamp) {
     var date = '—';
     if (timestamp != null && timestamp.isNotEmpty) {
-      final millisecondsSinceEpoch = DateFormat("yyyy-MM-ddThh:mm:ssZ")
+      final millisecondsSinceEpoch = DateFormat("yyyy-MM-ddTHH:mm:ssZ")
           .parse(timestamp, true)
           .millisecondsSinceEpoch;
       DateTime tempDate =

@@ -13,6 +13,7 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/nodes/providers/add_wired_nodes_state.dart';
 import 'package:privacy_gui/providers/idle_checker_pause_provider.dart';
+import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
 final addWiredNodesProvider =
     NotifierProvider.autoDispose<AddWiredNodesNotifier, AddWiredNodesState>(
@@ -21,6 +22,16 @@ final addWiredNodesProvider =
 class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
   @override
   AddWiredNodesState build() => const AddWiredNodesState(isLoading: false);
+
+  /// The login the running flow belongs to (#1904). Its backhaul reads end at
+  /// a logout, and so does the flow. Null while no flow runs.
+  int? _logoutGeneration;
+
+  bool get _loggedOut {
+    final generation = _logoutGeneration;
+    return generation != null &&
+        ref.read(authProvider.notifier).loggedOutSince(generation);
+  }
 
   Future<void> setAutoOnboardingSettings(bool enabled) {
     return ref
@@ -42,6 +53,7 @@ class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
     );
     // Pause the idle checker
     ref.read(idleCheckerPauseProvider.notifier).state = true;
+    _logoutGeneration = ref.read(authProvider.notifier).logoutGeneration;
     // Whether the router's wired onboarding is on, so that a run that fails
     // part way still turns it off.
     var onboardingOn = false;
@@ -64,11 +76,15 @@ class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
       state = state.copyWith(nodes: nodes);
       stopCheckingBackhaul(context);
       await ref.read(pollingProvider.notifier).forcePolling();
+    } on LoggedOutException {
+      // The login the run belonged to has ended; its dialog is gone.
+      logger.d('[AddWiredNode]: Logged out, the run is dropped');
     } finally {
       // A run that fails part way must not leave wired onboarding on at the
       // router, the idle logout off for the rest of the session, nor the
-      // dialog loading.
-      if (onboardingOn) {
+      // dialog loading. After a logout, though, nothing more is asked of the
+      // router: the request would carry the factory default password (#1904).
+      if (onboardingOn && !_loggedOut) {
         await setAutoOnboardingSettings(false).catchError((Object error) {
           logger
               .e('[AddWiredNode]: could not turn wired onboarding off: $error');
@@ -79,6 +95,7 @@ class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
       }
       // Resume the idle checker
       ref.read(idleCheckerPauseProvider.notifier).state = false;
+      _logoutGeneration = null;
     }
     final delta = log.end();
     logger.d('[AddWiredNode]: end auto onboarding, cost time: ${delta}ms');
@@ -107,6 +124,7 @@ class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
     return repo.scheduledCommand(
       action: JNAPAction.getBackhaulInfo,
       auth: true,
+      logoutGeneration: _logoutGeneration,
       firstDelayInMilliSec: 1 * 1000,
       retryDelayInMilliSec: 10 * 1000,
       maxRetry: refreshing ? 6 : 60,

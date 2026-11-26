@@ -395,7 +395,7 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
   }
 
   String _getDateTimeText(String? timestamp) {
-    final speedTestTimeStamp = DateFormat("yyyy-MM-ddThh:mm:ssZ")
+    final speedTestTimeStamp = DateFormat("yyyy-MM-ddTHH:mm:ssZ")
         .tryParse(timestamp ?? '', true)
         ?.millisecondsSinceEpoch;
     final dateTime = speedTestTimeStamp == null

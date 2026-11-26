@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
+import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/vpn/service/vpn_service.dart';
 import '../models/vpn_models.dart';
 import 'vpn_state.dart';
@@ -7,6 +10,15 @@ import 'vpn_state.dart';
 class VPNNotifier extends Notifier<VPNState> {
   @override
   VPNState build() {
+    // Reads the status after each completed poll, on a router that supports
+    // VPN (#1834). A failed read stays here: polling never hears of it.
+    ref.listen(pollCompletedProvider, (_, __) {
+      if (!serviceHelper.isSupportVPN()) return;
+      fetch(false, true).onError((error, _) {
+        logger.d('[VPN]: status read after a poll failed: $error');
+        return state;
+      });
+    });
     return const VPNState.init();
   }
 
