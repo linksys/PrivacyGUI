@@ -209,22 +209,16 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
       started = await run.lock
           .withLock(() async => run.stopWhenStarted ? null : service.start());
     } on ServiceError catch (e) {
+      // A `TimeoutError` here is the lock's (#1831), and it means Start()
+      // itself did not answer: the lock's timeout covers the command it holds,
+      // and a wait for the lock that runs out force-releases it rather than
+      // throwing. So the router may have started a session. No Stop() for it:
+      // with no answer it cannot be told from a session the pairing button
+      // started. One of ours that nobody follows is left to end on its own —
+      // how long that takes on the firmware has not been measured.
       logger.w('$_tag Start() failed', error: e);
       _publish(
           generation, AddNodesState(phase: AddNodesPhase.failed, error: e));
-      return;
-    } on TimeoutException catch (e) {
-      // Start() itself did not answer: the lock's timeout covers the command it
-      // holds, and a wait for the lock that runs out force-releases it rather
-      // than throwing. So the router may have started a session. No Stop() for
-      // it: with no answer it cannot be told from a session the pairing button
-      // started. One of ours that nobody follows is left to end on its own —
-      // how long that takes on the firmware has not been measured.
-      logger.w('$_tag Start() did not answer in time: $e');
-      _publish(
-          generation,
-          const AddNodesState(
-              phase: AddNodesPhase.failed, error: TimeoutError()));
       return;
     }
 
@@ -506,9 +500,8 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
     try {
       await run.lock.withLock(run.service.stop);
     } on ServiceError catch (e) {
+      // The lock's timeout included: it is a `TimeoutError` (#1831).
       logger.w('$_tag Stop() failed', error: e);
-    } on TimeoutException catch (e) {
-      logger.w('$_tag Stop() did not answer in time: $e');
     }
   }
 
