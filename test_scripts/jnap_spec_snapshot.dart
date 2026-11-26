@@ -174,7 +174,7 @@ Future<void> main(List<String> args) async {
       'ref': baseline,
       'commit': baselineSha,
       'about': 'The JNAP release in the oldest firmware 1.x still supports. '
-          'Its services need no gate. Provisional until #1923 confirms it.',
+          'Its services need no gate (#1923).',
     },
     'services': services,
     'baselineServices': baselineServices.toList(),
