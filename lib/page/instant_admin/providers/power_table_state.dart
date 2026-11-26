@@ -30,7 +30,8 @@ class PowerTableState extends Equatable {
   Map<String, dynamic> toMap() {
     return {
       'isPowerTableSelectable': isPowerTableSelectable,
-      'supportedCountries': supportedCountries.map((e) => e.name.toUpperCase()),
+      'supportedCountries':
+          supportedCountries.map((e) => e.name.toUpperCase()).toList(),
       'country': country?.name.toUpperCase(),
     }..removeWhere((_, value) => value == null);
   }

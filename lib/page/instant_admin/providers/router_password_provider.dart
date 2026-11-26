@@ -98,9 +98,15 @@ class RouterPasswordNotifier extends Notifier<RouterPasswordState> {
         'resetCode': code,
       },
     ).then((result) {
-      state = state.copyWith(
-        remainingErrorAttempts: null,
-        error: null,
+      // Not copyWith: it reads null as "keep", so the count of a wrong code
+      // before this one would stay on the recovery page.
+      state = RouterPasswordState(
+        adminPassword: state.adminPassword,
+        hint: state.hint,
+        isValid: state.isValid,
+        isDefault: state.isDefault,
+        isSetByUser: state.isSetByUser,
+        hasEdited: state.hasEdited,
       );
       return true;
     }).onError((error, stackTrace) {

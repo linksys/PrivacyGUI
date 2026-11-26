@@ -3,8 +3,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/di.dart';
@@ -14,16 +16,21 @@ import 'package:privacy_gui/page/instant_setup/data/pnp_step_state.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_wifi_settings.dart';
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
 import 'package:privacy_gui/page/instant_setup/pnp_setup_view.dart';
+import 'package:privacy_gui/page/instant_setup/widgets/wifi_password_widget.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/wifi_ssid_widget.dart';
 import 'package:privacy_gui/page/components/widgets/wifi_qr/wifi_qr_warning_card.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../common/di.dart';
+import '../../common/router_boundary.dart';
 import '../../common/testable_router.dart';
 import '../../common/theme_data.dart';
 import '../../mocks/pnp_notifier_mocks.dart' as mock;
 import '../../test_data/device_info_test_data.dart';
+import 'data/pnp_router_data.dart';
+import 'model/impl/pnp_setup_harness.dart';
 
 void main() async {
   late mock.MockPnpNotifier mockPnpNotifier;
@@ -260,5 +267,82 @@ void main() async {
       ),
       findsOneWidget,
     );
+  });
+
+  // What PnP saves from the step: the real PnpNotifier over a RouterBoundary,
+  // on an auto-parented router with neither guest WiFi nor night mode, where
+  // this step is the one that saves. The user types into the step's own
+  // fields, so a change to the map the step hands PnP turns these red.
+  group('what PnP saves from the step', () {
+    late RouterBoundary router;
+
+    final passwordField = find.descendant(
+      of: find.byType(WiFiPasswordField),
+      matching: find.byType(TextField),
+    );
+
+    setUp(() {
+      SharedPreferences.setMockInitialValues({});
+      FlutterSecureStorage.setMockInitialValues({});
+      when(mockServiceHelper.isSupportGuestNetwork(any)).thenReturn(false);
+      when(mockServiceHelper.isSupportLedMode(any)).thenReturn(false);
+      router = RouterBoundary()
+        ..refuses(JNAPAction.getAutoMasterStatus)
+        ..holds(JNAPAction.getDevices, {
+          'revision': 1,
+          'devices': [pnpDevice('router', nodeType: 'Master')],
+        });
+      holdPnpReads(router,
+          autoConfiguration: pnpAutoConfiguration(method: 'AutoParent'));
+    });
+
+    testWidgets('writes the name and password typed to every band',
+        (tester) async {
+      await openPnpSetup(tester, router: router, pnp: ArrivedPnp());
+
+      await tester.enterText(ssidField, 'MyHome');
+      await tester.enterText(passwordField, 'MyHomePass1');
+      await tester.pumpAndSettle();
+      await tapAndSave(tester, 'Next');
+
+      expect(router.payloadsOf(JNAPAction.setRadioSettings).single, {
+        'radios': [
+          pnpSavedBand('RADIO_2.4GHz', '2.4GHz',
+              ssid: 'MyHome', passphrase: 'MyHomePass1'),
+          pnpSavedBand('RADIO_5GHz', '5GHz',
+              ssid: 'MyHome', passphrase: 'MyHomePass1', channel: 149),
+        ],
+      });
+    });
+
+    testWidgets(
+        'writes each band its own name and password when the router\'s bands '
+        'differ', (tester) async {
+      router.holds(
+          JNAPAction.getRadioInfo,
+          pnpRadioInfo(radios: [
+            pnpRadio('RADIO_2.4GHz', '2.4GHz'),
+            pnpRadio('RADIO_5GHz', '5GHz',
+                ssid: 'Linksys00042-5G', channel: 149),
+          ]));
+      await openPnpSetup(tester, router: router, pnp: ArrivedPnp());
+
+      // One card per band, 2.4 GHz first.
+      await tester.enterText(ssidField.at(0), 'Home-2G');
+      await tester.enterText(passwordField.at(0), 'Pass-2G-123');
+      await tester.enterText(ssidField.at(1), 'Home-5G');
+      await tester.enterText(passwordField.at(1), 'Pass-5G-123');
+      await tester.pumpAndSettle();
+      await tapAndSave(tester, 'Next');
+
+      expect(router.payloadsOf(JNAPAction.setRadioSettings).single, {
+        'radios': [
+          pnpSavedBand('RADIO_2.4GHz', '2.4GHz',
+              ssid: 'Home-2G', passphrase: 'Pass-2G-123'),
+          pnpSavedBand('RADIO_5GHz', '5GHz',
+              ssid: 'Home-5G', passphrase: 'Pass-5G-123', channel: 149),
+        ],
+      });
+    });
   });
 }
