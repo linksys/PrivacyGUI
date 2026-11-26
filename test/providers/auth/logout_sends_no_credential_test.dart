@@ -37,6 +37,8 @@ import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/jnap/spec/jnap_spec.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
+import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
+import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_troubleshooter_provider.dart';
 import 'package:privacy_gui/page/instant_topology/providers/instant_topology_provider.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_provider.dart';
 import 'package:privacy_gui/page/troubleshooting/providers/troubleshooting_provider.dart';
@@ -673,6 +675,33 @@ void main() {
 
     expect(after.where((r) => r.carriesCredential), isEmpty);
     expect(ended, isA<LoggedOutException>());
+  });
+
+  netTest(
+      "the PnP troubleshooter's check of new WAN settings sends nothing after "
+      'the logout', (tester) async {
+    // It reads the WAN status every 5 s, up to 18 times, until the new
+    // settings connect. Its page's next steps run from onCompleted.
+    var completed = false;
+    final after = await logOutDuring(
+        tester,
+        JNAPAction.getWANStatus,
+        const {
+          'macAddress': '00:11:22:33:44:55',
+          'detectedWANType': 'DHCP',
+          'wanStatus': 'Disconnected',
+          'wanIPv6Status': 'Disconnected',
+          'supportedWANTypes': <String>['DHCP'],
+        },
+        () => container
+            .read(pnpTroubleshooterProvider.notifier)
+            .checkNewSettings(
+                settingWanType: WanType.dhcp,
+                onCompleted: (_) => completed = true));
+
+    expect(after.where((r) => r.carriesCredential), isEmpty);
+    expect(completed, isFalse,
+        reason: "the page's next steps do not run on the login screen");
   });
 
   netTest(
