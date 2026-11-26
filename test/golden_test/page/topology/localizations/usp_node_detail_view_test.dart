@@ -40,6 +40,13 @@ void main() {
         'slave_offline': (overrides) => overrides.addAll(
               nodeDetailOverrides(slaveNodeOffline),
             ),
+        // The offline extender FL-WRT 2.0 produces (#1443): how long it has been
+        // offline under the badge, its upstream node unknown, and the address
+        // placeholder in the Network card. `slave_offline` above has no stamp,
+        // so it photographs "Offline duration unknown".
+        'slave_offline_from_hosts': (overrides) => overrides.addAll(
+              nodeDetailOverrides(slaveNodeOfflineForGolden),
+            ),
         // LAN IPv6 global address — rendered without a scope badge.
         'global_ipv6': (overrides) => overrides.addAll(
               nodeDetailOverrides(slaveNodeGlobalIpv6),

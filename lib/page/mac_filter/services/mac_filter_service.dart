@@ -9,6 +9,7 @@ import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/generated/data_elements_network.g.dart';
 import 'package:privacy_gui/generated/mac_filter_network.g.dart';
 import 'package:privacy_gui/generated/mac_filter_network_operations.g.dart';
+import 'package:privacy_gui/page/_shared/services/mesh_topology_builder.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_node_identity.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_data.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_device_ui_model.dart';
@@ -51,7 +52,9 @@ class UspMacFilterService {
   /// locked out of its own network (PRODUCT_MANAGEMENT#124 REQ-10a). A node is
   /// recognised by the one rule in `mesh_node_identity.dart` — its `Hosts`
   /// PhysAddress is a DataElements node ID — because FL-WRT 2.0 has no
-  /// `DeviceRole` to exclude it by (#1688 item 3).
+  /// `DeviceRole` to exclude it by (#1688 item 3). The same test excludes the
+  /// nodes' backhaul stations (#1839): while an agent rejoins, its backhaul
+  /// station has a `Hosts` row that looks like any Wi-Fi client.
   Future<MacFilterFetchResult> fetchAll() async {
     try {
       final results = await Future.wait([
@@ -95,6 +98,11 @@ class UspMacFilterService {
   /// The node MACs DataElements reports, for excluding the nodes' own `Hosts`
   /// rows from [fetchAll]'s device list.
   ///
+  /// A node's MACs here are its ID and its backhaul stations
+  /// (`MeshTopologyBuilder.backhaulStationsOf`, #1839). An agent's backhaul
+  /// station has a `Hosts` row while the agent rejoins, and offering it would
+  /// let a user put a node's own interface on the block list.
+  ///
   /// **Never fails the page.** The node list only narrows the device picker, so
   /// a DataElements read that faults (a router without the subtree, a
   /// transport error) yields an empty set and the page still opens — the cost
@@ -103,7 +111,10 @@ class UspMacFilterService {
   Future<Set<String>> _fetchNodeMacs() async {
     try {
       final network = await DataElementsNetwork.fetch(_usp);
-      return meshNodeMacSet(network.items.map((n) => n.id));
+      return meshNodeMacSet([
+        ...network.items.map((n) => n.id),
+        ...MeshTopologyBuilder.backhaulStationsOf(network),
+      ]);
     } catch (e) {
       logger.w('[USP][MacFilter]: node list unavailable, no node excluded: $e');
       return const {};

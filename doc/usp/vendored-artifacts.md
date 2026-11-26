@@ -162,13 +162,37 @@ The YAML definitions are **not vendored** into this repo and individual definiti
   - a local session receives both.
   - Remote Assistance was not tried.
 
+**`connected_devices.g.dart` carries `X_LINKSYS_IsMeshNode` (#1443).**
+- **Source:** 0.19.0 output from `usp_framework` `main` @ `ff67c76`, the merge of linksys/usp_framework#124 (2026-11-23), taken with `git archive ff67c76 usp-definitions`.
+- **What the definition adds:** `connected_devices.yaml` 2.3.0 adds `linksysIsMeshNode` on `Device.Hosts.Host.{i}.X_LINKSYS_IsMeshNode`, a read-only, optional `boolean`. Firmware sets it when the row's MAC has been a DataElements `Device.{i}.ID` and never clears it, so the row keeps it while the node is offline and until the row ages out.
+- **What the file gains:** the field, its path in the `Device.Hosts.Host.*` batch, and a parse that reads `true`, `"true"` and `"1"` as true. It is null when the router leaves the leaf out.
+- **Consumer:** `MeshNetworkBuilder` builds an offline extender from a row that carries the flag and matches no DataElements agent, whether the row is active or not; the duration is counted only from an inactive row's `ActiveLastChange`.
+- **Where the app departs from the definition:** the definition's description reads an *active* row with true that no DataElements Device lists as a former node still on the LAN, not an offline node. The app reads that row as an offline node on its way back: a Linksys node that is factory reset and wired to the controller joins the mesh by itself, and a node that restarts is on the LAN before DataElements lists it again. `MeshNetworkBuilder`'s class doc gives the reasoning and the known limitation it costs (#1443).
+- **The rest of the output:** every other file the command writes is unchanged. `index.dart` comes out in a different order with the same exports and is left as checked in.
+- **Firmware side:** linksys/feed_usp#89 (hostmngr, merged 2026-11-23).
+  - Measured on a controller at `2.0.4.26112201` with an agent at `2.0.4.26111122` (#1443):
+    - the leaf reads 1 on the agent's row only;
+    - it stays 1 while the agent is powered off and across a controller reboot;
+    - it reads 0 until the agent is back in DataElements on the first boot after an upgrade from firmware without it.
+  - **Firmware without the leaf is out of scope** while FL-WRT 2.0 has not shipped (decided on #1443). That covers anything before linksys/feed_usp#89, such as `2.0.4.26111122`. On such a build it is not measured whether the `Device.Hosts.Host.*` batch still succeeds with the leaf absent. It could answer a per-path 7026 for the unknown path, which `UspClient.extractGetResult` leaves out, as measured for the optional DataElements leaves above. Or it could refuse the whole Get (`kind: request`); `ConnectedDevices.fetch` would then throw, and the device list, topology and dashboard would fail. Measure this before supporting such a build.
+
+**`connected_devices.g.dart` also carries `WANStats` (#1927).**
+- **Source:** 0.19.0 output from `usp_framework` `main` @ `d601860`, the merge of linksys/usp_framework#126 (2026-11-24), taken with `git archive d601860 usp-definitions`. It was first generated contract first from #126's head `fbe5a02`, on `main` @ `ff67c76` (the merge of #124). Only this file is taken: the same command also writes #125's temperature sensors into `system_info.g.dart`, which belongs to #1926 and is left as checked in, and reorders `index.dart`. When `dev-2.7.5` was merged in on 2026-11-26, after the #1443 output above, the file was generated again from `d601860` and from `main` @ `830e771` (#127 rewords `linksysIsMeshNode`'s description). Both gave this file byte for byte.
+- **What the definitions add:** `connected_devices.yaml` 2.4.0 (#126) adds `wanStatsBytesSent` / `wanStatsBytesReceived` on `.WANStats.BytesSent` / `.BytesReceived`. Both are read-only, optional `int`s: the bytes the row's MAC exchanged through the router, added once a connection ends. `linksysIsMeshNode` (2.3.0) is the #1443 field above.
+- **What the file gains:** against the #1443 output above, the two fields, the two paths in the table's one Get, and their `int.tryParse`.
+- **The rest of the output:** every other file the command writes is unchanged. `index.dart` comes out in a different order with the same exports and is left as checked in.
+- **Consumer:** `MeshNetworkBuilder` puts each row's counters on its `ClientDevice` / `ClientInterfaceInfo`. The device detail page shows their sum as Download / Upload.
+- **Bench, 2026-11-24 (M60, 2.0.4.26112201):** the exact Get `ConnectedDevices.fetch()` sends (35 paths) went through usp-bridge with the WASM client. Its four counters equal `obuspa -c get` two seconds later. Replayed through `UspClient.extractGetResult`, the generated `fetch()` and `MeshNetworkBuilder`, the same numbers reach both clients. Posted on PR #126.
+- **Recheck once #126 merges (#1927):**
+  1. ~~Regenerate `connected_devices.g.dart` from merged `main` and diff it against this output. Anything but a description is a contract change to read first.~~ **Done 2026-11-25** at `d601860`: byte-identical to the contract-first output. #126 merged at its head `fbe5a02`, and `connected_devices.yaml` is the same file.
+  2. ~~Confirm both leaves are still `optional`. A required counter would fail the whole table on firmware without `WANStats`.~~ **Done 2026-11-25:** both are `optional: true` in the merged YAML.
+  3. ~~Before #1927 closes, reboot the router and re-read the counters. The page's "Since the router last restarted" depends on what that shows (#1927 to-do 2).~~ **Done 2026-11-25:** the wired Mac's row read `BytesReceived` 169,930,579 before and 10,412 after the router restarted (twice in between, for reasons not known), so the caption stands. The readings are on #1927.
+
 **`system_info.g.dart` carries the temperature sensors (#1926).**
-- **Source:** 0.19.0 output from `usp_framework` `main` @ `d601860`, which holds linksys/usp_framework#125 (merged 2026-11-24), taken with `git archive d601860 usp-definitions`.
+- **Source:** 0.19.0 output from `usp_framework` `main` @ `d601860`, which holds linksys/usp_framework#125 (merged 2026-11-24), taken with `git archive d601860 usp-definitions`. When `dev-2.7.5` was merged in on 2026-11-26, generating from `main` @ `830e771` (#127) gave this file byte for byte.
 - **What the definition adds:** `system_info.yaml` 2.5.0 adds the child table `temperatureSensors` on `.TemperatureStatus.TemperatureSensor.`, with `name` (`.Name`) and `value` (`.Value`, an `int`). Both are read-only and optional. The table is read in the same Get as the rest of DeviceInfo.
 - **What the file gains:** `SystemInfoTemperatureSensor`, the `temperatureSensors` list (a required constructor parameter), the two wildcard paths and their parse. A hand-written `SystemInfo(...)` must now pass `temperatureSensors`. The one in `test/core/models/device_info_test.dart` passes `[]`.
-- **The rest of the output:** only this file is taken.
-  - `connected_devices.g.dart` comes out with #124's `linksysIsMeshNode` and #126's WANStats counters, which belong to #1443 and #1927. It is left as checked in.
-  - `index.dart` comes out in a different order with the same exports and is left as checked in.
+- **The rest of the output:** `connected_devices.g.dart` comes out byte for byte as #1927 checked it in (above). `index.dart` comes out in a different order with the same exports and is left as checked in.
 - **Consumer:** `UspSystemMonitorService.fetchSnapshot()` picks the row named `cpu-top-thermal` into `SystemSnapshot.cpuTemperatureCelsius`, and treats -274 as no reading. The Device Information card shows the latest snapshot's value.
 - **Bench, 2026-11-24 (M60, 2.0.4.26112201):** the exact Get `SystemInfo.fetch()` sends (19 paths) went through usp-bridge with the WASM client. It returned five rows with no per-path error, the same names `obuspa -c get` read, and values within 1 °C a second apart. Replayed through `UspClient.extractGetResult` and the generated `fetch()`, picking by name gave `cpu-top-thermal` = 50. Posted on PR #125.
 

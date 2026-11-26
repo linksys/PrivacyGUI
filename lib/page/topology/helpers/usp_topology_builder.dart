@@ -109,14 +109,22 @@ class UspTopologyBuilder {
       final normalizedDeviceId = normalizeMac(slave.deviceId);
       extenderNodeIdsNormalized.add(normalizedDeviceId);
       normalizedToOriginal[normalizedDeviceId] = slave.deviceId;
-      deviceIdToExtenderId[normalizedDeviceId] = extenderId;
+      // An offline extender (#1443) is no one's parent: it is not in the mesh,
+      // so a node still naming it reports a stale parent. Left out of the
+      // parent map, that node resolves as a miss and goes under the gateway
+      // (logged), instead of being drawn online beneath an offline node.
+      if (slave.isOnline) {
+        deviceIdToExtenderId[normalizedDeviceId] = extenderId;
+      }
 
       if (slave.dataElementsId != null && slave.dataElementsId!.isNotEmpty) {
         final normalizedDeMac = normalizeMac(slave.dataElementsId!);
         if (normalizedDeMac != normalizedDeviceId) {
           extenderNodeIdsNormalized.add(normalizedDeMac);
           normalizedToOriginal[normalizedDeMac] = slave.deviceId;
-          deviceIdToExtenderId[normalizedDeMac] = extenderId;
+          if (slave.isOnline) {
+            deviceIdToExtenderId[normalizedDeMac] = extenderId;
+          }
         }
       }
       parentQueries.add((

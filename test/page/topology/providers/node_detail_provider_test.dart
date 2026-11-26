@@ -100,6 +100,55 @@ void main() {
       container.dispose();
     });
 
+    // -----------------------------------------------------------------------
+    // Parent node
+    // -----------------------------------------------------------------------
+
+    group('parent node', () {
+      SlaveNode childOf(String parentId) => SlaveNode(
+            deviceId: 'AA:BB:CC:DD:EE:03',
+            dataElementsId: 'AA:BB:CC:DD:EE:03',
+            model: 'MX5500',
+            backhaul: BackhaulInfo(linkType: 'Wi-Fi', parentNodeId: parentId),
+          );
+
+      DevicesData meshWith(SlaveNode parent) => DevicesData(
+            meshNetwork: MeshNetwork(
+              master: masterNode,
+              slaves: [parent, childOf(parent.deviceId)],
+            ),
+          );
+
+      test('resolves an online parent', () async {
+        final parent =
+            extenderNode.copyWith(dataElementsId: extenderNode.deviceId);
+        final container = createContainer(data: meshWith(parent));
+        await container.read(devicesDataProvider.future);
+
+        final detail =
+            container.read(uspNodeDetailProvider('AA:BB:CC:DD:EE:03'));
+
+        expect(detail.parentNode?.deviceId, parent.deviceId);
+        container.dispose();
+      });
+
+      // #1443: a node still naming an extender that went offline reports a
+      // stale parent. The topology draws it under the gateway, so its page
+      // does not claim a link to the offline node either.
+      test('does not resolve an offline parent', () async {
+        final container = createContainer(data: meshWith(extenderNode));
+        await container.read(devicesDataProvider.future);
+        expect(extenderNode.isOnline, isFalse);
+
+        final detail =
+            container.read(uspNodeDetailProvider('AA:BB:CC:DD:EE:03'));
+
+        expect(detail.node, isNotNull);
+        expect(detail.parentNode, isNull);
+        container.dispose();
+      });
+    });
+
     test('returns node and connected devices for extender node', () async {
       final meshData = createMeshData();
       final container = createContainer(data: meshData);
