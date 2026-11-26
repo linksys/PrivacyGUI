@@ -109,6 +109,21 @@ final pollingProvider =
 /// raise it again once that route is gone - which a settled flag could not.
 final routerUnreachableProvider = StateProvider<int>((ref) => 0);
 
+/// "A poll completed": what a feature that reads after each poll listens to,
+/// with `ref.listen`, instead of being called by polling (#1834).
+///
+/// It counts up once for each successful poll, right after [pollingProvider]
+/// has published that poll's result. It promises three things:
+/// - **Once per successful poll.** A failed poll does not move it, nor does a
+///   client signal merge into the poll's data, nor a poll that outlived its run
+///   (polling was stopped or paused while it was on the wire, as a logout
+///   does).
+/// - **`isReady` does not wait for its listeners.** A poll is ready once the
+///   core transaction and polling's own reads are in.
+/// - **A listener's failure stays with the listener.** It never reaches
+///   polling's error state, nor its count towards the router's silence.
+final pollCompletedProvider = StateProvider<int>((ref) => 0);
+
 class CoreTransactionData extends Equatable {
   final int lastUpdate;
   final bool isReady;
@@ -433,6 +448,9 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
         _clearRouterSilence();
       } else {
         _recordPollFailure(repository);
+      }
+      if (!result.hasError) {
+        ref.read(pollCompletedProvider.notifier).state++;
       }
     }
 

@@ -1794,6 +1794,113 @@ void main() {
     });
   });
 
+  group('the poll completed signal (#1834)', () {
+    // The one thing a feature that reads after a poll listens to. See
+    // [pollCompletedProvider] for what it promises.
+    int completed() => container.read(pollCompletedProvider);
+
+    testWidgets('moves once per successful poll, after the poll is published',
+        (tester) async {
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction((_) => transactionSuccess());
+      final readyWhenSignalled = <bool>[];
+      container.listen(
+          pollCompletedProvider,
+          (_, __) => readyWhenSignalled
+              .add(container.read(pollingProvider).value?.isReady ?? false));
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      expect(completed(), 1);
+      await advanceOneTick(tester);
+      expect(completed(), 2);
+      expect(readyWhenSignalled, [true, true],
+          reason: 'each time, the poll had been published first');
+
+      await stopAndSettle(tester);
+    });
+
+    testWidgets('a failed poll does not move it', (tester) async {
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction((n) async {
+        if (n == 2) throw const JNAPError(result: '_ErrorUnexpected');
+        return transactionSuccess();
+      });
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      await advanceOneTick(tester);
+
+      expect(container.read(pollingProvider).hasError, isTrue);
+      expect(completed(), 1, reason: 'only the first poll succeeded');
+
+      await stopAndSettle(tester);
+    });
+
+    testWidgets('a poll answered after polling stops does not move it',
+        (tester) async {
+      // A logout stops polling while a poll may be on the wire; whatever
+      // listens must not read for a session that has ended.
+      final onTheWire = Completer<JNAPTransactionSuccessWrap>();
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction((_) => onTheWire.future);
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      notifier.stopPolling();
+      onTheWire.complete(transactionSuccess());
+      await tester.pump();
+      await tester.pump();
+
+      expect(completed(), 0);
+    });
+
+    testWidgets('a client signal merge does not move it', (tester) async {
+      final helper = serviceHelper as MockServiceHelper;
+      when(helper.isSupportNodesNetworkConnections()).thenReturn(true);
+      addTearDown(() => reset(helper));
+      whenSend((action) async => action ==
+              JNAPAction.getNodesWirelessNetworkConnections
+          ? JNAPSuccess(result: 'OK', output: const {
+              'nodeWirelessConnections': [
+                {
+                  'deviceID': 'node',
+                  'connections': [
+                    {'macAddress': 'AA:BB:CC:DD:EE:FF', 'signal': -60}
+                  ],
+                }
+              ],
+            })
+          : action == JNAPAction.getDeviceMode
+              ? deviceMode('Master')
+              : JNAPSuccess(result: 'OK', output: const {}));
+      whenTransaction((_) => transactionSuccess());
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      expect(completed(), 1);
+
+      final done = notifier.refreshClientSignals();
+      await advance(
+          tester,
+          const Duration(
+              seconds:
+                  clientSignalRereadDelayInSec * clientSignalRereadCount + 1));
+      await done;
+
+      expect(
+          sends.where(
+              (a) => a == JNAPAction.getNodesWirelessNetworkConnections),
+          hasLength(clientSignalRereadCount),
+          reason: 'the re-reads were merged');
+      expect(completed(), 1);
+
+      notifier.stopPolling();
+      notifier.init();
+      await tester.pump();
+    });
+  });
+
   group("the features' reads after a poll (#1834 P0)", () {
     // The net for #1834, which moves these reads out of polling and into the
     // features, as listeners of a "poll completed" signal. Each test goes
