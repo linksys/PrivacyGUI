@@ -533,24 +533,27 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
   /// Writes the name and icon the user gave a client (#1691), then reads the
   /// devices back so every surface shows what the router now holds.
   ///
-  /// [hostInstancePaths] is every Hosts row of the device
-  /// ([ClientDevice.hostInstancePaths]), so a merged device stays merged
-  /// (#1719).
+  /// [macs] are the MACs of every Hosts row of the device
+  /// ([ClientDevice.hostRowMacs]), so a merged device stays merged (#1719).
+  /// The rows are looked up by MAC when the name is written, not taken from
+  /// the row numbers this provider holds: those can name another device by
+  /// then (#1840).
   ///
   /// A refused write is thrown for the caller to report. A read-back that
   /// fails after a successful write is not: the save happened, so the failure
   /// is logged by the refetch, the list keeps its previous value, and the next
   /// push corrects it.
   Future<void> updateIdentity({
-    required List<String> hostInstancePaths,
+    required List<String> macs,
     required String name,
     String? userTypeCode,
   }) async {
-    // Only the write takes the lock (constitution Art. IV Rule 3); the
-    // read-back stays outside it, as the DHCP mutations do.
+    // Only the write takes the lock (constitution Art. IV Rule 3), with the
+    // read of the rows it writes to; the read-back stays outside it, as the
+    // DHCP mutations do.
     await ref.read(uspMutationLockProvider).withLock(
           () => ref.read(uspDevicesDataServiceProvider).updateIdentity(
-                hostInstancePaths: hostInstancePaths,
+                macs: macs,
                 name: name,
                 userTypeCode: userTypeCode,
               ),

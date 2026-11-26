@@ -690,6 +690,7 @@
   "errorNetwork": "Verkkovirhe. Tarkista yhteytesi ja yritä uudelleen.",
   "errorNotAuthenticated": "Et ole kirjautunut sisään. Kirjaudu sisään ja yritä uudelleen.",
   "errorResourceNotFound": "Pyydettyä asetusta ei löytynyt reitittimestä.",
+  "errorDeviceNotOnNetwork": "Tämä laite ei ole enää verkossa. Päivitä sivu ja yritä uudelleen.",
   "errorServiceNotReady": "Palvelu ei ole vielä valmis. Yritä hetken kuluttua uudelleen.",
   "errorSessionExpired": "Istuntosi on vanhentunut. Kirjaudu sisään uudelleen.",
   "errorTimeout": "Toiminto aikakatkaistiin. Yritä uudelleen.",

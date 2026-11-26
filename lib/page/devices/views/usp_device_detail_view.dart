@@ -166,7 +166,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                         name: device.displayName,
                         editLabel: loc(context).editDevice,
                         identifier: 'device-detail-edit-identity',
-                        onEdit: device.hostInstancePaths.isEmpty
+                        onEdit: device.hostRowMacs.isEmpty
                             ? null
                             : () => _editIdentity(context, ref, device),
                       ),
@@ -898,7 +898,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
         detectedName: device.detectedName ?? device.hostName,
         onSave: (name, category) =>
             ref.read(devicesDataProvider.notifier).updateIdentity(
-                  hostInstancePaths: device.hostInstancePaths,
+                  macs: device.hostRowMacs,
                   name: name,
                   userTypeCode: category?.userTypeCode,
                 ),

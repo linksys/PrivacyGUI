@@ -693,6 +693,7 @@
   "errorNetwork": "网络错误。请检查您的连接后重试。",
   "errorNotAuthenticated": "您尚未登录。请登录后重试。",
   "errorResourceNotFound": "在路由器上找不到请求的设置。",
+  "errorDeviceNotOnNetwork": "此设备已不在网络中，请刷新页面后重试。",
   "errorServiceNotReady": "服务尚未就绪。请稍后重试。",
   "errorSessionExpired": "您的会话已过期。请重新登录。",
   "errorTimeout": "操作超时。请重试。",

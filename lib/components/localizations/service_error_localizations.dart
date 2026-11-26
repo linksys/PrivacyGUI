@@ -38,6 +38,7 @@ String localizeServiceError(BuildContext context, Object error) {
     InvalidSessionTokenError() => l.errorInvalidSessionToken,
     UnauthorizedError() => l.errorUnauthorized,
     ResourceNotFoundError() => l.errorResourceNotFound,
+    DeviceNotOnNetworkError() => l.errorDeviceNotOnNetwork,
     InvalidInputError() => l.errorInvalidInput,
     NetworkError() => l.errorNetwork,
     ConnectivityError() => l.errorConnectivity,

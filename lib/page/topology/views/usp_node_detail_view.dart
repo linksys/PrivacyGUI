@@ -166,11 +166,13 @@ class UspNodeDetailView extends ConsumerWidget {
   /// Names an agent (#1688 item 4): its own Hosts row's
   /// `X_LINKSYS_UserDeviceLocation`, written as a client's name is, with no
   /// icon. `X_LINKSYS_FriendlyName` reads the name back, so the read-back
-  /// `updateIdentity` runs is what shows the new name. The dialog saves and
-  /// shows its own progress and errors; this page only confirms a finished
-  /// save.
-  Future<void> _editAgentName(BuildContext context, WidgetRef ref,
-      SlaveNode node, String hostInstancePath) async {
+  /// `updateIdentity` runs is what shows the new name. The row is the one
+  /// that carries the node's MAC when the name is saved, not
+  /// [SlaveNode.hostInstancePath]: rows renumber while a node rejoins (#1840).
+  /// The dialog saves and shows its own progress and errors; this page only
+  /// confirms a finished save.
+  Future<void> _editAgentName(
+      BuildContext context, WidgetRef ref, SlaveNode node) async {
     final saved = await showAppDialog<bool>(
       context: context,
       builder: (_) => DeviceIdentityEditDialog(
@@ -180,7 +182,7 @@ class UspNodeDetailView extends ConsumerWidget {
         showIcon: false,
         onSave: (name, _) => ref
             .read(devicesDataProvider.notifier)
-            .updateIdentity(hostInstancePaths: [hostInstancePath], name: name),
+            .updateIdentity(macs: [node.deviceId], name: name),
       ),
     );
     if (saved == true && context.mounted) {
@@ -295,9 +297,10 @@ class UspNodeDetailView extends ConsumerWidget {
                         onEdit: switch (node) {
                           MasterNode() => () =>
                               _editRouterName(context, ref, node),
-                          SlaveNode(:final hostInstancePath?) => () =>
-                              _editAgentName(
-                                  context, ref, node, hostInstancePath),
+                          // A node with no Hosts row has nothing to write the
+                          // name to.
+                          SlaveNode(hostInstancePath: _?) => () =>
+                              _editAgentName(context, ref, node),
                           SlaveNode() => null,
                         },
                       ),

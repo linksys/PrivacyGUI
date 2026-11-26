@@ -692,6 +692,7 @@
   "errorNetwork": "Netwerkfout. Controleer uw verbinding en probeer het opnieuw.",
   "errorNotAuthenticated": "U bent niet aangemeld. Meld u aan en probeer het opnieuw.",
   "errorResourceNotFound": "De gevraagde instelling kon niet op de router worden gevonden.",
+  "errorDeviceNotOnNetwork": "Dit apparaat is niet meer op het netwerk. Vernieuw de pagina en probeer het opnieuw.",
   "errorServiceNotReady": "De service is nog niet gereed. Probeer het zo dadelijk opnieuw.",
   "errorSessionExpired": "Uw sessie is verlopen. Meld u opnieuw aan.",
   "errorTimeout": "De bewerking is verlopen. Probeer het opnieuw.",
