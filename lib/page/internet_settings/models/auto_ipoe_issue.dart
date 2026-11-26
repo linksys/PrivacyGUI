@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:equatable/equatable.dart';
 import 'package:http/http.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
@@ -201,7 +199,7 @@ class AutoIPoEIssueMapper {
     final fallbackError = _firstText(
       effectiveError is ServiceError ? effectiveError.detail : null,
       notStarted ? 'ApplyNotStarted' : null,
-      effectiveError is TimeoutException ? 'Timeout' : null,
+      effectiveError is TimeoutError ? 'Timeout' : null,
       effectiveError is ClientException ? 'ConnectionInterrupted' : null,
       effectiveError is ConnectivityError ? 'ApplyOutcomeUnknown' : null,
       effectiveError?.runtimeType.toString(),
@@ -220,7 +218,7 @@ class AutoIPoEIssueMapper {
         ? false
         : explicitRetryable ??
             explicitCategory?.toLowerCase().contains('retry') == true ||
-                effectiveError is TimeoutException ||
+                effectiveError is TimeoutError ||
                 effectiveError is ClientException ||
                 effectiveError is ConnectivityError ||
                 _containsAny(normalized, _retryableTokens);

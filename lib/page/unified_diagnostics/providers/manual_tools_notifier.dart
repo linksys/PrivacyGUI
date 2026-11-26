@@ -128,12 +128,6 @@ class ManualToolsNotifier
         status: DiagnosticStatus.completed,
         pingResult: pingResult,
       ));
-    } on TimeoutException catch (e) {
-      logger.w('[USP][Diagnostics]: Ping timeout: $e');
-      state = AsyncData(state.requireValue.copyWith(
-        status: DiagnosticStatus.error,
-        error: TimeoutError(detail: e.toString()),
-      ));
     } on ServiceError catch (e) {
       logger.w('[USP][Diagnostics]: Ping failed: $e');
       state = AsyncData(state.requireValue.copyWith(
@@ -174,12 +168,6 @@ class ManualToolsNotifier
       state = AsyncData(state.requireValue.copyWith(
         status: DiagnosticStatus.completed,
         tracerouteResult: traceResult,
-      ));
-    } on TimeoutException catch (e) {
-      logger.w('[USP][Diagnostics]: Traceroute timeout: $e');
-      state = AsyncData(state.requireValue.copyWith(
-        status: DiagnosticStatus.error,
-        error: TimeoutError(detail: e.toString()),
       ));
     } on ServiceError catch (e) {
       logger.w('[USP][Diagnostics]: Traceroute failed: $e');
@@ -223,12 +211,6 @@ class ManualToolsNotifier
       state = AsyncData(state.requireValue.copyWith(
         status: DiagnosticStatus.completed,
         nsLookupResult: lookupResult,
-      ));
-    } on TimeoutException catch (e) {
-      logger.w('[USP][Diagnostics]: NS Lookup timeout: $e');
-      state = AsyncData(state.requireValue.copyWith(
-        status: DiagnosticStatus.error,
-        error: TimeoutError(detail: e.toString()),
       ));
     } on ServiceError catch (e) {
       logger.w('[USP][Diagnostics]: NS Lookup failed: $e');

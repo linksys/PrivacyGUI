@@ -3,7 +3,7 @@
 // THE DECISION GUARDED. Guardian publishes a diagnostic's `OperationComplete` push
 // **at most once and never retries it**, and it closes every stream at ~10 minutes.
 // So a diagnostic straddling that boundary loses its result with nothing to notice:
-// the caller sees a `TimeoutException` and the result sits in DynamoDB, readable, for
+// the caller sees a `TimeoutError` and the result sits in DynamoDB, readable, for
 // the whole retention window. `GET /usp/results?commandKey=` is that read, and this
 // file pins the three claims that make it worth having:
 //
@@ -48,6 +48,7 @@ import 'dart:async';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/sse_manager.dart';
 import 'package:privacy_gui/core/usp/services/sse_operation_awaiter.dart';
 import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
@@ -202,7 +203,7 @@ void main() {
     test('an empty array still times out, with no retry', () async {
       await connectManager();
 
-      await expectLater(runDiagnostic(), throwsA(isA<TimeoutException>()));
+      await expectLater(runDiagnostic(), throwsA(isA<TimeoutError>()));
 
       // Exactly one read: an empty array is a definitive answer, because the index
       // is a strongly-consistent LSI. A retry loop here would be reads spent to
@@ -219,7 +220,7 @@ void main() {
       when(() => mockBridge.results(any()))
           .thenThrow(StateError('no RemoteReads on this transport'));
 
-      await expectLater(runDiagnostic(), throwsA(isA<TimeoutException>()));
+      await expectLater(runDiagnostic(), throwsA(isA<TimeoutError>()));
     });
 
     test('a diagnostic against an OFFLINE device still reconciles', () async {
@@ -252,7 +253,7 @@ void main() {
       when(() => mockBridge.results('key-abc'))
           .thenAnswer((_) async => [_storedEnvelope('key-SOMEONE-ELSE')]);
 
-      await expectLater(runDiagnostic(), throwsA(isA<TimeoutException>()));
+      await expectLater(runDiagnostic(), throwsA(isA<TimeoutError>()));
     });
 
     test('a matching row is taken even when a foreign one is served first',
@@ -300,12 +301,12 @@ void main() {
     });
 
     test('a diagnostic that already timed out is not read again', () async {
-      // Once the caller has its `TimeoutException`, the operation is over: nobody
+      // Once the caller has its `TimeoutError`, the operation is over: nobody
       // is awaiting it, so a later reopen that reads it anyway is a Guardian read
       // per reopen, for ever — Guardian closes every stream at ~10 minutes, so that
       // is an interval read in all but name.
       await connectManager();
-      await expectLater(runDiagnostic(), throwsA(isA<TimeoutException>()));
+      await expectLater(runDiagnostic(), throwsA(isA<TimeoutError>()));
       verify(() => mockBridge.results('key-abc')).called(1);
 
       await reopenStream();
@@ -361,8 +362,7 @@ void main() {
 
     test('a diagnostic that already timed out is not read again', () async {
       await connectManager();
-      await expectLater(
-          runDiagnosticInSession(), throwsA(isA<TimeoutException>()));
+      await expectLater(runDiagnosticInSession(), throwsA(isA<TimeoutError>()));
       verify(() => mockBridge.results('key-abc')).called(1);
 
       await reopenStream();
@@ -454,7 +454,7 @@ void main() {
     //
     // A `String`, not an `Exception`, because that is what the USP layer throws across
     // the Wasm boundary — and it is also why `_operateWithRetry` does not swallow it:
-    // that method catches `TimeoutException` alone, so a refusal is not re-fired.
+    // that method catches its own ack timeout alone, so a refusal is not re-fired.
     await connectManager();
     when(() => mockUsp.operate(any(), args: any(named: 'args')))
         .thenThrow('Operate failed: Operation error: refused (code: 7004)');

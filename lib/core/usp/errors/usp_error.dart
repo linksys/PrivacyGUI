@@ -290,10 +290,19 @@ bool isUspClientFaultCode(int code) => code >= 9997 && code <= 9999;
 /// client's own 9997–9999 — so the function itself is live even though its string
 /// arms are not. See [_mapOperationError].
 ///
+/// ### Already a [ServiceError]
+///
+/// Returned unchanged. `lib/core/usp/` raises a few itself — the mutation lock's,
+/// the operation awaiter's and the request throttler's timeouts are
+/// [TimeoutError] (#1831) — and a service that maps everything it catches must
+/// not turn one into an [UnexpectedError]: every USP GET goes through the
+/// throttler, and most read services hand whatever they catch to this function.
+///
 /// **Warning**: anything not matched above falls through to NetworkError
 /// (transport) or UnexpectedError (auth/protocol/unparseable). If source
 /// strings/codes change, update this table AND the contract tests together.
 ServiceError mapUspErrorToServiceError(Object error) {
+  if (error is ServiceError) return error;
   final parsed = parseUspError(error);
   if (parsed == null) {
     final result = UnexpectedError(originalError: error);
