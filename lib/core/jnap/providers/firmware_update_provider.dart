@@ -168,7 +168,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
           : JNAPAction.updateFirmwareNow;
       // A check that continues an install the user has logged out of since
       // asks nothing.
-      if (auth.logoutGeneration != generation) {
+      if (auth.loggedOutSince(generation)) {
         throw const LoggedOutException();
       }
       await repository
@@ -299,7 +299,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     // a debug build refuses a `ref.read` from it until it has rebuilt.
     final auth = ref.read(authProvider.notifier);
     final generation = logoutGeneration ?? auth.logoutGeneration;
-    bool loggedOut() => auth.logoutGeneration != generation;
+    bool loggedOut() => auth.loggedOutSince(generation);
     void recordDone() => SharedPreferences.getInstance().then((pref) {
           pref.setBool(pFWUpdated, true);
         });

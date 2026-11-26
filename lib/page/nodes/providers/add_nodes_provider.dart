@@ -27,9 +27,11 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
   /// for on its own is not tied to a login.
   int? _logoutGeneration;
 
-  bool get _loggedOut =>
-      _logoutGeneration != null &&
-      ref.read(authProvider.notifier).logoutGeneration != _logoutGeneration;
+  bool get _loggedOut {
+    final generation = _logoutGeneration;
+    return generation != null &&
+        ref.read(authProvider.notifier).loggedOutSince(generation);
+  }
 
   Future<bool> getAutoOnboardingSettings() {
     return ref

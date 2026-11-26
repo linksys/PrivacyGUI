@@ -273,8 +273,7 @@ class RouterRepository {
     bool exceedMaxRetry = true;
     void endIfLoggedOut() {
       if (logoutGeneration != null &&
-          ref.read(authProvider.notifier).logoutGeneration !=
-              logoutGeneration) {
+          ref.read(authProvider.notifier).loggedOutSince(logoutGeneration)) {
         logger.d('SCHEDULED COMMAND: command {$action}: logged out, STOP!');
         throw const LoggedOutException();
       }

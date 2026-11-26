@@ -27,9 +27,11 @@ class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
   /// a logout, and so does the flow. Null while no flow runs.
   int? _logoutGeneration;
 
-  bool get _loggedOut =>
-      _logoutGeneration != null &&
-      ref.read(authProvider.notifier).logoutGeneration != _logoutGeneration;
+  bool get _loggedOut {
+    final generation = _logoutGeneration;
+    return generation != null &&
+        ref.read(authProvider.notifier).loggedOutSince(generation);
+  }
 
   Future<void> setAutoOnboardingSettings(bool enabled) {
     return ref
