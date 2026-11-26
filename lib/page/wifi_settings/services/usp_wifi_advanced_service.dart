@@ -178,21 +178,17 @@ class UspWifiAdvancedService {
 
   /// Sends [params] as one Set and says whether the router answered.
   ///
-  /// Returns [WifiWriteOutcome.unanswered] when every error says the request
-  /// never got an answer: the Wi-Fi restart can take the reply with it, and
-  /// over Remote Assistance #1460's DFS Set took 35.4 s and had applied when
-  /// the app reported a failure. A refusal, whole or in part, throws.
+  /// Returns [WifiWriteOutcome.unanswered] when the request never got an
+  /// answer: the Wi-Fi restart can take the reply with it, and over Remote
+  /// Assistance #1460's DFS Set took 35.4 s and had applied when the app
+  /// reported a failure. `UspClient` throws that write (#1666) and its message
+  /// says so ([isUnansweredWifiWrite]); a 401 is thrown the same way and still
+  /// fails. A refusal, whole or in part, throws.
   Future<WifiWriteOutcome> _writeOnce(Map<String, dynamic> params) async {
     if (params.isEmpty) return WifiWriteOutcome.confirmed;
     try {
       final result = await _usp.set(params, allowPartial: true);
       final parsed = UspResultParser.parseSetResult(result);
-      if (parsed is UspFailure &&
-          parsed.errors.every((e) => isUnansweredWifiWrite(e.errorMessage))) {
-        logger.i('[USP][WiFi][Advanced]: Set unanswered — Wi-Fi restarted '
-            'under the request');
-        return WifiWriteOutcome.unanswered;
-      }
       switch (parsed) {
         case UspSuccess():
           return WifiWriteOutcome.confirmed;
@@ -210,6 +206,11 @@ class UspWifiAdvancedService {
       }
     } catch (e) {
       if (e is ServiceError) rethrow;
+      if (isUnansweredWifiWrite(e.toString())) {
+        logger.i('[USP][WiFi][Advanced]: Set unanswered — Wi-Fi restarted '
+            'under the request');
+        return WifiWriteOutcome.unanswered;
+      }
       throw mapUspErrorToServiceError(e);
     }
   }

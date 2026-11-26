@@ -80,8 +80,8 @@ class UspIpv6PortServiceService {
 
       // Delete in reverse instance order to avoid firmware renumbering issues
       for (final r in toDelete.reversed) {
-        final result =
-            await Ipv6PortService.deleteRules(_usp, [r.instancePath!]);
+        final result = await writeOrUnanswered(
+            () => Ipv6PortService.deleteRules(_usp, [r.instancePath!]));
         tally.record('Delete', UspResultParser.parseDeleteResult(result));
       }
 
@@ -114,7 +114,8 @@ class UspIpv6PortServiceService {
       }
 
       if (toUpdate.isNotEmpty) {
-        final result = await Ipv6PortService.updateRules(_usp, toUpdate);
+        final result = await writeOrUnanswered(
+            () => Ipv6PortService.updateRules(_usp, toUpdate));
         tally.record('Update', UspResultParser.parseSetResult(result));
       }
 
@@ -122,24 +123,24 @@ class UspIpv6PortServiceService {
       final toAdd = current.where((r) => r.instancePath == null).toList();
       if (toAdd.isNotEmpty) {
         final chainPath = await _defaultChainPath();
-        final result = await Ipv6PortService.addRules(
-          _usp,
-          toAdd
-              .map((r) => Ipv6PortServiceRuleAdd(
-                    parentInstancePath: chainPath,
-                    enable: r.enabled,
-                    description: r.description,
-                    ipVersion: 6,
-                    destIp: r.ipv6Address,
-                    destPort: r.startPort,
-                    destPortRangeMax: r.endPort,
-                    protocol: mapDisplayToIana(r.protocol),
-                    // FW runs its checks when Target is written, so it goes
-                    // last.
-                    target: 'Accept',
-                  ))
-              .toList(),
-        );
+        final result = await writeOrUnanswered(() => Ipv6PortService.addRules(
+              _usp,
+              toAdd
+                  .map((r) => Ipv6PortServiceRuleAdd(
+                        parentInstancePath: chainPath,
+                        enable: r.enabled,
+                        description: r.description,
+                        ipVersion: 6,
+                        destIp: r.ipv6Address,
+                        destPort: r.startPort,
+                        destPortRangeMax: r.endPort,
+                        protocol: mapDisplayToIana(r.protocol),
+                        // FW runs its checks when Target is written, so it
+                        // goes last.
+                        target: 'Accept',
+                      ))
+                  .toList(),
+            ));
         await tally.recordAdd(_usp, 'Add', result);
       }
 

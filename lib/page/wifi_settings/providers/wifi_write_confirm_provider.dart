@@ -176,7 +176,9 @@ final wifiWriteConfirmProvider = Provider<WifiWriteConfirm>((ref) {
         },
         timeout: window,
       );
-    } on TimeoutException {
+      // The window running out is the lock's `TimeoutError` (#1831); no Wi-Fi
+      // send raises one of its own, so this arm is "no answer", not a fault.
+    } on TimeoutError {
       logger.i('[USP][WiFi]: write not answered within ${window.inSeconds}s '
           '— reading the router back');
     }

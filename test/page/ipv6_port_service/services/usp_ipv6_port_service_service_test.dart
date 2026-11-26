@@ -563,6 +563,33 @@ void main() {
           .called(1);
     });
 
+    // The router never answered the Set (#1666): the client throws it, and the
+    // batch records it as one failed step. The Delete before it landed, so the
+    // save is a partial failure (the page reads the router back), and the Add
+    // after it is still sent.
+    test(
+        'a Delete that landed, then an Update the router never answered: '
+        'a partial failure', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenThrow(UspEnvelopeTestData.unansweredWrite('Set'));
+
+      await expectLater(
+        service.saveBatch(
+          original: [
+            _ui(instancePath: 'p.27.', description: 'Gone'),
+            _ui(),
+          ],
+          current: [
+            _ui(enabled: false),
+            _ui(instancePath: null, description: 'New', startPort: 9000),
+          ],
+        ),
+        throwsA(isA<UspPartialFailureError>()),
+      );
+      verify(() => mockUsp.delete(['p.27.'])).called(1);
+      verify(() => mockUsp.add(any())).called(1);
+    });
+
     test('a refused Delete does not keep the other steps from being sent',
         () async {
       when(() => mockUsp.delete(any())).thenAnswer(

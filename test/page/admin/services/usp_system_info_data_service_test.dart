@@ -4,6 +4,7 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/admin/services/usp_system_info_data_service.dart';
 
+import '../../../mocks/test_data/system_monitor_test_data.dart';
 import '../../../mocks/test_data/usp_envelope_test_data.dart';
 
 class MockUspClient extends Mock implements UspClient {}
@@ -141,6 +142,30 @@ void main() {
           .thenThrow('Get failed: Transport error: Request timeout');
 
       expect(() => svc.fetch(), throwsA(isA<NetworkError>()));
+    });
+  });
+
+  // The session cache reads the sensors too, so the dashboard's first
+  // snapshot, pushed from it at login and on every refresh, keeps the
+  // temperature instead of blanking the card until the next poll (#1926).
+  group('UspSystemInfoDataService — CPU temperature (#1926)', () {
+    void stubSensors(Map<String, String> sensors) {
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((_) async {
+        final paths = _.positionalArguments[0] as List;
+        if (paths.any((p) => p.toString().contains('Manufacturer'))) {
+          return {...systemInfoResponse, ...sensors};
+        }
+        return firmwareImagesResponse;
+      });
+    }
+
+    test('carries the cpu-top-thermal row into the UI model', () async {
+      stubSensors(SystemMonitorTestData.benchTemperatureSensors());
+
+      final model = await svc.fetch();
+
+      expect(model.cpuTemperatureCelsius, 50);
     });
   });
 

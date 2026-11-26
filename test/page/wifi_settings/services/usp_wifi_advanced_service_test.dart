@@ -37,12 +37,8 @@ Map<String, dynamic> _setFailure({
       success: false,
     );
 
-/// A per-path SET error whose request never got an answer.
-Map<String, dynamic> _setUnanswered() => UspEnvelopeTestData.failedAsAWhole(
-      ['Device.WiFi.Radio.1.IEEE80211hEnabled'],
-      errorCode: 9999,
-      errorMessage: 'Transport error: Failed to fetch',
-    );
+/// A SET whose request never got an answer: `UspClient` throws it (#1666).
+Object _setUnanswered() => UspEnvelopeTestData.unansweredWrite('Set');
 
 void main() {
   late MockUspClient mockUsp;
@@ -193,7 +189,7 @@ void main() {
 
     test('a lost reply is "unanswered", for the caller to read back', () async {
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => _setUnanswered());
+          .thenThrow(_setUnanswered());
       final plan = svc.planSave(
           original: off,
           current: off.copyWith(ieee80211hByRadio: {

@@ -13,8 +13,8 @@ import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_settings_servic
 /// arrives is read back from the router before it is called a failure.
 ///
 /// Driven through the REAL [UspMutationLock] with a short answer window, so the
-/// lock's own `TimeoutException` — the exact thing #1460 tripped at 30 s — is
-/// what the tests exercise. A stand-in lock would hide it.
+/// lock's own timeout — the exact thing #1460 tripped at 30 s, a `TimeoutError`
+/// since #1831 — is what the tests exercise. A stand-in lock would hide it.
 void main() {
   const params = {'Device.WiFi.SSID.1.SSID': 'NewHome'};
   WifiWritePlan plan(Future<WifiWriteOutcome> Function() send,

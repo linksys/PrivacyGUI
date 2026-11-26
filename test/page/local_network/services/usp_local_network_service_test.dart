@@ -719,19 +719,24 @@ void main() {
       });
     });
 
-    test('save on IP change treats a transport error as success', () async {
+    test(
+        'save on IP change reports a SET that failed before the timeout '
+        '(#1666)', () async {
       stubLanGets();
+      // Only no answer within the timeout is the router dropping the
+      // connection it applied the new address on (the timeout test above). A
+      // request that fails early does not prove the SET arrived, so it is
+      // reported — what the user saw while the client still returned this
+      // failure in the envelope. Since #1666 `UspClient` throws it.
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenThrow('Set failed: Transport error: Connection refused');
+          .thenThrow(UspEnvelopeTestData.unansweredWrite('Set'));
 
-      // A transport error on an IP-changing SET is the disconnect signature →
-      // success. (Contrast with the hostName-only case above, which surfaces.)
       await expectLater(
         service.save(
           original: _model(ipAddress: '192.168.1.1'),
           pending: _model(ipAddress: '192.168.2.1'),
         ),
-        completes,
+        throwsA(isA<NetworkError>()),
       );
     });
 

@@ -8,6 +8,7 @@ import 'package:privacy_gui/generated/data_elements_network_operations.g.dart';
 import 'package:privacy_gui/generated/device_operations.g.dart';
 import 'package:privacy_gui/generated/time_settings.g.dart';
 import 'package:privacy_gui/generated/time_settings_operations.g.dart';
+import 'package:privacy_gui/page/_shared/services/batch_tally.dart';
 import 'package:privacy_gui/page/_shared/services/empty_row.dart';
 import 'package:privacy_gui/page/_shared/models/timezone_info.dart';
 import 'package:privacy_gui/page/admin/models/admin_ui_models.dart';
@@ -160,7 +161,10 @@ class UspAdminService {
       }
       if (ntpServer1 != null) {
         _check(
-          await TimeSettings.update(_usp, ntpServer1: ntpServer1),
+          // An unanswered Set still reaches `_check` as the failure it was
+          // before #1666, so the note that the zone already landed survives.
+          await writeOrUnanswered(
+              () => TimeSettings.update(_usp, ntpServer1: ntpServer1)),
           // The zone is already saved by this point, and nothing rolls it back.
           alreadyApplied: zone != null ? 'timezone' : null,
         );

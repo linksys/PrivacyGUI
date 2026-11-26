@@ -636,6 +636,50 @@ void main() {
     });
   });
 
+  // Data used (#1927): FL-WRT 2.0 counts per Hosts row, so a device shown
+  // across interfaces adds up the counters of every row it merges.
+  group('ClientDevice data used (#1927)', () {
+    test('adds up the counters of every interface', () {
+      final device = DevicesTestData.createWifiClient().copyWith(
+        bytesReceived: 3000,
+        bytesSent: 400,
+        additionalInterfaces: [
+          DevicesTestData.createWiredInterface(
+            isActive: false,
+            bytesReceived: 2000,
+            bytesSent: 100,
+          ),
+        ],
+      );
+
+      expect(device.totalBytesReceived, 5000);
+      expect(device.totalBytesSent, 500);
+    });
+
+    // Null, not 0: the page hides the rows for a device the router has no
+    // counter for, and shows them for one that has used nothing.
+    test('is null when no row has a counter', () {
+      final device = DevicesTestData.createMultiInterfaceClient();
+
+      expect(device.totalBytesReceived, isNull);
+      expect(device.totalBytesSent, isNull);
+    });
+
+    test('counts the rows that have a counter when another has none', () {
+      final device = DevicesTestData.createMultiInterfaceClient(
+        additionalInterfaces: [
+          DevicesTestData.createWiredInterface(
+            bytesReceived: 2000,
+            bytesSent: 100,
+          ),
+        ],
+      );
+
+      expect(device.totalBytesReceived, 2000);
+      expect(device.totalBytesSent, 100);
+    });
+  });
+
   group('ClientInterfaceInfo', () {
     test('isWifi returns true for WiFi connection type', () {
       final wifi = DevicesTestData.createWifiInterface();

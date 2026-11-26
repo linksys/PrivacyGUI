@@ -37,12 +37,22 @@ class UspLocalNetworkService {
   ///
   /// When the router IP address changes, the SET is terminal-by-design: the
   /// firmware applies the new IP and drops the connection carrying the SET
-  /// response, so a timeout / transport error on an IP-changing SET is the
-  /// expected signature of success (the SET was received and applied before the
-  /// disconnect). Any fault the router actively returns BEFORE the disconnect —
-  /// a validation/resource/partial/complete failure — still propagates, so a
-  /// genuine config failure is never hidden. When the IP does not change, the
-  /// response is awaited normally and every error surfaces.
+  /// response, so no answer within [_ipChangeSetTimeout] on an IP-changing SET
+  /// is the expected signature of success (the SET was received and applied
+  /// before the disconnect).
+  ///
+  /// **A request that fails before the timeout is a failure**, IP change or
+  /// not — a lost connection, a 5xx — though `UspClient` throws it the same way
+  /// as the drop (#1666). `Failed to fetch` does not prove the SET reached the
+  /// router, and reading it as applied sends the user to an address the router
+  /// may not have. Until #1666 the client returned that failure in the
+  /// envelope, `_handleSetResult` made it a `UspCompleteFailureError`, and the
+  /// user saw it; that shipped behaviour is kept.
+  ///
+  /// Any fault the router actively returns — a validation/resource/partial/
+  /// complete failure — propagates, so a genuine config failure is never
+  /// hidden. When the IP does not change, the response is awaited normally and
+  /// every error surfaces.
   Future<void> save({
     required LocalNetworkUIModel original,
     required LocalNetworkUIModel pending,
@@ -81,21 +91,10 @@ class UspLocalNetworkService {
           '${_ipChangeSetTimeout.inSeconds}s — treating as success '
           '(firmware dropped the connection applying the new IP)');
     } catch (e) {
-      // A fault the router actively returned (ServiceError from
-      // _handleSetResult) means the connection was alive and the config was
-      // rejected → propagate, even on an IP change.
+      // A refusal, or a request that got no answer before the timeout: both
+      // propagate, even on an IP change — see the doc comment.
       if (e is ServiceError) rethrow;
-      // Transport / connectivity errors are raw (non-ServiceError). On an IP
-      // change they are the disconnect signature = success; otherwise they are
-      // a genuine failure.
-      final mapped = mapUspErrorToServiceError(e);
-      if (ipAddressChanged &&
-          (mapped is NetworkError || mapped is ConnectivityError)) {
-        logger.i('[USP][Network][LAN]: IP-change SET hit a transport error '
-            '— treating as success (firmware dropped the connection)');
-        return;
-      }
-      throw mapped;
+      throw mapUspErrorToServiceError(e);
     }
   }
 

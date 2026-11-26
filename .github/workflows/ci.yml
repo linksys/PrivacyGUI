@@ -268,7 +268,7 @@ jobs:
 
 
       - name: Shared USP operation contract tests
-        run: node --test test/web/usp_operate_test.mjs
+        run: node --test test/web/usp_operate_test.mjs test/web/usp_write_test.mjs
 
   # ------------------------------------------------------------------------
   # 3. The layout gate, on its own, because it is ~85% of the pipeline's wall

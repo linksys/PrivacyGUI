@@ -99,8 +99,11 @@ class FakeSseOperationStrategy implements SseOperationStrategy {
   }
 }
 
-/// The WASM client's error for a 401, as far as [UspClient] can see it: a thrown
-/// object whose `toString()` carries the transport prefixes and the status.
+/// The WASM client's text for a 401: its transport prefixes and the status.
+///
+/// Get, Set, setOrdered, Add, Delete and Operate carry it inside a resolved
+/// failure envelope (see [UnauthenticatedTransport._failed]); only
+/// `listSubscriptions` still throws it here, a verb nobody has measured.
 Exception unauthenticatedError() =>
     Exception('Transport error: HTTP error: HTTP 401');
 
@@ -157,79 +160,77 @@ class UnauthenticatedTransport implements UspTransport {
   @override
   Future<void> refreshToken({String? token}) async => refreshCalls++;
 
-  /// GET reports its 401 the way the WASM client does: it resolves with a
-  /// per-path 9999 in the envelope, it does not throw (measured 2026-10-07;
-  /// #1212). The other verbs still throw — how they reach `UspClient` is
-  /// #1666's to change.
-  @override
-  Future<Map<String, dynamic>> get(List<String> paths) async {
+  /// Counts the request, holds it on [requestGate], and returns the envelope a
+  /// failed one resolves with — a 401 while [rejections] last, [failWith]
+  /// always — or null when it is answered.
+  ///
+  /// Every verb here reports a failed request the way the WASM client does: it
+  /// **resolves** with a `kind: request` 9999 entry per requested path, it does
+  /// not throw. Get measured 2026-10-07 (#1212); Set, setOrdered, Add, Delete
+  /// and Operate on usp-client 0.16.0, 2026-11-25 (#1666) — setOrdered's entry
+  /// carries no path. A transport that threw here instead is why #1627's tests
+  /// stayed green for the verbs whose 401 never reached `_withAuthRetry`.
+  Future<Map<String, dynamic>?> _failed(List<String> paths) async {
     requests++;
     final gate = requestGate;
     if (gate != null) await gate.future;
     final failure =
         failWith ?? (rejections > 0 ? unauthenticatedError() : null);
-    if (failure != null) {
-      if (failWith == null) rejections--;
-      return UspEnvelopeTestData.failedAsAWhole(
-        paths,
-        errorCode: 9999,
-        errorMessage: failure is Exception
-            ? failure.toString().replaceFirst('Exception: ', '')
-            : '$failure',
-      );
-    }
-    return {
-      'success': true,
-      'result': {
-        'data': {for (final p in paths) p: 'value'}
-      },
-    };
+    if (failure == null) return null;
+    if (failWith == null) rejections--;
+    return UspEnvelopeTestData.failedAsAWhole(
+      paths,
+      errorCode: 9999,
+      errorMessage: failure is Exception
+          ? failure.toString().replaceFirst('Exception: ', '')
+          : '$failure',
+    );
   }
+
+  @override
+  Future<Map<String, dynamic>> get(List<String> paths) async =>
+      await _failed(paths) ??
+      {
+        'success': true,
+        'result': {
+          'data': {for (final p in paths) p: 'value'}
+        },
+      };
 
   @override
   Future<Map<String, dynamic>> set(
     Map<String, String> parameters, {
     bool allowPartial = false,
-  }) async {
-    await _request();
-    return _ok;
-  }
+  }) async =>
+      await _failed(parameters.keys.toList()) ?? _ok;
 
   @override
   Future<Map<String, dynamic>> setOrdered(
     List<List<Map<String, String>>> parameterGroups, {
     bool allowPartial = false,
-  }) async {
-    await _request();
-    return _ok;
-  }
+  }) async =>
+      await _failed(const []) ?? _ok;
 
   @override
   Future<Map<String, dynamic>> add(
     List<Map<String, dynamic>> items, {
     bool allowPartial = false,
-  }) async {
-    await _request();
-    return _ok;
-  }
+  }) async =>
+      await _failed([for (final i in items) '${i['path']}']) ?? _ok;
 
   @override
   Future<Map<String, dynamic>> delete(
     List<String> paths, {
     bool allowPartial = false,
-  }) async {
-    await _request();
-    return _ok;
-  }
+  }) async =>
+      await _failed(paths) ?? _ok;
 
   @override
   Future<Map<String, dynamic>> operate(
     String command, {
     Map<String, String> args = const {},
-  }) async {
-    await _request();
-    return _ok;
-  }
+  }) async =>
+      await _failed([command]) ?? _ok;
 
   @override
   Future<List<Map<String, dynamic>>> listSubscriptions() async {

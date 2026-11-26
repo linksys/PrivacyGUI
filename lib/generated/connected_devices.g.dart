@@ -76,6 +76,8 @@ class ConnectedDevice {
   final String? linksysUserDeviceLocation;
   final String? linksysUserDeviceType;
   final bool? linksysIsMeshNode;
+  final int? wanStatsBytesSent;
+  final int? wanStatsBytesReceived;
   final List<ConnectedDeviceIpv4> ipv4Addresses;
   final List<ConnectedDeviceIpv6> ipv6Addresses;
 
@@ -112,6 +114,8 @@ class ConnectedDevice {
     this.linksysUserDeviceLocation,
     this.linksysUserDeviceType,
     this.linksysIsMeshNode,
+    this.wanStatsBytesSent,
+    this.wanStatsBytesReceived,
     required this.ipv4Addresses,
     required this.ipv6Addresses,
   });
@@ -151,6 +155,8 @@ class ConnectedDevice {
         'linksysUserDeviceLocation: $linksysUserDeviceLocation, '
         'linksysUserDeviceType: $linksysUserDeviceType, '
         'linksysIsMeshNode: $linksysIsMeshNode, '
+        'wanStatsBytesSent: $wanStatsBytesSent, '
+        'wanStatsBytesReceived: $wanStatsBytesReceived, '
         'ipv4Addresses: $ipv4Addresses, '
         'ipv6Addresses: $ipv6Addresses'
         ')';
@@ -213,6 +219,8 @@ class ConnectedDevices {
     'Device.Hosts.Host.*.X_LINKSYS_UserDeviceLocation',
     'Device.Hosts.Host.*.X_LINKSYS_UserDeviceType',
     'Device.Hosts.Host.*.X_LINKSYS_IsMeshNode',
+    'Device.Hosts.Host.*.WANStats.BytesSent',
+    'Device.Hosts.Host.*.WANStats.BytesReceived',
     'Device.Hosts.Host.*.IPv4Address.*.IPAddress',
     'Device.Hosts.Host.*.IPv6Address.*.IPAddress',
   ];
@@ -404,6 +412,14 @@ class ConnectedDevices {
                 response['${p}X_LINKSYS_IsMeshNode'] == 'true' ||
                 response['${p}X_LINKSYS_IsMeshNode'] == '1')
             : null,
+        wanStatsBytesSent: response.containsKey('${p}WANStats.BytesSent')
+            ? int.tryParse(response['${p}WANStats.BytesSent']?.toString() ?? '')
+            : null,
+        wanStatsBytesReceived:
+            response.containsKey('${p}WANStats.BytesReceived')
+                ? int.tryParse(
+                    response['${p}WANStats.BytesReceived']?.toString() ?? '')
+                : null,
         ipv4Addresses: ipv4Addresses,
         ipv6Addresses: ipv6Addresses,
       ));

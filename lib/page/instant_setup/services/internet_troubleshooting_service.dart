@@ -68,22 +68,16 @@ class InternetTroubleshootingService {
   /// including PPP/VLAN instance lifecycle, result validation, and allowPartial
   /// handling.
   ///
-  /// Throws only `ServiceError`. The lock times out with Dart's bare
-  /// `TimeoutException`, which is folded into [TimeoutError] here, where it
-  /// starts, so the provider above handles `ServiceError` alone (constitution
-  /// §13.4).
+  /// Throws only `ServiceError` — the lock's own timeout included, which it
+  /// raises as a [TimeoutError] (#1831) — so the provider above handles
+  /// `ServiceError` alone (constitution §13.4).
   ///
   /// **Takes the lock itself**, so a caller must not wrap it in another
   /// `withLock`: the lock is not re-entrant, and the inner call would wait on
   /// the outer one until it timed out. PnP's Wi-Fi save is the opposite shape
   /// — see `PnpService.saveWifi`.
-  Future<void> saveIspSettings(PnpIspConfig config) async {
-    try {
-      await _mutationLock.withLock(() => _writeIspSettings(config));
-    } on TimeoutException catch (e) {
-      throw TimeoutError(detail: e.message);
-    }
-  }
+  Future<void> saveIspSettings(PnpIspConfig config) =>
+      _mutationLock.withLock(() => _writeIspSettings(config));
 
   Future<void> _writeIspSettings(PnpIspConfig config) async {
     if (config.type == IspConnectionType.dhcp) {

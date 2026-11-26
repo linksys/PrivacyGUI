@@ -33,6 +33,7 @@ import 'package:privacy_gui/page/firmware_update/services/firmware_router_ota_in
 import 'package:privacy_gui/page/firmware_update/services/usp_firmware_update_service.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
+import '../../../mocks/short_window_lock.dart';
 import '../../../mocks/test_data/firmware_update_test_data.dart';
 
 class MockFirmwareRouterOtaCheckService extends Mock
@@ -143,20 +144,20 @@ class _FlakyBanksNotifier extends FirmwareBanksDataNotifier {
 
 /// A read that fails with something other than a [ServiceError].
 ///
-/// `TimeoutException` because it is the one this app raises on purpose:
-/// `UspMutationLock.withLock` throws it after 30 s, deliberately not as a
-/// `ServiceError`. A codegen parse of an unexpected payload reaches the same arm
-/// with a `TypeError`.
+/// `TimeoutException` because one raised outside the mutation lock still
+/// arrives bare until #1831 converts the rest of its sources (the lock's own is
+/// a `TimeoutError` now). A codegen parse of an unexpected payload reaches the
+/// same arm with a `TypeError`.
 class _TimingOutBanksNotifier extends FirmwareBanksDataNotifier {
   @override
   Future<FirmwareBanksData> build() async =>
-      throw TimeoutException('mutation lock', const Duration(seconds: 30));
+      throw TimeoutException('banks read', const Duration(seconds: 30));
 
   /// The same failure on the path `verify()` takes. `refresh()` rethrows raw, so
   /// this is what actually arrives at the notifier's own catch.
   @override
   Future<FirmwareBanksData> refresh() async =>
-      throw TimeoutException('mutation lock', const Duration(seconds: 30));
+      throw TimeoutException('banks read', const Duration(seconds: 30));
 }
 
 /// A router that answers the first read and then stops answering.
@@ -180,6 +181,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(Uint8List(0));
+    registerFallbackValue(<String, String>{});
   });
 
   setUp(() {
@@ -474,8 +476,8 @@ void main() {
 
     test('a read failure that is not a ServiceError is still a read error',
         () async {
-      // The bridge does not only fail with `ServiceError`. `UspMutationLock`
-      // throws a bare `TimeoutException` after 30 s by design, and a codegen
+      // The bridge does not only fail with `ServiceError`. A `TimeoutException`
+      // raised outside the mutation lock still arrives bare (#1831), and a codegen
       // parse of an unexpected payload throws a `TypeError` — neither is caught by
       // an `on ServiceError` arm. Recording nothing for them leaves
       // `stateReadError` null with the banks provider in `AsyncError`, and the
@@ -683,6 +685,43 @@ void main() {
       expect(state.failure?.error, isA<NetworkError>());
     });
 
+    test(
+        'a chunk that outlasts the mutation lock ends the upload on the '
+        'failure card, not in uploading', () async {
+      // #1831. Through the real uploader and the real lock: each chunk is one
+      // Operate under the lock, and `runUpload` maps `ServiceError` only. While
+      // the lock threw a bare `TimeoutException`, a chunk the router never
+      // answered passed that arm — no `_fail`, the phase stayed `uploading`
+      // (`isUpdating`, which `_firmwareExitGuard` vetoes the back arrow on), and
+      // the view only logged it.
+      final bytes = validImage();
+      when(() => mockUsp.operate(any(), args: any(named: 'args')))
+          .thenAnswer((_) => Completer<Map<String, dynamic>>().future);
+      final lock = ShortWindowLock();
+      final container = createContainer(
+        picker: _StubPickerService(
+          FirmwarePickedFile(name: 'fw.img', size: bytes.length, bytes: bytes),
+        ),
+        uploader: FirmwareLocalUploadService(mockUsp, lock),
+        extra: [uspMutationLockProvider.overrideWithValue(lock)],
+      );
+      addTearDown(container.dispose);
+      final notifier = container.read(firmwareUpdateNotifierProvider.notifier);
+
+      await notifier.pickAndValidateFile();
+      await expectLater(
+        notifier.runUpload(commandKey: '1'),
+        throwsA(isA<TimeoutError>()),
+      );
+
+      final state = container.read(firmwareUpdateNotifierProvider);
+      expect(state.phase, FirmwareUpdatePhase.failed);
+      expect(state.failure?.error, isA<TimeoutError>());
+      expect(state.isUpdating, isFalse,
+          reason: 'the exit guard reads this; a page the user cannot leave '
+              'and that says nothing is the defect');
+    });
+
     test('triggerInstall succeeds, moves through triggering→installing',
         () async {
       when(() => mockService.triggerLocalDownload(
@@ -721,6 +760,34 @@ void main() {
         container.read(firmwareUpdateNotifierProvider).phase,
         FirmwareUpdatePhase.failed,
       );
+    });
+
+    test(
+        'a dispatch that outlasts the mutation lock ends on the failure card, '
+        'not in triggering', () async {
+      // #1831. The local-install dispatch runs under the lock and
+      // `triggerInstall` maps `ServiceError` only. While the lock threw a bare
+      // `TimeoutException`, it passed that arm: no `_fail`, the phase stayed
+      // `triggering` (`isUpdating`), and the view only logged it.
+      when(() => mockService.triggerLocalDownload(
+            targetInstance: any(named: 'targetInstance'),
+          )).thenAnswer((_) => Completer<void>().future);
+      final container = createContainer(
+        extra: [uspMutationLockProvider.overrideWithValue(ShortWindowLock())],
+      );
+      addTearDown(container.dispose);
+
+      await expectLater(
+        container
+            .read(firmwareUpdateNotifierProvider.notifier)
+            .triggerInstall(targetInstance: 2),
+        throwsA(isA<TimeoutError>()),
+      );
+
+      final state = container.read(firmwareUpdateNotifierProvider);
+      expect(state.phase, FirmwareUpdatePhase.failed);
+      expect(state.failure?.error, isA<TimeoutError>());
+      expect(state.isUpdating, isFalse);
     });
 
     test('verify returns done on version match', () async {
@@ -1301,7 +1368,7 @@ void main() {
         'lets the user leave', () async {
       // The trap this closes: `verify()` used to catch `on ServiceError` only,
       // while `firmwareBanksDataProvider.refresh()` rethrows whatever it got. A
-      // `TimeoutException` — which `UspMutationLock` raises on purpose — therefore
+      // `TimeoutException` — which the mutation lock raised at the time — therefore
       // went straight past `_fail()`, the phase stayed `verifying`, and
       // `verifying` is `isUpdating`: `_firmwareExitGuard` in
       // `route_usp_dashboard.dart` returns `!isUpdating`, so the back arrow was
@@ -2160,16 +2227,16 @@ void main() {
         // the browser Back button for the rest of the session, with no card on
         // screen saying why.
         //
-        // A `TimeoutException` rather than a contrived one: `UspMutationLock`
-        // throws exactly this after 30 s, deliberately not as a `ServiceError`, and
-        // the install dispatch runs under that lock.
+        // Any throw that is not a `ServiceError`. A `TimeoutException`, because one
+        // raised outside the mutation lock still arrives bare (the lock's own has
+        // been a `TimeoutError` since #1831).
         when(() => mockOtaInstaller.install(
                   otaInstance: any(named: 'otaInstance'),
                   onProgress: any(named: 'onProgress'),
                   isCancelled: any(named: 'isCancelled'),
                 ))
-            .thenThrow(
-                TimeoutException('mutation lock', const Duration(seconds: 30)));
+            .thenThrow(TimeoutException(
+                'outside the lock', const Duration(seconds: 30)));
         final container = createContainer();
         addTearDown(container.dispose);
 
@@ -2247,11 +2314,10 @@ void main() {
       });
 
       test('a mutation timeout reaches the failure card', () async {
-        // The consumer end of the mapping the install service does. The lock throws
-        // a bare `TimeoutException`, which is not a `ServiceError` and so matched no
-        // `catch` between it and the button: the dispatch appeared to do nothing for
-        // 30 s, left no card, and escaped an unawaited `onTap`. Mapped in the
-        // service — where Article XIII §13.3 puts it — this arm now runs, and what
+        // The consumer end of the lock's `TimeoutError` (#1831). While the lock
+        // threw a bare `TimeoutException`, it matched no `catch` between it and the
+        // button: the dispatch appeared to do nothing for 30 s, left no card, and
+        // escaped an unawaited `onTap`. As a `ServiceError` this arm runs, and what
         // it has to produce is a phase the user can leave: `triggering` is
         // `isUpdating`, which `_firmwareExitGuard` silently vetoes the back arrow on.
         when(() => mockOtaInstaller.install(
@@ -2640,14 +2706,14 @@ void main() {
       test('a read failure that is not a ServiceError is still a read error',
           () async {
         // Same argument as `loadBanks`': the two reads share one field and one
-        // card, and a `TimeoutException` out of the mutation lock leaves the page
-        // exactly as unreadable as a `NetworkError` does.
+        // card, and a throw that is not a `ServiceError` leaves the page exactly as
+        // unreadable as a `NetworkError` does.
         when(() => mockOtaInstaller.observe(
                   onProgress: any(named: 'onProgress'),
                   isCancelled: any(named: 'isCancelled'),
                 ))
-            .thenThrow(
-                TimeoutException('mutation lock', const Duration(seconds: 30)));
+            .thenThrow(TimeoutException(
+                'outside the lock', const Duration(seconds: 30)));
         final container = createContainer();
         addTearDown(container.dispose);
 
