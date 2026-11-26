@@ -19,6 +19,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -42,6 +43,8 @@ import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_trou
 import 'package:privacy_gui/page/instant_topology/providers/instant_topology_provider.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_provider.dart';
 import 'package:privacy_gui/page/nodes/providers/add_nodes_provider.dart';
+import 'package:privacy_gui/page/nodes/providers/add_wired_nodes_provider.dart';
+import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/troubleshooting/providers/troubleshooting_provider.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
@@ -741,6 +744,48 @@ void main() {
     expect(done, isTrue);
     expect(container.read(pollingProvider).value?.lastUpdate, 0,
         reason: 'polling has not run since the logout reset it');
+  });
+
+  netTest('wired onboarding under way at the logout sends nothing after it',
+      (tester) async {
+    // It reads the backhaul every 10 s, up to 60 times. Its finally block
+    // turned wired onboarding off at the router, which after a logout went
+    // out with the default password too.
+    late BuildContext context;
+    await tester.pumpWidget(MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Builder(builder: (built) {
+        context = built;
+        return const SizedBox();
+      }),
+    ));
+    await logIn();
+    router.answer(
+        JNAPAction.getBackhaulInfo, const {'backhaulDevices': <Object>[]});
+    // The notifier is autoDispose; the dialog keeps it alive.
+    container.listen(addWiredNodesProvider, (_, __) {});
+    var done = false;
+    Object? failed;
+    container
+        .read(addWiredNodesProvider.notifier)
+        .startAutoOnboarding(context)
+        .then((_) => done = true, onError: (Object e) {
+      failed = e;
+    });
+    // The first backhaul read goes out 1 s in, the next 10 s after it.
+    await tester.pump(const Duration(seconds: 3));
+    expect(
+        router.received
+            .where((r) => r.action == JNAPAction.getBackhaulInfo.actionValue),
+        isNotEmpty,
+        reason: 'the onboarding is under way');
+
+    final after = await logOut(tester);
+
+    expect(after.where((r) => r.carriesCredential), isEmpty);
+    expect(failed, isNull, reason: 'it ends quietly');
+    expect(done, isTrue);
   });
 
   netTest(
