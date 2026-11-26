@@ -2,6 +2,7 @@
 // gives the views, and what the state writes.
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
 import 'package:privacy_gui/core/jnap/models/radio_info.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_state.dart';
 
@@ -80,6 +81,20 @@ void main() {
         state.copyWith(
             radioInfo:
                 const GetRadioInfo(isBandSteeringSupported: false, radios: [])),
+        isNot(state));
+  });
+
+  // Constitution 4.2: a state lists every field in props.
+  test('a change to the guest network or the running flag is a change', () {
+    final state = InstantVerifyState.fromMap(instantVerifyTestState);
+
+    expect(state.copyWith(isRunning: true), isNot(state));
+    expect(
+        state.copyWith(
+            guestRadioSettings: const GuestRadioSettings(
+                isGuestNetworkACaptivePortal: false,
+                isGuestNetworkEnabled: false,
+                radios: [])),
         isNot(state));
   });
 }
