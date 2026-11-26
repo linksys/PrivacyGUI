@@ -343,9 +343,10 @@ class PnpService {
   /// Returns [PnpWifiWriteOutcome.unanswered] when the response was lost to the
   /// restart — the ordinary outcome when the browser is on the WiFi it changed.
   /// A refusal from the router throws, because a router that answered applied
-  /// nothing. The message says whether the router answered (see
-  /// [isUnansweredTransportFailure]); up to usp-client 0.14.0 the WASM client
-  /// stamped `9999` on both, so the `errorCode` could not.
+  /// nothing. An unanswered write reaches here **thrown** by `UspClient`
+  /// (#1666), and the message says it was not answered (see
+  /// [isUnansweredTransportFailure]): read from the text, not the type,
+  /// because a 401 is thrown the same way and must still fail.
   ///
   /// **Takes no lock: the caller holds `uspMutationLockProvider`**
   /// (`PnpNotifier._writeWifi`), and turns the lock's timeout into
@@ -364,17 +365,15 @@ class PnpService {
     try {
       final result = await _usp.set(params, allowPartial: true);
       final parsed = UspResultParser.parseSetResult(result);
-      if (parsed is UspFailure &&
-          parsed.errors
-              .every((e) => isUnansweredTransportFailure(e.errorMessage))) {
-        logger.i('[PnP] WiFi write unanswered — the network restarted under '
-            'the request');
-        return PnpWifiWriteOutcome.unanswered;
-      }
       _throwIfParsedNotSuccess(parsed, 'WiFi update');
       return PnpWifiWriteOutcome.confirmed;
     } catch (e) {
       if (e is ServiceError) rethrow;
+      if (isUnansweredTransportFailure(e.toString())) {
+        logger.i('[PnP] WiFi write unanswered — the network restarted under '
+            'the request');
+        return PnpWifiWriteOutcome.unanswered;
+      }
       throw mapUspErrorToServiceError(e);
     }
   }

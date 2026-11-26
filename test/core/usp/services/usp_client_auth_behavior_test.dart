@@ -62,9 +62,10 @@ void main() {
         client.onReauthRequired = () async => relogins++;
         client.onForceLogout = () => forcedLogouts++;
 
-        // `anything`, not `isA<Exception>()`: GET's 401 now arrives in the
-        // envelope and UspClient throws it as a USP string (#1212); the other
-        // verbs still throw the transport's Exception (#1666).
+        // `anything`, not `isA<Exception>()`: every verb's 401 arrives in the
+        // envelope, and UspClient throws it as a USP string — Get since #1212,
+        // the writes and Operate since #1666. Only `listSubscriptions` still
+        // throws the transport's Exception.
         await expectLater(send(client), throwsA(anything),
             reason: 'the caller must still see the request fail');
 
