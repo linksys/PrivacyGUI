@@ -242,10 +242,11 @@ class RouterRepository {
   ///
   /// [logoutGeneration] ties the loop to a login. Pass
   /// [AuthNotifier.logoutGeneration] as it was when the work this loop belongs
-  /// to began. Once a logout has moved it on, the loop sends nothing more and
-  /// ends with a [LoggedOutException], and [onCompleted] is not called: the
-  /// condition did not hold, and the retries did not run out. Left null, the
-  /// loop goes on across a logout (#1904).
+  /// to began. Once a logout has moved it on, the loop sends nothing more,
+  /// hands on no answer that came back after it, and ends with a
+  /// [LoggedOutException]. [onCompleted] is not called: the condition did not
+  /// hold, and the retries did not run out. Left null, the loop goes on across
+  /// a logout (#1904).
   Stream<JNAPResult> scheduledCommand({
     required JNAPAction action,
     int retryDelayInMilliSec = 5000,
@@ -260,6 +261,15 @@ class RouterRepository {
   }) async* {
     int retry = 0;
     bool exceedMaxRetry = true;
+    void endIfLoggedOut() {
+      if (logoutGeneration != null &&
+          ref.read(authProvider.notifier).logoutGeneration !=
+              logoutGeneration) {
+        logger.d('SCHEDULED COMMAND: command {$action}: logged out, STOP!');
+        throw const LoggedOutException();
+      }
+    }
+
     while (++retry <= maxRetry || maxRetry == -1) {
       logger.d('SCHEDULED COMMAND: publish command {$action}: $retry times');
       if (retry <= 1) {
@@ -267,12 +277,7 @@ class RouterRepository {
       }
       // After the delay and before the request, so that a logout during the
       // delay stops the request it was waiting to send.
-      if (logoutGeneration != null &&
-          ref.read(authProvider.notifier).logoutGeneration !=
-              logoutGeneration) {
-        logger.d('SCHEDULED COMMAND: command {$action}: logged out, STOP!');
-        throw const LoggedOutException();
-      }
+      endIfLoggedOut();
       late JNAPResult result;
       try {
         result = await send(
@@ -298,6 +303,10 @@ class RouterRepository {
           error: e.runtimeType.toString(),
         );
       }
+      // And once the answer is in: a request that was out at the logout
+      // answers for a login that has ended, and a caller handed its answer
+      // would act on it, as the firmware install's completion did.
+      endIfLoggedOut();
       yield result;
 
       if (condition?.call(result) ?? false) {
