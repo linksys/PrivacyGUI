@@ -2,6 +2,7 @@
 /// the fields, \ escapes and " quotes. A name or password holding one must
 /// escape it with a backslash.
 final _qrSpecialCharacters = RegExp(r'[\\;,:"]');
+final _qrEscapedCharacter = RegExp(r'\\([\\;,:"])');
 
 enum SecurityType { wpa, wep, none }
 
@@ -33,15 +34,16 @@ class WiFiCredential {
       regex.allMatches(data).forEach((element) {
         switch (element.group(1)) {
           case 'S':
-            ssid = element.group(2) ?? '';
+            ssid = _unescape(element.group(2) ?? '');
             break;
           case 'T':
+            // WPA, WEP or nopass; nopass, like any other, is no security.
             type = SecurityType.values.firstWhere(
-                (e) => e.toString() == (element.group(2) ?? 'none'),
+                (e) => e.name == (element.group(2) ?? '').toLowerCase(),
                 orElse: () => SecurityType.none);
             break;
           case 'P':
-            password = element.group(2) ?? '';
+            password = _unescape(element.group(2) ?? '');
             break;
           case 'H':
             isHidden = (element.group(2) ?? '') == 'true';
@@ -81,4 +83,7 @@ class WiFiCredential {
 
   static String _escape(String value) =>
       value.replaceAllMapped(_qrSpecialCharacters, (m) => '\\${m[0]}');
+
+  static String _unescape(String value) =>
+      value.replaceAllMapped(_qrEscapedCharacter, (m) => m[1]!);
 }

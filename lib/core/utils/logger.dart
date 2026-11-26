@@ -212,7 +212,7 @@ String getScreenInfo(BuildContext context) {
   final List data = [
     '================================= Screen Info ==================================',
     'Screen size: ${MediaQueryUtils.getScreenSize(context)}',
-    'Physical Screen size: ${MediaQueryUtils.getScreenSize(context)}',
+    'Physical Screen size: ${MediaQueryUtils.getPhysicalScreenSize(context)}',
     'Screen pixel ratio: ${MediaQueryUtils.getScreenRatio(context)}',
     'Font scale: ${MediaQueryUtils.getTextScaleFactor(context)}',
     'Top padding of safe area: ${MediaQueryUtils.getTopSafeAreaPadding(context)}',
