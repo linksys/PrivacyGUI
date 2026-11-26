@@ -319,16 +319,6 @@ void main() {
   });
 
   group('PnpService — WiFi save (#1000 / #1490 / #1491)', () {
-    // The router's own reply when the request never reached it: the browser lost
-    // the network the write restarted. Shape taken from #1490's log.
-    Map<String, dynamic> transportLost(Map<String, dynamic> params) =>
-        UspEnvelopeTestData.failedAsAWhole(
-          params.keys.toList(),
-          errorCode: 9999,
-          errorMessage: 'Transport error: Transport error: HTTP '
-              'error: error sending request: TypeError: Failed to fetch',
-        );
-
     Map<String, dynamic> refused(Map<String, dynamic> params) =>
         UspEnvelopeTestData.parameterErrors(
           {
@@ -473,13 +463,27 @@ void main() {
     test(
         'saveWifi reports a write whose answer was lost as unanswered, not as '
         'a failure', () async {
+      // The browser lost the network the write restarted. Since #1666
+      // `UspClient` throws that write rather than returning its envelope.
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((inv) async => transportLost(
-              inv.positionalArguments[0] as Map<String, dynamic>));
+          .thenThrow(UspEnvelopeTestData.unansweredWrite('Set'));
 
       final outcome = await service.saveWifi(unifiedWrite);
 
       expect(outcome, PnpWifiWriteOutcome.unanswered);
+    });
+
+    test(
+        'saveWifi fails on a 401, though UspClient throws it the same way as a '
+        'lost answer', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenThrow(UspEnvelopeTestData.unansweredWrite('Set',
+              errorMessage: 'Transport error: HTTP error: HTTP 401'));
+
+      await expectLater(
+        service.saveWifi(unifiedWrite),
+        throwsA(isA<NotAuthenticatedError>()),
+      );
     });
 
     test(

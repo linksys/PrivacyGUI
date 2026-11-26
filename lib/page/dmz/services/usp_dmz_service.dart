@@ -4,6 +4,7 @@ import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/dmz.g.dart';
+import 'package:privacy_gui/page/_shared/services/batch_tally.dart';
 import 'package:privacy_gui/page/_shared/services/empty_row.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_settings.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_status.dart';
@@ -165,7 +166,10 @@ class UspDmzService {
     List<DmzEntryUpdate> entries, {
     required String summaryPrefix,
   }) async {
-    final result = await Dmz.update(_usp, entries);
+    // An unanswered Set is a complete failure here, as it was before #1666:
+    // while switching, that is what says "the router may hold no host" and
+    // sends the page back to the router (see [update]).
+    final result = await writeOrUnanswered(() => Dmz.update(_usp, entries));
     final parsed = UspResultParser.parseSetResult(result);
     switch (parsed) {
       case UspSuccess():

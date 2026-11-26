@@ -179,6 +179,24 @@ void main() {
       expect(written['Device.Time.NTPServer1'], 'time.cloudflare.com');
     });
 
+    test(
+        'an NTP Set the router never answered still says the zone was already '
+        'applied (#1666)', () async {
+      when(() => mockUsp.operate(any(), args: any(named: 'args')))
+          .thenAnswer((_) async => {'Result': 'OK'});
+      when(() => mockUsp.set(any()))
+          .thenThrow(UspEnvelopeTestData.unansweredWrite('Set'));
+
+      await expectLater(
+        service.updateTimezone(
+          zone: (id: 'SGT-8-NO-DST', autoAdjustForDst: false),
+          ntpServer1: 'time.cloudflare.com',
+        ),
+        throwsA(isA<UspCompleteFailureError>().having((e) => e.summary,
+            'summary', contains('(timezone was already applied)'))),
+      );
+    });
+
     test('a rejected zone writes no NTP server either', () async {
       when(() => mockUsp.operate(any(), args: any(named: 'args')))
           .thenAnswer((_) async => {'Result': 'ErrorUnknownTimeZone'});

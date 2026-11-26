@@ -1,3 +1,5 @@
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
+
 /// One entry of a unified envelope's `errors` list. A null [errorCode] leaves
 /// the member out, for a test of what the app does without one.
 typedef UspEnvelopeError = ({
@@ -19,6 +21,31 @@ typedef UspEnvelopeError = ({
 /// the vendored client's, measured from Node (`test/web/usp_operate_test.mjs`)
 /// and read from its source (`usp-client/src/wasm/mod.rs`, 0.16.0).
 class UspEnvelopeTestData {
+  /// What `UspClient` throws for a write the router never answered (#1666),
+  /// for a service test whose `UspClient` is a mock: `thenThrow` this, not a
+  /// failed envelope — since #1666 a write's 9999 never reaches a service as
+  /// one.
+  ///
+  /// Built by [UspClient.throwIfUnanswered] itself from the envelope the client
+  /// resolves with ([failedAsAWhole], 9999), so a stub cannot drift from what
+  /// production throws. [errorMessage] is the client's: a lost connection by
+  /// default; `Transport error: HTTP error: HTTP 503` for a 5xx.
+  static Object unansweredWrite(
+    String operation, {
+    String errorMessage = 'Transport error: HTTP error: error sending '
+        'request: JsValue(TypeError: Failed to fetch)',
+  }) {
+    try {
+      UspClient.throwIfUnanswered(
+        operation,
+        failedAsAWhole(const [], errorCode: 9999, errorMessage: errorMessage),
+      );
+    } catch (e) {
+      return e;
+    }
+    throw StateError('UspClient.throwIfUnanswered did not throw');
+  }
+
   /// A call that failed as a whole: one `kind: request` entry per requested
   /// path, `success: false`, empty `data`.
   ///

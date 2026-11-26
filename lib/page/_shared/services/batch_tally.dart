@@ -1,7 +1,50 @@
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/_shared/services/refused_add_service.dart';
+
+/// Sends [write] and returns its envelope — or, when the router never answered
+/// it, the failed envelope the client resolved with before #1666.
+///
+/// Since #1666 `UspClient` throws a write the router never answered (a lost
+/// connection, a 5xx, a 401 it could not recover), so that a 401 reaches the
+/// session check ([UspClient.throwIfUnanswered]). A save made of several
+/// writes is read from their envelopes: a failed step is recorded and the
+/// next one still goes out, and a save that landed in part says so — which is
+/// what sends a page back to the router (`saveReadingBackAfterPartialWrite`).
+/// Stopping at the throw would lose that: a page whose first step landed would
+/// keep the edits as if nothing had been written, and its next save could add
+/// the same row twice. So here the throw becomes the one `kind: request` 9999
+/// entry it was built from, with the client's own text, and the caller parses
+/// the step like any other — exactly what it did before #1666.
+///
+/// For the writes of [BatchTally] and the other multi-step saves that decide
+/// "landed in part" from a failed envelope. Every other throw propagates.
+Future<Map<String, dynamic>> writeOrUnanswered(
+    Future<Map<String, dynamic>> Function() write) async {
+  try {
+    return await write();
+  } catch (e) {
+    final parsed = e is ServiceError ? null : parseUspError(e);
+    if (parsed == null || parsed.category != UspErrorCategory.transport) {
+      rethrow;
+    }
+    return {
+      'success': false,
+      'result': {
+        'data': const <String, dynamic>{},
+        'errors': [
+          {
+            'kind': 'request',
+            'errorCode': 9999,
+            'errorMessage': 'Transport error: ${parsed.message}',
+          },
+        ],
+      },
+    };
+  }
+}
 
 /// The outcome of every step in one batch save.
 ///

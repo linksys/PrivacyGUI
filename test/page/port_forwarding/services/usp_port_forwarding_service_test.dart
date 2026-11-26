@@ -559,6 +559,52 @@ void main() {
         )),
       );
     });
+
+    // The page reads the router again only on a partial failure
+    // (`saveReadingBackAfterPartialWrite`), and its notifier counts any other
+    // error as "wrote nothing". Since #1666 `UspClient` throws a write the
+    // router never answered; stopping the batch at that throw would have kept
+    // the deleted rule on screen and in the shared lists.
+    test(
+        'a Delete that landed, then an Add the router never answered: a '
+        'partial failure, so the page reads the router again (#1666)',
+        () async {
+      when(() => mockUsp.delete(any())).thenAnswer((_) async => uspSuccess());
+      when(() => mockUsp.add(any()))
+          .thenThrow(UspEnvelopeTestData.unansweredWrite('Add'));
+
+      final original = [
+        PortForwardingRuleUIModel(
+          instancePath: 'path.1.',
+          description: 'ToDelete',
+          externalPort: 80,
+          internalPort: 80,
+          internalClient: '192.168.1.100',
+          protocol: 'TCP',
+          enabled: true,
+        ),
+      ];
+      final current = [
+        PortForwardingRuleUIModel(
+          description: 'NewRule',
+          externalPort: 22,
+          internalPort: 22,
+          internalClient: '192.168.1.50',
+          protocol: 'Both',
+          enabled: true,
+        ),
+      ];
+
+      await expectLater(
+        service.saveForwardingBatch(original: original, current: current),
+        throwsA(isA<UspPartialFailureError>().having(
+          (e) => e.failures.single.errorMessage,
+          "the client's own text",
+          contains('Failed to fetch'),
+        )),
+      );
+      verify(() => mockUsp.delete(['path.1.'])).called(1);
+    });
   });
 
   // ---------------------------------------------------------------------------

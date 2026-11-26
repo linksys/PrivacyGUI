@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/services/batch_tally.dart';
 
 import '../../../mocks/test_data/usp_add_refusal_test_data.dart';
+import '../../../mocks/test_data/usp_envelope_test_data.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
@@ -16,6 +17,68 @@ void main() {
   const ok = UspSuccess<dynamic>([]);
   UspErrorDetail refusal(String path, String message) => UspErrorDetail(
       requestedPath: path, errorCode: 7012, errorMessage: message);
+
+  // Since #1666 `UspClient` throws a write the router never answered. A batch
+  // reads its steps from envelopes, so that throw is turned back into the
+  // failed step it was before — or a page whose first step landed would keep
+  // its edits as if nothing had been written.
+  group('writeOrUnanswered (#1666)', () {
+    test('an answered write is returned as it came', () async {
+      final answered = {
+        'success': true,
+        'result': {'data': <String, dynamic>{}},
+      };
+      expect(await writeOrUnanswered(() async => answered), same(answered));
+    });
+
+    test(
+        'a write the router never answered becomes the failed step it was '
+        "before, with the client's own text", () async {
+      final raw = await writeOrUnanswered(
+          () async => throw UspEnvelopeTestData.unansweredWrite('Delete'));
+
+      final parsed = UspResultParser.parseDeleteResult(raw);
+      expect(parsed, isA<UspFailure<dynamic>>());
+      final failure = (parsed as UspFailure<dynamic>).errors.single;
+      expect(failure.errorCode, 9999);
+      expect(failure.errorMessage, startsWith('Transport error: '));
+      expect(failure.errorMessage, contains('Failed to fetch'));
+    });
+
+    test(
+        'beside a step that landed, it makes the save a partial failure, so '
+        'the page reads the router again', () async {
+      final tally = BatchTally('[T]')..record('Delete', ok);
+      tally.record(
+          'Update',
+          UspResultParser.parseSetResult(await writeOrUnanswered(
+              () async => throw UspEnvelopeTestData.unansweredWrite('Set'))));
+
+      expect(tally.throwIfAnyFailed, throwsA(isA<UspPartialFailureError>()));
+    });
+
+    test('a 401 is recorded the same way, as it was before', () async {
+      final raw = await writeOrUnanswered(() async =>
+          throw UspEnvelopeTestData.unansweredWrite('Set',
+              errorMessage: 'Transport error: HTTP error: HTTP 401'));
+
+      expect(UspResultParser.parseSetResult(raw), isA<UspFailure<dynamic>>());
+    });
+
+    test('a ServiceError, a refusal and a bug propagate unchanged', () async {
+      await expectLater(
+          writeOrUnanswered(() async => throw const InvalidInputError()),
+          throwsA(isA<InvalidInputError>()));
+
+      const refused = 'Set failed: Protocol error: refused (code: 7005)';
+      await expectLater(
+          writeOrUnanswered(() async => throw refused), throwsA(refused));
+
+      final bug = StateError('a bug, not a lost request');
+      await expectLater(
+          writeOrUnanswered(() async => throw bug), throwsA(same(bug)));
+    });
+  });
 
   test('every step succeeded: nothing is thrown', () {
     final tally = BatchTally('[T]')

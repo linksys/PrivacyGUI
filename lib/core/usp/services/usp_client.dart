@@ -759,7 +759,8 @@ class UspClient {
     logger.d('$_tag#$id SET →\n${_prettyMap(params)}');
 
     try {
-      final result = await _withAuthRetry(() => _client.set({path: value}));
+      final result = await _withAuthRetry(() async =>
+          throwIfUnanswered('Set', await _client.set({path: value})));
       sw.stop();
       final label = _idLabel(id);
       logger.d(
@@ -793,7 +794,8 @@ class UspClient {
 
     try {
       final result = await _withAuthRetry(
-        () => _client.set(stringParams, allowPartial: allowPartial),
+        () async => throwIfUnanswered(
+            'Set', await _client.set(stringParams, allowPartial: allowPartial)),
       );
       sw.stop();
       final label = _idLabel(id);
@@ -814,14 +816,17 @@ class UspClient {
   // Set Ordered — preserves parameter execution sequence
   // ===========================================================================
 
-  /// Performs an ordered Set operation where parameter groups are processed
-  /// sequentially. Each group is sent as a separate USP Set message.
-  /// Use when parameter order affects correctness
-  /// (e.g., AddressingType must be set before SubnetMask).
+  /// Performs a Set whose parameter groups keep their order. Use when parameter
+  /// order affects correctness (e.g., AddressingType must be set before
+  /// SubnetMask).
   ///
   /// [parameterGroups] is a list of groups, where each group is a list of
-  /// `{path, value}` maps. Groups are processed in order; params within a
-  /// group are sent together in one Set message.
+  /// `{path, value}` maps. **All the groups go out in one USP Set message**, in
+  /// group order: usp-client 0.16.0 does not send a Set per group (measured,
+  /// `test/web/usp_write_test.mjs`). So the order holds as far as the router
+  /// applies one message's objects in the order they arrive, which has not been
+  /// measured, and there is no answer in which one group landed and a later
+  /// one went unanswered.
   Future<Map<String, dynamic>> setOrdered(
           List<List<Map<String, String>>> parameterGroups,
           {bool allowPartial = false}) =>
@@ -842,7 +847,10 @@ class UspClient {
 
     try {
       final result = await _withAuthRetry(
-        () => _client.setOrdered(parameterGroups, allowPartial: allowPartial),
+        () async => throwIfUnanswered(
+            'Set',
+            await _client.setOrdered(parameterGroups,
+                allowPartial: allowPartial)),
       );
       sw.stop();
       final label = _idLabel(id);
@@ -897,9 +905,11 @@ class UspClient {
 
     try {
       final result = await _withAuthRetry(
-        () => _client.add([
-          {'path': objectPath, 'params': stringParams},
-        ]),
+        () async => throwIfUnanswered(
+            'Add',
+            await _client.add([
+              {'path': objectPath, 'params': stringParams},
+            ])),
       );
       sw.stop();
       final label = _idLabel(id);
@@ -931,7 +941,8 @@ class UspClient {
 
     try {
       final result = await _withAuthRetry(
-        () => _client.add(objects, allowPartial: allowPartial),
+        () async => throwIfUnanswered(
+            'Add', await _client.add(objects, allowPartial: allowPartial)),
       );
       sw.stop();
       final label = _idLabel(id);
@@ -975,7 +986,8 @@ class UspClient {
     logger.d('$_tag#$id DELETE →\n${_prettyList([path])}');
 
     try {
-      final result = await _withAuthRetry(() => _client.delete([path]));
+      final result = await _withAuthRetry(() async =>
+          throwIfUnanswered('Delete', await _client.delete([path])));
       sw.stop();
       final label = _idLabel(id);
       logger.d(
@@ -1006,7 +1018,8 @@ class UspClient {
 
     try {
       final result = await _withAuthRetry(
-        () => _client.delete(paths, allowPartial: allowPartial),
+        () async => throwIfUnanswered(
+            'Delete', await _client.delete(paths, allowPartial: allowPartial)),
       );
       sw.stop();
       final label = _idLabel(id);
@@ -1065,15 +1078,18 @@ class UspClient {
     logger.d('$_tag#$id OPERATE →\n${_prettyMap(payload)}');
 
     try {
-      final rawResponse = retryOnAuthFailure
-          ? await _withAuthRetry(() => _client.operate(command, args: args))
-          : await _client.operate(command, args: args);
-      sw.stop();
-
       // usp-client unified format (0.13.0; `errors` since 0.16.0):
       // { success, result: { data: { commandKey, requestPath, outputArgs }, error?, errors? } }
       // Throws when the agent refused the command — see extractOperateResult.
-      final response = extractOperateResult(rawResponse);
+      //
+      // Decoded inside the retry, as a Get is (#1666): the client resolves a
+      // 401 into the envelope, and [_withAuthRetry] only sees what the decode
+      // throws. Decoded after it, an Operate's 401 reached no session check.
+      final response = retryOnAuthFailure
+          ? await _withAuthRetry(() async =>
+              extractOperateResult(await _client.operate(command, args: args)))
+          : extractOperateResult(await _client.operate(command, args: args));
+      sw.stop();
       final label = _idLabel(id);
       logger.d(
         '$_tag$label OPERATE ← (${sw.elapsedMilliseconds}ms)\n'
@@ -1203,6 +1219,34 @@ class UspClient {
       }
     }
     return output;
+  }
+
+  /// A write's envelope, or a throw when the router **never answered** it.
+  ///
+  /// That is an `errors` entry of `kind: request` with the client's transport
+  /// code 9999: a 401, a 5xx, a lost connection, a request that timed out or a
+  /// body that could not be read. Measured from Node against the vendored
+  /// client for Set, setOrdered, Add and Delete (usp-client 0.16.0,
+  /// 2026-11-25, #1666): each resolves with exactly that, never throws, and
+  /// sends one request. Run inside [_withAuthRetry], so a 401 reads `HTTP 401`
+  /// to [_isAuthError] — before this the write verbs passed the envelope
+  /// through and their 401 reached no session check at all.
+  ///
+  /// **Everything else is returned for the caller to read, as before.** The
+  /// router refusing the whole request is also `kind: request`, but with the
+  /// router's own code (7005 for an atomic Set it cannot apply) — an answer,
+  /// whose reason the services read from the envelope. So are an object or a
+  /// parameter it refused (`kind: path` / `parameter`), and the client's
+  /// decode (9998) and validation (9997) failures. Only the code tells the
+  /// unanswered request from the refused one: both are `kind: request`.
+  @visibleForTesting
+  static Map<String, dynamic> throwIfUnanswered(
+      String operation, Map<String, dynamic> raw) {
+    final failure = _requestFailureIn(raw['result']);
+    if (failure != null && _integerCode(failure['errorCode']) == 9999) {
+      throw _failedAsAWhole(operation, failure);
+    }
+    return raw;
   }
 
   /// The first entry of a unified result's `errors` list whose `kind` is

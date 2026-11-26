@@ -728,6 +728,44 @@ void main() {
       verifyNever(() => mockUsp.delete([good]));
     });
 
+    // The same hazard when the later step is not refused but never answered:
+    // since #1666 `UspClient` throws that write, and the batch still records
+    // it as one failed step instead of stopping at the throw.
+    test(
+        'a Delete that landed, then an Update the router never answered: a '
+        'partial failure (#1666)', () async {
+      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
+            'success': true,
+            'result': {'data': <String, dynamic>{}},
+          });
+      when(() => mockUsp.set(any()))
+          .thenThrow(UspEnvelopeTestData.unansweredWrite('Set'));
+      const kept = 'Device.DHCPv4.Server.Pool.1.StaticAddress.2.';
+
+      await expectLater(
+        service.saveBatch(original: [
+          DhcpReservationUIModel(
+              instancePath: 'Device.DHCPv4.Server.Pool.1.StaticAddress.1.',
+              mac: 'AA:AA:AA:AA:AA:01',
+              ip: '192.168.1.10',
+              enable: true),
+          DhcpReservationUIModel(
+              instancePath: kept,
+              mac: 'AA:AA:AA:AA:AA:02',
+              ip: '192.168.1.11',
+              enable: true),
+        ], current: [
+          DhcpReservationUIModel(
+              instancePath: kept,
+              mac: 'AA:AA:AA:AA:AA:02',
+              ip: '192.168.1.12',
+              enable: true),
+        ]),
+        throwsA(isA<UspPartialFailureError>()),
+      );
+      verify(() => mockUsp.set(any())).called(1);
+    });
+
     // A Delete that landed before a refused Add has changed the router, and it
     // renumbers rows after a delete: reading that as "wrote nothing" would
     // keep the old list, and a retry would delete the wrong reservation.

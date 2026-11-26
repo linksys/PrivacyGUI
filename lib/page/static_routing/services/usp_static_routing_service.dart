@@ -171,22 +171,24 @@ class UspStaticRoutingService {
       // 1. Delete (in original, not in current), in reverse instance order to
       // avoid firmware renumbering issues
       for (final r in toDelete.reversed) {
-        final result =
-            await StaticRouting.deleteForwardings(_usp, [r.instancePath!]);
+        final result = await writeOrUnanswered(
+            () => StaticRouting.deleteForwardings(_usp, [r.instancePath!]));
         tally.record('Delete', UspResultParser.parseDeleteResult(result));
         tally.throwIfAnyFailed();
       }
 
       // 2. Update (same path, different content)
       if (toUpdate.isNotEmpty) {
-        final result = await StaticRouting.updateForwardings(_usp, toUpdate);
+        final result = await writeOrUnanswered(
+            () => StaticRouting.updateForwardings(_usp, toUpdate));
         tally.record('Update', UspResultParser.parseSetResult(result));
         tally.throwIfAnyFailed();
       }
 
       // 3. Add (instancePath == null → new)
       if (adds.isNotEmpty) {
-        final result = await StaticRouting.addForwardings(_usp, adds);
+        final result = await writeOrUnanswered(
+            () => StaticRouting.addForwardings(_usp, adds));
         await tally.recordAdd(_usp, 'Add', result);
         tally.throwIfAnyFailed();
       }

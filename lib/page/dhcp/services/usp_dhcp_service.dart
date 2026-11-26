@@ -236,8 +236,8 @@ class UspDhcpService {
 
       // Delete in reverse instance order to avoid firmware renumbering issues
       for (final r in toDelete.reversed) {
-        final result = await DhcpReservations.deleteStaticAddresses(
-            _usp, [r.instancePath!]);
+        final result = await writeOrUnanswered(() =>
+            DhcpReservations.deleteStaticAddresses(_usp, [r.instancePath!]));
         tally.record('Delete', UspResultParser.parseDeleteResult(result));
       }
 
@@ -245,18 +245,19 @@ class UspDhcpService {
       final toAdd = current.where((r) => r.instancePath == null).toList();
       if (toAdd.isNotEmpty) {
         final poolPath = await _lanPoolPath();
-        final result = await DhcpReservations.addStaticAddresses(
-          _usp,
-          toAdd
-              .map((r) => DhcpReservationAdd(
-                    parentInstancePath: poolPath,
-                    enable: r.enable,
-                    chaddr: r.mac,
-                    yiaddr: r.ip,
-                    name: _nameToSend(r.name),
-                  ))
-              .toList(),
-        );
+        final result =
+            await writeOrUnanswered(() => DhcpReservations.addStaticAddresses(
+                  _usp,
+                  toAdd
+                      .map((r) => DhcpReservationAdd(
+                            parentInstancePath: poolPath,
+                            enable: r.enable,
+                            chaddr: r.mac,
+                            yiaddr: r.ip,
+                            name: _nameToSend(r.name),
+                          ))
+                      .toList(),
+                ));
         await tally.recordAdd(_usp, 'Add', result);
       }
 
@@ -285,8 +286,8 @@ class UspDhcpService {
       }
 
       if (toUpdate.isNotEmpty) {
-        final result =
-            await DhcpReservations.updateStaticAddresses(_usp, toUpdate);
+        final result = await writeOrUnanswered(
+            () => DhcpReservations.updateStaticAddresses(_usp, toUpdate));
         tally.record('Update', UspResultParser.parseSetResult(result));
       }
 
