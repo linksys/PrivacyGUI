@@ -58,7 +58,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
       _getAdminPasswordHint();
       ref
           .read(dashboardManagerProvider.notifier)
-          .checkDeviceInfo(null)
+          .checkDeviceInfo()
           .then((value) {
         _deviceInfo = value;
         if (_p != null) {
@@ -226,6 +226,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
                   const AppGap.large3(),
                   SizedBox(
                     child: AppPasswordField(
+                      identifier: 'login-password',
                       border: const OutlineInputBorder(),
                       controller: _passwordController,
                       hintText: loc(context).routerPassword,
@@ -250,30 +251,38 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
                           .copyWith(dividerColor: Colors.transparent),
                       child: SizedBox(
                         width: 200,
-                        child: ExpansionTile(
-                          title: AppText.labelMedium(
-                            _showPassword
-                                ? loc(context).hideHint
-                                : loc(context).showHint,
-                            color: Theme.of(context).colorScheme.primary,
+                        // A raw ExpansionTile takes no identifier, so it is
+                        // put on a node of its own (constitution 11.1.2).
+                        child: Semantics(
+                          container: true,
+                          identifier: 'login-hint',
+                          child: ExpansionTile(
+                            title: AppText.labelMedium(
+                              _showPassword
+                                  ? loc(context).hideHint
+                                  : loc(context).showHint,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            tilePadding: EdgeInsets.zero,
+                            backgroundColor: Colors.transparent,
+                            trailing: const SizedBox(),
+                            expandedAlignment: Alignment.centerLeft,
+                            expandedCrossAxisAlignment:
+                                CrossAxisAlignment.start,
+                            onExpansionChanged: (value) {
+                              setState(() {
+                                _showPassword = value;
+                              });
+                            },
+                            children: [AppText.bodySmall(_passwordHint!)],
                           ),
-                          tilePadding: EdgeInsets.zero,
-                          backgroundColor: Colors.transparent,
-                          trailing: const SizedBox(),
-                          expandedAlignment: Alignment.centerLeft,
-                          expandedCrossAxisAlignment: CrossAxisAlignment.start,
-                          onExpansionChanged: (value) {
-                            setState(() {
-                              _showPassword = value;
-                            });
-                          },
-                          children: [AppText.bodySmall(_passwordHint!)],
                         ),
                       ),
                     ),
                   const AppGap.small3(),
                   AppTextButton.noPadding(
                     loc(context).forgotPassword,
+                    identifier: 'login-forgot-password',
                     onTap: () {
                       context.pushNamed(RouteNamed.localRouterRecovery);
                     },
@@ -281,6 +290,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
                   const AppGap.large3(),
                   AppFilledButton(
                     loc(context).login,
+                    identifier: 'login-submit',
                     onTap: _shouldEnableLoginButton()
                         ? () {
                             _doLogin();

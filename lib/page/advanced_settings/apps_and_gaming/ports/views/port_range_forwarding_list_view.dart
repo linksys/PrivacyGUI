@@ -123,7 +123,7 @@ class _PortRangeForwardingContentViewState
   Widget _mobildSettingsView(PortRangeForwardingListState state,
       List<String> submaskToken, String prefixIP) {
     // return Center();
-    return EditableCardListsettingsView<PortRangeForwardingRule>(
+    return AppEditableCardListSettingsView<PortRangeForwardingRule>(
         title: loc(context).portRangeForwarding,
         emptyMessage: loc(context).noPortRangeForwarding,
         addEnabled: !_notifier.isExceedMax(),

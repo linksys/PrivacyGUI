@@ -133,7 +133,7 @@ class _PortRangeTriggeringContentViewState
 
   Widget _mobildSettingsView(PortRangeTriggeringListState state) {
     // return Center();
-    return EditableCardListsettingsView<PortRangeTriggeringRule>(
+    return AppEditableCardListSettingsView<PortRangeTriggeringRule>(
         title: loc(context).portRangeTriggering,
         addLabel: loc(context).add,
         addEnabled: !_notifier.isExceedMax(),

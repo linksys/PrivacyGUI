@@ -139,13 +139,15 @@ String bulletList(Set<String> items) =>
 /// Declares the two tests that hold what [scan] finds to the
 /// `constitution.md` table called [table], in [section]: every finding has a
 /// row, and every row is still a finding. [fix] tells the reader what to do
-/// about a finding instead of adding a row.
+/// about a finding instead of adding a row, and [explain], when given, adds
+/// the detail behind the findings that have no row.
 void testAgainstTable({
   required String section,
   required String table,
   required String scope,
   required Set<String> Function() scan,
   required String fix,
+  String Function(Set<String> unlisted)? explain,
 }) {
   late Set<String> found;
   late Set<String> listed;
@@ -164,6 +166,7 @@ void testAgainstTable({
       isEmpty,
       reason: 'These break constitution.md $section and have no row in its '
           'table:\n${bulletList(unlisted)}\n'
+          '${explain == null ? '' : '${explain(unlisted)}\n'}'
           '$fix Adding a row instead is an amendment (Article IX).',
     );
   });

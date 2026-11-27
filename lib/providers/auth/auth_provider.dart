@@ -12,6 +12,7 @@ import 'package:privacy_gui/core/ai_session/router_ai_loader.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:privacy_gui/constants/error_code.dart';
@@ -399,6 +400,12 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     // cleared would go out with the factory default password.
     _logoutGeneration++;
     ref.read(pollingProvider.notifier).stopPolling();
+    // Every logout ends Remote Assistance, not only the top bar's "End"
+    // (#1904). Started here, before the stores are cleared and the device
+    // manager is reset, so that it reads the session and the master it ends.
+    // Its timers and its stream stop at once. The cloud's delete is not
+    // awaited: a logout does not wait on the cloud.
+    unawaited(_endRemoteAssistance());
     if (BuildConfig.enableRouterAi) {
       // A logout settles this launch's AI session. If the first init() is
       // still reading storage, it must not bootstrap the old password after
@@ -440,6 +447,29 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     // then.
     ref.read(pollingProvider.notifier).stopPolling();
     ref.read(selectedNetworkIdProvider.notifier).state = null;
+    // The nodes a firmware install saved belong to this login's router. The
+    // next login, maybe to another router, would show them in place of its
+    // own (#1904).
+    ref.read(firmwareUpdateCandidateProvider.notifier).state = null;
+  }
+
+  /// How long a logout lets the Remote Assistance teardown run. Ending the
+  /// session can hit the cloud, and that request retries with a backoff.
+  static const _remoteAssistanceTeardownTimeout = Duration(seconds: 5);
+
+  /// Ends Remote Assistance for [logout], whatever happens to the cloud's
+  /// delete. The top bar's "End" waits for it itself, through
+  /// `endRemoteAssistanceAndLogout`, and this one then finds nothing to end.
+  Future<void> _endRemoteAssistance() async {
+    try {
+      await ref
+          .read(remoteClientProvider.notifier)
+          .endRemoteAssistance()
+          .timeout(_remoteAssistanceTeardownTimeout);
+    } catch (error, stackTrace) {
+      logger.e('[Auth]: Failed to end the remote assistance session',
+          error: error, stackTrace: stackTrace);
+    }
   }
 
   Future<void> _logoutAiSession() async {

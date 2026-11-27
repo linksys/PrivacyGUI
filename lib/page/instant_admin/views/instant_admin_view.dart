@@ -31,6 +31,10 @@ import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/constants/error_code.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 
+/// The key of [country]'s identifier in the region list (constitution 11.3):
+/// its code, such as `twn`, never the translated name the list shows.
+String regionIdentifierKey(PowerTableCountries country) => country.name;
+
 class InstantAdminView extends ArgumentsConsumerStatefulView {
   const InstantAdminView({
     Key? key,
@@ -293,14 +297,14 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView>
               hoverColor:
                   Theme.of(context).colorScheme.background.withOpacity(.5),
               title: Semantics(
-                identifier: 'now-locale-item-${country.name}',
+                identifier: 'region-item-${regionIdentifierKey(country)}',
                 child: AppText.labelLarge(
                   country.resolveDisplayText(context),
                 ),
               ),
               trailing: selected == country
                   ? Semantics(
-                      identifier: 'now-country-item-checked',
+                      identifier: 'region-item-checked',
                       label: 'checked',
                       child: const Icon(LinksysIcons.check))
                   : null,
