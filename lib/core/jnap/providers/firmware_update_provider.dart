@@ -232,9 +232,13 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
           );
     } catch (error) {
       // The router never started the install, so no status check will end it:
-      // put the page back as it was before the update was asked for.
+      // put the page back as it was before the update was asked for. Not once
+      // the login has ended: the logout cleared those nodes, and putting them
+      // back would carry them over to the next login (#1904).
       logger.e('[FIRMWARE]: Update firmware: refused: $error');
-      ref.read(firmwareUpdateCandidateProvider.notifier).state = candidates;
+      if (!ref.read(authProvider.notifier).loggedOutSince(logoutGeneration)) {
+        ref.read(firmwareUpdateCandidateProvider.notifier).state = candidates;
+      }
       state = state.copyWith(isUpdating: false);
       rethrow;
     }
