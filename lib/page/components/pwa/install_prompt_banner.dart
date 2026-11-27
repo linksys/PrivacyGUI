@@ -12,7 +12,7 @@ class InstallPromptBanner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Only show on Web - logic handled by provider state (PwaMode.none if not web)
-    // Only show on 'DU' model (Logic moved to provider)
+    // Every model offers it; the provider has no model check (#1975)
     final mode = ref.watch(pwaInstallServiceProvider);
     final pwaNotifier = ref.read(pwaInstallServiceProvider.notifier);
 
