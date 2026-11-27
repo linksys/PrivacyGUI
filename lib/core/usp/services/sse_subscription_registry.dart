@@ -120,9 +120,13 @@ class SseSubscriptionRegistry {
     for (final entry in entries) {
       entry.registering = null;
       final id = entry.subscription.subscriptionId;
-      // Gone: the session ended while this was in flight. Not unregistered here:
-      // an intentional disconnect leaves the router side to the strategy.
-      if (!identical(_entries[id], entry)) continue;
+      // Gone: the session ended while this was in flight.
+      if (!identical(_entries[id], entry)) {
+        if (_entries[id] == null && byId.containsKey(id)) {
+          _unregisterDropped(id);
+        }
+        continue;
+      }
       final record = byId[id];
       if (record == null) {
         _entries.remove(id);
@@ -132,6 +136,35 @@ class SseSubscriptionRegistry {
     }
     logger.d('[SSE]: Registered ${records.length} subscriptions, '
         'total active: ${activeIds.length}');
+  }
+
+  /// Unregisters [id], whose registration landed after the session that asked
+  /// for it ended (#1666, folded in from #1981's review).
+  ///
+  /// Nothing else would: on Guardian the disconnect's cleanup listed the
+  /// subscriptions before this one landed, and locally the bridge's cleanup on
+  /// a disconnect is a no-op, so it would stay on the router up to its
+  /// `time_to_live` (21,600 s measured). It goes out after the session has
+  /// ended, and the 401 it may get is one `SessionAuthGate` ignores: the
+  /// session is ended, or superseded for an old bridge.
+  ///
+  /// Only for an id nobody holds now. A newer hold of the id owns it on the
+  /// router, and unregistering it would undo that registration. Recorded in
+  /// [_unregistering] like a release's, so a hold that comes after waits for
+  /// it instead of being undone by it. A failure is logged and dropped.
+  void _unregisterDropped(String id) {
+    final unregistering = _strategy.unregisterSubscriptions([id]).then<void>(
+      (_) => logger.d('[SSE]: Unregistered $id, registered after its session '
+          'ended'),
+      onError: (Object e) => logger.w('[SSE]: Could not unregister $id after '
+          'its session ended: $e'),
+    );
+    _unregistering[id] = unregistering;
+    unregistering.whenComplete(() {
+      if (identical(_unregistering[id], unregistering)) {
+        _unregistering.remove(id);
+      }
+    });
   }
 
   void _forget(List<_Entry> entries) {

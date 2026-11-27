@@ -42,9 +42,9 @@ final bridgeConfigProvider = Provider<BridgeConfig?>((ref) {
 
 /// Provides [UspBridgeClient] instance — depends on [UspClient].
 ///
-/// A pure assembler since #1474 phase 3: which endpoints, host, token and auth
-/// behaviour to use is [bridgeConfigProvider]'s answer, and this provider only
-/// builds the client and wires its auth-failure callback. `endpoints: local` /
+/// A pure assembler since #1474 phase 3: which endpoints, host and token to use
+/// is [bridgeConfigProvider]'s answer, and this provider only builds the client,
+/// handing it [sessionAuthGateProvider] for its 401s (#1666). `endpoints: local` /
 /// `baseUrl: null` is exactly what the omitted arguments used to mean —
 /// `_endpoints = endpoints ?? BridgeEndpoints.local` and
 /// `_baseUrl => _overrideBaseUrl ?? _usp.baseUrl` — so naming them changes

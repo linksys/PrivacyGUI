@@ -28,14 +28,27 @@
 @TestOn('browser')
 library;
 
+import 'dart:async';
+import 'dart:js_interop';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/usp/services/bridge_endpoints.dart';
 import 'package:privacy_gui/core/usp/services/session_auth_gate.dart';
 import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
+import 'package:web/web.dart' as web;
 
 import '../../mocks.dart';
+
+/// The page's `fetch`, which the notification stream calls directly (it needs
+/// a `ReadableStream`, so it does not go through `package:http`).
+@JS('fetch')
+external JSFunction get _fetch;
+
+@JS('fetch')
+external set _fetch(JSFunction value);
 
 void main() {
   late int sessionEnds;
@@ -99,6 +112,17 @@ void main() {
 
     // 721939aa8: a re-activation disposes the old bridge after the new session
     // has begun. Its token, and so its ticket, are the old session's.
+    // A single handler's release in a live session (#1666's design, Q9): the
+    // flag it used to pass is gone, and a rejected credential in a live session
+    // is over.
+    test('an unsubscribe ends the session, once', () async {
+      await expectLater(
+        with401(() => bridge.unsubscribe(subscriptionId: 'x')),
+        throwsA(isA<SessionExpiredException>()),
+      );
+      expect(sessionEnds, 1);
+    });
+
     test('from a bridge built for a session since replaced, ends nothing',
         () async {
       gate.begin(); // the re-activation's transport swap
@@ -131,6 +155,76 @@ void main() {
         throwsA(isA<SessionExpiredException>()),
       );
       expect(sessionEnds, 1);
+    });
+  });
+
+  // The notification stream's 401 goes through the same rule as the REST
+  // requests, from its own call site. Answered 401 every time, the local
+  // stream reauths and reopens once, and the second 401 ends the session: a
+  // stream that reopened on every 401 would reauth without end.
+  group('UspBridgeClient - the notification stream answered 401', () {
+    late int fetches;
+    late JSFunction original;
+
+    setUp(() {
+      fetches = 0;
+      original = _fetch;
+      _fetch = ((JSAny? input, JSAny? init) {
+        fetches++;
+        return Future<web.Response>.value(
+          web.Response(null, web.ResponseInit(status: 401)),
+        ).toJS;
+      }).toJS;
+    });
+    tearDown(() => _fetch = original);
+
+    /// Listens to [stream] until it closes and returns the errors it carried.
+    Future<List<Object>> errorsUntilClosed(Stream<SseEvent> stream) async {
+      final errors = <Object>[];
+      final done = Completer<void>();
+      stream.listen((_) {}, onError: errors.add, onDone: done.complete);
+      await done.future.timeout(const Duration(seconds: 5));
+      return errors;
+    }
+
+    test('local: reauths and reopens once, then ends the session', () async {
+      final localGate = SessionAuthGate(
+        authBehavior: AuthBehavior.local,
+        endSession: () => sessionEnds++,
+      )..begin();
+      final usp = MockUspClient();
+      when(() => usp.sessionToken).thenReturn('token');
+      when(() => usp.reauth()).thenAnswer((_) async {});
+      final local = UspBridgeClient(
+        usp,
+        baseUrl: 'https://router.test',
+        gate: localGate,
+      );
+
+      final errors = await errorsUntilClosed(local.notifications());
+
+      expect(fetches, 2);
+      verify(() => usp.reauth()).called(1);
+      expect(sessionEnds, 1);
+      expect(errors.single, isA<SessionExpiredException>());
+    });
+
+    test('remote: ends the session at once, with no reauth', () async {
+      final errors = await errorsUntilClosed(bridge.notifications());
+
+      expect(fetches, 1);
+      expect(sessionEnds, 1);
+      expect(errors.single, isA<SessionExpiredException>());
+    });
+
+    test('after logout() has ended the session, ends nothing', () async {
+      gate.markEnded();
+
+      final errors = await errorsUntilClosed(bridge.notifications());
+
+      expect(fetches, 1);
+      expect(sessionEnds, 0);
+      expect(errors.single, isA<SessionExpiredException>());
     });
   });
 }

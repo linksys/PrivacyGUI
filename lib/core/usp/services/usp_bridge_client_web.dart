@@ -296,6 +296,9 @@ class UspBridgeClient {
 
   /// Quick diagnostic: hit the SSE endpoint with a regular http.get
   /// to check if it's reachable (will buffer and timeout for SSE streams).
+  ///
+  /// Sent outside [_withAuthRetry] on purpose: it reports what came back, and
+  /// its 401 decides nothing about the session (#1666).
   Future<Map<String, String>> notificationsProbe() async {
     final response = await http
         .get(

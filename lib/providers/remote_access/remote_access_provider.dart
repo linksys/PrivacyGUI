@@ -148,13 +148,27 @@ class RemoteAccessNotifier extends Notifier<RemoteAccessState> {
       // The end itself is the chip's: it navigates to `?expired=true` and then
       // logs out, an order the route redirect would break if this logged out
       // first.
-      switch (ref.read(sessionAuthGateProvider).decideOn401(ticket)) {
+      final gate = ref.read(sessionAuthGateProvider);
+      switch (gate.decideOn401(ticket)) {
         case AuthDecision.end:
           logger.w('[RA] Poll unauthorized (401) — forcing session end');
           _forceSessionEnd(sessionId);
-        case AuthDecision.retry || AuthDecision.ignore:
+        // A reload restores the session from storage and polls before the
+        // confirm view activates it again, so no session has begun, and the
+        // gate has nothing to judge against. The poll is then the only thing
+        // asking Guardian about this session, and its 401 is that session's.
+        case AuthDecision.ignore
+            when ticket == gate.ticket && !gate.isLive && !gate.hasEnded:
+          logger.w('[RA] Poll unauthorized (401) before the session was '
+              'resumed — forcing session end');
+          _forceSessionEnd(sessionId);
+        case AuthDecision.ignore:
           logger.d('[RA] Poll unauthorized (401) for a session that is over '
               'or not this one — ignored');
+        // Not reached: the poll runs only under Remote Assistance, whose
+        // credential cannot be refreshed. A refresh is not the poll's to try.
+        case AuthDecision.retry:
+          logger.d('[RA] Poll unauthorized (401) — ignored');
       }
     } catch (e) {
       _pollFailureCount++;

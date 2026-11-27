@@ -1,3 +1,5 @@
+import 'package:privacy_gui/core/utils/logger.dart';
+
 import 'session_auth_gate.dart';
 
 /// The token a bridge request is sent with, and the session that token
@@ -81,7 +83,8 @@ Future<bool> resendAfter401({
       try {
         await reauth();
         return true;
-      } catch (_) {
+      } catch (e) {
+        logger.w('[USP][Auth]: reauth after a bridge 401 failed: $e');
         return false;
       }
   }
