@@ -49,7 +49,7 @@ class LocalModeProfile implements AppModeProfile {
   // its value with `==`, and a fresh strategy object per read would make the
   // provider notify — hence rebuild the bridge — on every unrelated invalidation.
   static const _credential = LocalCredentialStrategy();
-  static const _transport = LocalTransportStrategy(credential: _credential);
+  static const _transport = LocalTransportStrategy();
   static const _session = LocalSessionStrategy();
   static const _proximity = LocalProximityStrategy();
 

@@ -64,57 +64,47 @@ final uspBridgeClientProvider = Provider<UspBridgeClient?>((ref) {
     baseUrl: config.baseUrl,
     authToken: config.authToken,
     clientTypeId: config.clientTypeId,
-    authBehavior: config.authBehavior,
+    // What a 401 does is the gate's (#1666); the bridge asks it and acts.
+    gate: ref.read(sessionAuthGateProvider),
     // Null locally, and the client throws on any read that needs it. Nothing
     // local calls one: the only caller is #1580's page, whose entry point the
     // local surface does not offer.
     remoteReads: config.remoteReads,
   );
 
-  // W-1 fix: wire auth failure to logout (both modes)
-  //
-  // The one place under `lib/core/` still allowed to sign the user out, and
-  // `session_teardown_call_sites_test.dart` declares it as such. A 401 can arrive
-  // before any page is mounted, so converting it to a report the way phase 5 did
-  // the three connection exits would fail open. #1323 carries that reasoning.
-  //
-  // Under Remote Assistance this lands on the confirm view's "Session Ended"
-  // screen — the same screen an operator who finished on purpose sees. That is a
-  // decision, not an oversight: Austin's call on 2026-09-09 was not to tell the two
-  // apart, so this is a closed question and not pending work. Reopening it costs a
-  // stored end cause the route redirect can read, plus new copy in 26 locales;
-  // #1529 records the decision and what it would take.
-  bridge.onAuthFailed = () {
-    logger.w('[USP][Auth]: Session expired — triggering logout');
-    // Spelled out rather than left to the default, which is the same value. These
-    // two were the last `logout()` calls in the tree passing no cause, and #1474
-    // makes the cause the thing `SessionStrategy.end` switches on: under Remote
-    // Assistance `sessionLost` is what skips `endSessionForCA`. Here that is
-    // correct and not merely conservative — the credential this reports on has
-    // just been rejected, so asking Guardian to close the session with it would be
-    // a call the router cannot honour. Written out so that reading it needs no trip
-    // to the default.
-    ref.read(authProvider.notifier).logout(cause: EndCause.sessionLost);
-  };
-
   return bridge;
 });
 
-/// Who answers "does this 401 end the session?" (#1666) for USP commands, the
-/// heartbeat refresh and the session restore — see [SessionAuthGate]. The
-/// bridge's `onAuthFailed` below still answers for itself until the second half
-/// of #1666's PR C.
+/// Who answers "does this 401 end the session?" (#1666) — see
+/// [SessionAuthGate]. USP commands, the heartbeat refresh, the session
+/// restore, the bridge's REST and SSE requests and the Remote Assistance
+/// session poll all ask it.
 ///
 /// Built once and never rebuilt: it reads, never watches, so the session epoch
 /// it keeps lasts as long as the app. The mode's answer comes from
-/// `CredentialStrategy.authBehavior`, which is fixed for the build.
+/// `CredentialStrategy.authBehavior`, which is fixed for the build. Built at
+/// boot, through the coordinator, so it is live before any page is: a 401 can
+/// arrive before the dashboard shell has mounted (PnP, or a Remote Assistance
+/// session still on its way in).
 ///
-/// It ends the session here, in the one file under `lib/core/` allowed to
-/// (`session_teardown_call_sites_test.dart`), with the same waiver and the same
-/// cause as `bridge.onAuthFailed` above: what it noticed is a credential the
-/// router has stopped accepting. Built at boot, through the coordinator, so it
-/// is live before any page is: a 401 can arrive before the dashboard shell has
-/// mounted (PnP, or a Remote Assistance session still on its way in).
+/// **It ends the session here**, in the one file under `lib/core/` still
+/// allowed to sign the user out — `session_teardown_call_sites_test.dart`
+/// declares it as such. A 401 can arrive before any page is mounted, so turning
+/// it into a report the way #1323 phase 5 did the three connection exits would
+/// fail open; #1323 carries that reasoning.
+///
+/// Under Remote Assistance this lands on the confirm view's "Session Ended"
+/// screen — the same screen an operator who finished on purpose sees. That is a
+/// decision, not an oversight: Austin's call on 2026-09-09 was not to tell the
+/// two apart, so it is a closed question and not pending work. Reopening it
+/// costs a stored end cause the route redirect can read, plus new copy in 26
+/// locales; #1529 records the decision and what it would take.
+///
+/// The cause is spelled out: [EndCause.sessionLost] is what makes
+/// `SessionStrategy.end` skip `endSessionForCA` under Remote Assistance, and
+/// that is correct, not merely conservative — the credential has just been
+/// rejected, so asking Guardian to close the session with it would be a call
+/// it cannot honour.
 final sessionAuthGateProvider = Provider<SessionAuthGate>((ref) {
   return SessionAuthGate(
     authBehavior: ref.read(appModeProfileProvider).credential.authBehavior,
@@ -288,13 +278,14 @@ final sseBootstrapProvider = FutureProvider<void>((ref) async {
   // It is still not a mode *cause*: both transports have a health endpoint, so
   // there is nothing here for a strategy member to answer.
   //
-  // `reportAuthFailure: false` because nothing depends on the answer: a 401 here
-  // is caught below like any other failure, and reported it would have ended the
-  // session from a call whose result is ignored. Whether the token is really dead
-  // is for the connect and the first read, which report it as they always have.
+  // `RequestKind.bestEffort` because nothing depends on the answer: a 401 here
+  // is caught below like any other failure, and deciding on it would have ended
+  // the session from a call whose result is ignored (bb7d394ae). Whether the
+  // token is really dead is for the connect and the first read, which report it
+  // as they always have.
   try {
     await bridge
-        .health(reportAuthFailure: false)
+        .health(kind: RequestKind.bestEffort)
         .timeout(const Duration(seconds: 5));
     logger.d('[SSE]: Bridge health check passed');
   } catch (e) {

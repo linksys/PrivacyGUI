@@ -1,7 +1,8 @@
 import 'bridge_endpoints.dart';
-import 'sse_operation_strategy.dart';
+import 'session_auth_gate.dart';
 import 'usp_client.dart';
 
+export 'session_auth_gate.dart' show RequestKind;
 export 'sse_operation_strategy.dart' show AuthBehavior;
 export 'usp_bridge_client_errors.dart';
 
@@ -11,20 +12,19 @@ export 'usp_bridge_client_errors.dart';
 /// All methods throw [UnsupportedError] since SSE/bridge functionality
 /// requires the browser Fetch API.
 class UspBridgeClient {
-  /// Called when auth fails and cannot be recovered (session expired).
-  void Function()? onAuthFailed;
-
   UspBridgeClient(
     UspClient usp, {
     BridgeEndpoints? endpoints,
     String? baseUrl,
     String? authToken,
     String? clientTypeId,
-    AuthBehavior authBehavior = AuthBehavior.local,
+    required SessionAuthGate gate,
     RemoteReads? remoteReads,
   });
 
-  Future<Map<String, dynamic>> health({bool reportAuthFailure = true}) =>
+  Future<Map<String, dynamic>> health({
+    RequestKind kind = RequestKind.normal,
+  }) =>
       throw UnsupportedError('UspBridgeClient is only available on Web');
 
   Stream<SseEvent> notifications() =>
@@ -54,11 +54,10 @@ class UspBridgeClient {
 
   Future<Map<String, dynamic>> unsubscribe({
     required String subscriptionId,
-    bool teardown = false,
   }) =>
       throw UnsupportedError('UspBridgeClient is only available on Web');
 
-  Future<List<String>> listSubscriptions({bool teardown = false}) =>
+  Future<List<String>> listSubscriptions() =>
       throw UnsupportedError('UspBridgeClient is only available on Web');
 
   /// Synchronously abort the active SSE stream. No-op on non-Web platforms.

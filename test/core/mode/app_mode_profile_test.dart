@@ -110,8 +110,10 @@ void main() {
               'configures. UspBridgeClient reads it as `_usp.baseUrl`.');
       expect(config.authToken, isNull);
       expect(config.clientTypeId, isNull);
-      expect(config.authBehavior, same(AuthBehavior.local));
-      expect(config.authBehavior.shouldRetryOnFailure, isTrue,
+      // What a 401 means is no longer carried by the bridge config (#1666): the
+      // bridge asks SessionAuthGate, which reads it from the credential.
+      expect(profile.credential.authBehavior, same(AuthBehavior.local));
+      expect(profile.credential.authBehavior.shouldRetryOnFailure, isTrue,
           reason: 'locally a 401 is transient — the router session can be '
               'refreshed');
     });
@@ -152,10 +154,11 @@ void main() {
       expect(config.authToken, 'tat-abc');
       expect(config.clientTypeId, 'agent-web');
 
-      // Cause 2 — reached the transport from the credential strategy, not from
-      // a literal inside it.
-      expect(config.authBehavior, same(AuthBehavior.remote));
-      expect(config.authBehavior.shouldRetryOnFailure, isFalse,
+      // Cause 2 — the credential strategy's, read by SessionAuthGate (#1666);
+      // the transport no longer carries it.
+      final profile = container.read(appModeProfileProvider);
+      expect(profile.credential.authBehavior, same(AuthBehavior.remote));
+      expect(profile.credential.authBehavior.shouldRetryOnFailure, isFalse,
           reason: 'a Guardian 401 means the support session is over; retrying '
               're-asks a question whose answer is now permanent');
 

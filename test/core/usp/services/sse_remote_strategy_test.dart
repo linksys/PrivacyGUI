@@ -26,24 +26,12 @@ void main() {
         )).thenAnswer((_) async => {});
     when(() => mockBridge.listSubscriptions())
         .thenAnswer((_) async => <String>[]);
-    when(() => mockBridge.listSubscriptions(teardown: any(named: 'teardown')))
-        .thenAnswer((_) async => <String>[]);
-    when(() => mockBridge.unsubscribe(
-          subscriptionId: any(named: 'subscriptionId'),
-          teardown: any(named: 'teardown'),
-        )).thenAnswer((_) async => {});
   });
 
   group('heartbeatConfig', () {
     test('returns remote config with enabled=false', () {
       expect(strategy.heartbeatConfig.enabled, isFalse);
       expect(strategy.heartbeatConfig.authCheckEnabled, isFalse);
-    });
-  });
-
-  group('authBehavior', () {
-    test('returns remote config with shouldRetryOnFailure=false', () {
-      expect(strategy.authBehavior.shouldRetryOnFailure, isFalse);
     });
   });
 
@@ -237,35 +225,33 @@ void main() {
       await strategy.unregisterSubscriptions(['sub-1', 'sub-2']);
 
       // Bridge receives prefixed IDs
-      verify(() => mockBridge.unsubscribe(
-          subscriptionId: 'remote-sub-1', teardown: true)).called(1);
-      verify(() => mockBridge.unsubscribe(
-          subscriptionId: 'remote-sub-2', teardown: true)).called(1);
+      verify(() => mockBridge.unsubscribe(subscriptionId: 'remote-sub-1'))
+          .called(1);
+      verify(() => mockBridge.unsubscribe(subscriptionId: 'remote-sub-2'))
+          .called(1);
     });
 
     test('continues on failure', () async {
-      when(() => mockBridge.unsubscribe(
-          subscriptionId: 'remote-fail',
-          teardown: true)).thenThrow(Exception('error'));
+      when(() => mockBridge.unsubscribe(subscriptionId: 'remote-fail'))
+          .thenThrow(Exception('error'));
 
       await strategy.unregisterSubscriptions(['fail', 'ok']);
 
-      verify(() => mockBridge.unsubscribe(
-          subscriptionId: 'remote-ok', teardown: true)).called(1);
+      verify(() => mockBridge.unsubscribe(subscriptionId: 'remote-ok'))
+          .called(1);
     });
 
-    test('a 401 here cannot end the session', () async {
-      // Logout reaches this through `unregisterAll()` after `session.end()` has
-      // spent the credential, so a 401 is the expected answer — the same one that
-      // looped 770 times on QA when the disconnect cleanup reported it. Today
-      // `disconnect()` empties the registry first and the list is empty by the
-      // time it gets here; this is what keeps the loop closed if those two steps
-      // are ever reordered (review of #1600). A live single unregister is
-      // cleanup whose failure is ignored too, and the reads that depend on the
-      // token still report it.
+    // The `teardown: true` flag this used to pass is gone (#1666): logout
+    // reaches here after `session.end()` has spent the credential, in a session
+    // `logout()` has already ended, and a re-activation's dispose runs it on the
+    // old bridge, whose ticket the new session has superseded.
+    // `SessionAuthGate` ignores the 401 in both — `bridge_auth_test.dart` and
+    // the gate's own table pin that (721939aa8).
+    test('a plain unsubscribe: what a 401 means is the gate\'s', () async {
       await strategy.unregisterSubscriptions(['sub-1']);
 
-      verifyNever(() => mockBridge.unsubscribe(subscriptionId: 'remote-sub-1'));
+      verify(() => mockBridge.unsubscribe(subscriptionId: 'remote-sub-1'))
+          .called(1);
     });
   });
 
@@ -401,7 +387,7 @@ void main() {
 
   group('onSseDisconnected', () {
     test('intentional disconnect triggers fire-and-forget cleanup', () async {
-      when(() => mockBridge.listSubscriptions(teardown: true))
+      when(() => mockBridge.listSubscriptions())
           .thenAnswer((_) async => ['remote-sub-1', 'remote-sub-2']);
 
       await strategy.onSseDisconnected(intentional: true);
@@ -409,25 +395,23 @@ void main() {
       // Fire-and-forget, so we just verify it was called
       // The actual cleanup happens asynchronously
       await Future.delayed(const Duration(milliseconds: 50));
-      verify(() => mockBridge.listSubscriptions(teardown: true)).called(1);
+      verify(() => mockBridge.listSubscriptions()).called(1);
     });
 
     test('cleanup only removes remote-prefixed subscriptions', () async {
-      when(() => mockBridge.listSubscriptions(teardown: true)).thenAnswer(
+      when(() => mockBridge.listSubscriptions()).thenAnswer(
           (_) async => ['remote-sub-1', 'local-sub', 'ethernet-valuechange']);
 
       await strategy.onSseDisconnected(intentional: true);
       await Future.delayed(const Duration(milliseconds: 50));
 
       // Only remote-prefixed subscription should be unsubscribed
-      verify(() => mockBridge.unsubscribe(
-          subscriptionId: 'remote-sub-1', teardown: true)).called(1);
+      verify(() => mockBridge.unsubscribe(subscriptionId: 'remote-sub-1'))
+          .called(1);
       // Local subscriptions should NOT be touched
-      verifyNever(() => mockBridge.unsubscribe(
-          subscriptionId: 'local-sub', teardown: any(named: 'teardown')));
-      verifyNever(() => mockBridge.unsubscribe(
-          subscriptionId: 'ethernet-valuechange',
-          teardown: any(named: 'teardown')));
+      verifyNever(() => mockBridge.unsubscribe(subscriptionId: 'local-sub'));
+      verifyNever(
+          () => mockBridge.unsubscribe(subscriptionId: 'ethernet-valuechange'));
     });
 
     test('the cleanup cannot end the session it is cleaning up after',
@@ -435,20 +419,20 @@ void main() {
       // An intentional disconnect is almost always a logout, which has already
       // spent the credential — on QA Guardian the End Session DELETE had
       // returned 204 before this read went out. A 401 here is the expected
-      // answer, not news, so the reads go out with `teardown: true` and the
-      // bridge reports that 401 as an error only. Measured without it: the 401
-      // asked for a logout, that logout disconnected SSE again, and the loop ran
-      // 770 times in four minutes.
-      when(() => mockBridge.listSubscriptions(teardown: true))
+      // answer, not news. Measured with nothing stopping it: the 401 asked for a
+      // logout, that logout disconnected SSE again, and the loop ran 770 times
+      // in four minutes (7734c2e4d). What stops it now is the gate, not a flag
+      // (#1666): logout() ends the session first, and every 401 for an ended
+      // session is ignored, after the teardown too.
+      when(() => mockBridge.listSubscriptions())
           .thenAnswer((_) async => ['remote-sub-1']);
 
       await strategy.onSseDisconnected(intentional: true);
       await Future.delayed(const Duration(milliseconds: 50));
 
-      verify(() => mockBridge.listSubscriptions(teardown: true)).called(1);
-      verify(() => mockBridge.unsubscribe(
-          subscriptionId: 'remote-sub-1', teardown: true)).called(1);
-      verifyNever(() => mockBridge.listSubscriptions());
+      verify(() => mockBridge.listSubscriptions()).called(1);
+      verify(() => mockBridge.unsubscribe(subscriptionId: 'remote-sub-1'))
+          .called(1);
     });
 
     test('unintentional disconnect does not trigger cleanup', () async {

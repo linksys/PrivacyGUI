@@ -71,11 +71,12 @@ const _exitActions = 'lib/components/session/session_exit_actions.dart';
 /// The one file under `lib/core/` still allowed to sign the user out, and the one
 /// outside it that acts on the core's report.
 ///
-/// `sse_providers.dart` is an exception with a reason, not an oversight. Its two
-/// calls are `bridge.onAuthFailed` and the end of `sessionAuthGateProvider`, the 401
-/// gate `UspClient` and the auth coordinator report into since #1666. The 401 they
-/// answer can arrive during boot, before any page is mounted, so turning them into
-/// a report would fail *open*: the app would keep a session the router has already
+/// `sse_providers.dart` is an exception with a reason, not an oversight. Its one
+/// call is the end of `sessionAuthGateProvider`, the 401 gate that `UspClient`, the
+/// auth coordinator, the bridge and the Remote Assistance poll all ask since #1666
+/// (the bridge's own `onAuthFailed`, the second call this note once named, is gone).
+/// The 401 can arrive during boot, before any page is mounted, so turning it into a
+/// report would fail *open*: the app would keep a session the router has already
 /// rejected, which is strictly worse than the layer violation. `SessionAuthGate` is
 /// the state-carrying owner for transport auth failure this note once said nobody
 /// would build, and it still ends the session itself rather than reporting: what a
@@ -83,7 +84,7 @@ const _exitActions = 'lib/components/session/session_exit_actions.dart';
 /// the session on purpose — stays closed, because Austin's call on 2026-09-09 was
 /// that the two share one screen. So this waiver is the end state rather than a
 /// staging post. #1529 records the
-/// decision, and both sites carry a comment saying the question is closed — round 2
+/// decision, and the site carries a comment saying the question is closed — round 2
 /// of #1513's review had asked for a marker there, because the waiver named only
 /// #1323, which carries the reasoning but no acceptance line for these two sites,
 /// and a green census here therefore read as "done".

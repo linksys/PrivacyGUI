@@ -41,7 +41,7 @@
 //
 // WHAT THE "401 shows session-revoked" CLAUSE BECAME. The issue also asked for a
 // 401 on the RA bridge to surface as a session-revoked message here. It cannot: a
-// 401 calls `onAuthFailed` → `logout()`, which tears the session down and unmounts
+// 401 ends the session through `SessionAuthGate` → `logout()`, which tears it down and unmounts
 // the shell this banner lives in. There is no frame in which a revoked-session
 // banner could be read. The clause was dropped rather than implemented; the
 // terminal surface for that path is the confirm page's session-ended view, which
