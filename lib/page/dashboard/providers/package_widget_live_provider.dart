@@ -158,13 +158,21 @@ class PackageWidgetLiveNotifier
     if (!_active) return;
 
     try {
-      _sseCleanup = await service.subscribeValueChanges(
+      final cleanup = await service.subscribeValueChanges(
         widgetId: arg.widgetId,
         subscription: subscription,
         onValueChange: (path, value) {
           if (_active) _cache.updatePath(path, value);
         },
       );
+      // The card left while the subscribe was in flight, so `onDispose` had
+      // nothing to call. This releases only this notifier's hold on the id; a
+      // card of the same widget that came back meanwhile keeps its own (#1887).
+      if (_active) {
+        _sseCleanup = cleanup;
+      } else {
+        await cleanup?.call();
+      }
     } on ServiceError catch (e) {
       logger.w('[USP][PkgWidget]: SSE subscribe failed for '
           '${arg.widgetId}: $e');
