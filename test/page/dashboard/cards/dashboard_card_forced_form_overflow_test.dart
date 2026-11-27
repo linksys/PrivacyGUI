@@ -325,7 +325,7 @@ void main() {
   // inventory test above pins from the other side.
   runOverflowSweep(
     family: const ForcedPopupTileFamily(),
-    expectedCellCount: 51,
+    expectedCellCount: 54,
   );
 
   // ─── The loading state at the picked box ──────────────────────────────────

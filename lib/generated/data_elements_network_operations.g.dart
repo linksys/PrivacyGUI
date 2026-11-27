@@ -4,8 +4,24 @@
 
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
-/// Commands on DataElements mesh nodes - standard WPS push-button, Linksys reboot and factory reset of one node or of the whole network
+/// Commands on DataElements mesh nodes - standard WPS push-button, a radio's channel scan, Linksys reboot and factory reset of one node or of the whole network
 class DataElementsNetworkOperations {
+  /// Scan the given channels on one radio of a mesh node (FWDEV#277). FW pointed the GUI at the controller's own radios, the instance whose ID equals Network.ControllerID; FW also scanned an agent's radios through the controller this way. Look the radio up right before the call, since instance numbers change. channelsList is the channel numbers, comma-separated ("36,40,44,48"); request only channels the radio allows in the unit's region (Device.WiFi.Radio.{k}.PossibleChannels), as FW asked. dwellTimeMs is the time on each channel in ms; 100 was measured. The call returns once the controller has sent the request, and the result is a new ScanResult instance under this radio (data_elements_scan_results.yaml), which appeared 4-6 s later for 4 channels at 100 ms. Every call adds an instance, so read the newest one for this radio: the highest instance number, or the TimeStamp that matches. The controller keeps at most 5 instances across all radios and devices and drops the oldest; numbers are never reused. All bands share one wiphy, which runs one scan at a time, so scan the radios one after another; a call while Device.WiFi.NeighboringWiFiDiagnostic() runs was not measured. The radio leaves its channel while it scans; its effect on traffic was not measured for this command (FW measured no lost pings on a wireless backhaul and about 170 ms round-trip time at worst during a NeighboringWiFiDiagnostic(), FWDEV#277). Both input names are read: on the bench each ScanResult held exactly the requested channels, and the controller logged dwell_time_ms 100.
+  static Future<Map<String, dynamic>> channelScanRequest(
+    UspClient client,
+    int instance,
+    int childInstance, {
+    required String channelsList,
+    required int dwellTimeMs,
+  }) async {
+    final inputs = <String, String>{};
+    inputs['channels_list'] = channelsList;
+    inputs['dwell_time_ms'] = dwellTimeMs.toString();
+    return await client.operate(
+        'Device.WiFi.DataElements.Network.Device.$instance.Radio.$childInstance.ChannelScanRequest()',
+        args: inputs);
+  }
+
   /// Standard TR-181 WPS push-button on one mesh node, no BLE step. Pass the instance whose ID equals Network.ControllerID; Status is "Success", or "Error_Other" if the arm failed. Any other instance returns "Error_Invalid_Input". The joined node then appears as a new DataElements Device.{i}.
   static Future<Map<String, dynamic>> initiateWpsPbc(
       UspClient client, int instance) async {

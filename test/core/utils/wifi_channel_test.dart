@@ -144,4 +144,29 @@ void main() {
           isEmpty);
     });
   });
+
+  group('utilizationToPercent (#1778)', () {
+    test('rounds a 0–255 reading to a whole percentage', () {
+      expect(utilizationToPercent(0), 0);
+      expect(utilizationToPercent(128), 50);
+      expect(utilizationToPercent(184), 72);
+      expect(utilizationToPercent(255), 100);
+    });
+
+    test('keeps an unknown reading unknown', () {
+      expect(utilizationToPercent(null), isNull);
+    });
+  });
+
+  group('isBusyUtilization (#1778)', () {
+    test('is busy from busyChannelUtilization up', () {
+      expect(isBusyUtilization(busyChannelUtilization - 1), isFalse);
+      expect(isBusyUtilization(busyChannelUtilization), isTrue);
+      expect(isBusyUtilization(255), isTrue);
+    });
+
+    test('an unknown reading is not busy', () {
+      expect(isBusyUtilization(null), isFalse);
+    });
+  });
 }

@@ -51,8 +51,9 @@ import 'package:privacy_gui/validator_rules/lan_host_ipv4.dart';
 /// answers on the LAN before DataElements lists it again (about 50 s after a
 /// clean controller reboot, measured 2026-11-23). In both cases the row is a
 /// node on its way back, not a client, so it reads offline until DataElements
-/// lists it. This departs from the firmware's guidance on PrivacyGUI#1443,
-/// which keeps such a row a client.
+/// lists it. The definition leaves how to show such a row to the app: it
+/// calls it a node on the LAN but not in the mesh, rejoining or removed from
+/// it (linksys/usp_framework#127).
 ///
 /// Known limitation: a former node set up as a router of its own and then
 /// wired behind this network (router behind router, or Bridge Mode) does not
@@ -735,8 +736,9 @@ class MeshNetworkBuilder {
       connectedClients: connectedClients,
       backhaul: slaveMeshInfo.backhaul,
       livenessKnown: livenessKnown,
-      // The row a rename writes to, and the name it wrote (#1688 item 4). The
-      // same leaf a client's name is, since an agent is a Hosts row too.
+      // The agent's row, which says a rename has a row to write (#1688 item
+      // 4), and the name it wrote: the same leaf a client's name is, since an
+      // agent is a Hosts row too.
       hostInstancePath: slaveDevice?.instancePath,
       userDeviceName: nonEmpty(slaveDevice?.linksysUserDeviceLocation),
       // What the node detail page offers (#876); DataElements is its only source.
@@ -800,12 +802,9 @@ class MeshNetworkBuilder {
   /// another way would give the node a second ID, and a Node Detail page
   /// opened on it would read "not found" once the node is back.
   ///
-  /// No [SlaveNode.hostInstancePath], so the page offers no rename. A rename
-  /// writes to the row index read before the dialog opened, and Hosts rows
-  /// renumber while a node rejoins (measured 4 → 5 → 4), so the name could
-  /// land on another device (#1840); renaming a node that is not there buys
-  /// nothing. No action is offered either: the commands go through
-  /// DataElements, which no longer lists the node.
+  /// No [SlaveNode.hostInstancePath], so the page offers no rename: renaming a
+  /// node that is not there buys nothing. No action is offered either: the
+  /// commands go through DataElements, which no longer lists the node.
   static SlaveNode _buildOfflineSlaveNode(ConnectedDevice row) {
     return SlaveNode(
       deviceId: row.macAddress.trim().toUpperCase(),

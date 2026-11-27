@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
+import 'package:privacy_gui/core/utils/wifi_channel.dart';
+import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 
 import 'package:privacy_gui/page/_shared/utils/mesh_backhaul_link.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/device_score.dart';
@@ -354,6 +356,84 @@ class WifiCoverageCheckUIModel extends DiagnosticStepUIModel {
         );
 
   bool get hasWeakSignalDevices => weakSignalDevices.isNotEmpty;
+}
+
+/// How busy the channel one radio is on is, for
+/// [ChannelCongestionCheckUIModel].
+class ChannelCongestionRadioUIModel extends Equatable {
+  /// "2.4GHz", "5GHz" or "6GHz".
+  final String band;
+
+  /// The channel the radio is on, or null when the router does not say.
+  final int? channel;
+
+  /// DataElements `Radio.Utilization` of that channel, 0–255, or null when
+  /// it was not read.
+  final int? utilization;
+
+  const ChannelCongestionRadioUIModel({
+    required this.band,
+    required this.channel,
+    required this.utilization,
+  });
+
+  /// [utilization] as a whole percentage, or null when unknown.
+  int? get utilizationPercent => utilizationToPercent(utilization);
+
+  /// Whether the channel is at or above [busyChannelUtilization] (50 %).
+  bool get isBusy => isBusyUtilization(utilization);
+
+  @override
+  List<Object?> get props => [band, channel, utilization];
+}
+
+/// Whether the channel each radio is on is busy (#1778): the Wi-Fi coverage
+/// flow's second step. Read live, with no scan; a busy channel recommends
+/// Channel Finder, which compares every channel.
+class ChannelCongestionCheckUIModel extends DiagnosticStepUIModel {
+  final List<ChannelCongestionRadioUIModel> radios;
+
+  ChannelCongestionCheckUIModel({required this.radios})
+      : super(
+          step: DiagnosticStep.checkingChannelCongestion,
+          severity: radios.any((r) => r.isBusy)
+              ? DiagnosticSeverity.warning
+              : radios.any((r) => r.utilization != null)
+                  ? DiagnosticSeverity.ok
+                  : DiagnosticSeverity.skipped,
+          titleKey: 'diagnostics_channel_congestion',
+          descriptionKey: 'diagnostics_channel_congestion_desc',
+          rawData: {
+            for (final r in radios)
+              r.band: {'channel': r.channel, 'utilization': r.utilization},
+          },
+        );
+
+  /// One row per enabled radio of [wifiRadios].
+  factory ChannelCongestionCheckUIModel.fromRadios(
+          List<WifiRadioUIModel> wifiRadios) =>
+      ChannelCongestionCheckUIModel(radios: [
+        for (final radio in wifiRadios.where((r) => r.enable))
+          ChannelCongestionRadioUIModel(
+            band: radio.band,
+            channel: radio.channelInUse,
+            utilization: radio.utilization,
+          ),
+      ]);
+
+  /// Whether any radio's channel is busy.
+  bool get isCongested => radios.any((r) => r.isBusy);
+
+  /// The busiest radio with a reading, or null when none was read.
+  ChannelCongestionRadioUIModel? get busiest {
+    ChannelCongestionRadioUIModel? busiest;
+    for (final radio in radios) {
+      final value = radio.utilization;
+      if (value == null) continue;
+      if (busiest == null || value > busiest.utilization!) busiest = radio;
+    }
+    return busiest;
+  }
 }
 
 /// DNS lookup check result UI model.

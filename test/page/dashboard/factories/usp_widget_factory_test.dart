@@ -7,6 +7,7 @@ import 'package:privacy_gui/page/dashboard/factories/usp_widget_factory.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 import 'package:privacy_gui/page/dashboard/views/components/_components.dart';
 import 'package:privacy_gui/page/admin/cards/usp_device_info_card.dart';
+import 'package:privacy_gui/page/channel_finder/cards/channel_finder_card.dart';
 import 'package:privacy_gui/page/internet_settings/cards/usp_network_status_card.dart';
 import 'package:privacy_gui/page/topology/cards/usp_network_topology_card.dart';
 
@@ -25,7 +26,7 @@ void main() {
   });
 
   group('buildWidget', () {
-    test('returns non-null for all 18 valid IDs', () {
+    test('returns non-null for all 19 valid IDs', () {
       for (final spec in UspWidgetSpecs.all) {
         expect(
           factory.buildWidget(spec.id, cardWidth: 400),
@@ -53,6 +54,11 @@ void main() {
     test('topology returns UspNetworkTopologyCard', () {
       expect(cardOf(factory.buildWidget('topology', cardWidth: 400)),
           isA<UspNetworkTopologyCard>());
+    });
+
+    test('channel_finder returns ChannelFinderCard', () {
+      expect(cardOf(factory.buildWidget('channel_finder', cardWidth: 400)),
+          isA<ChannelFinderCard>());
     });
 
     test('returns null for unknown ID', () {

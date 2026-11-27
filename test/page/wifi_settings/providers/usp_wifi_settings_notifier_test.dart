@@ -1390,6 +1390,9 @@ class _FakeWifiDataNotifier extends AsyncNotifier<WifiData>
 
   @override
   Future<void> refreshUtilization() async {}
+
+  @override
+  Future<void> refreshUtilizationOrThrow() async {}
 }
 
 /// Builds normally, then throws on the next build once [failNext] is set — the
@@ -1403,15 +1406,17 @@ class _ThrowOnRefresh extends AsyncNotifier<WifiData>
   Future<WifiData> build() async {
     if (failNext) {
       failures++;
-      throw const NetworkError(
-          detail: 'TimeoutException after 0:00:15.000000: Throttler: request '
-              'exceeded 15s');
+      // What the throttler raises when its window runs out (#1831).
+      throw const TimeoutError(detail: 'Throttler: request exceeded 15s');
     }
     return WifiSettingsTestData.createWifiData();
   }
 
   @override
   Future<void> refreshUtilization() async {}
+
+  @override
+  Future<void> refreshUtilizationOrThrow() async {}
 }
 
 // ---------------------------------------------------------------------------
@@ -1428,4 +1433,7 @@ class _ErrorWifiDataNotifier extends AsyncNotifier<WifiData>
 
   @override
   Future<void> refreshUtilization() async {}
+
+  @override
+  Future<void> refreshUtilizationOrThrow() async {}
 }

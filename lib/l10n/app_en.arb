@@ -553,6 +553,73 @@
     }
   },
   "channelUtilizationUnavailable": "Channel utilization: —",
+  "channelFinder": "Channel Finder",
+  "channelFinderDescription": "See how busy each WiFi channel is around your router.",
+  "channelFinderScanNote": "A scan takes about 45 seconds. WiFi may pause briefly while it runs.",
+  "channelFinderScan": "Scan",
+  "channelFinderScanAgain": "Scan again",
+  "channelFinderLastScan": "Last scan: {time}",
+  "@channelFinderLastScan": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "channelFinderNoScan": "No scan yet. Scan to see how busy each channel is.",
+  "channelFinderScanningNeighbors": "Listening for nearby networks…",
+  "channelFinderScanningChannels": "Measuring how busy each channel is…",
+  "channelFinderChannel": "Channel {channel}",
+  "@channelFinderChannel": {
+    "placeholders": {
+      "channel": {
+        "type": "int"
+      }
+    }
+  },
+  "channelFinderInUse": "In use",
+  "channelFinderBusy": "{percent}% busy",
+  "@channelFinderBusy": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "channelFinderBusyUnknown": "Busyness not measured",
+  "channelFinderBandRefused": "The router did not measure how busy this band's channels are.",
+  "@channelFinderBandRefused": {"description": "Channel Finder: above a band's chart when the router refused to measure its channels' busyness (#1778)."},
+  "channelFinderBandUnanswered": "Measuring how busy this band's channels are did not finish. Scan again to try once more.",
+  "@channelFinderBandUnanswered": {"description": "Channel Finder: above a band's chart when measuring its channels' busyness did not finish (#1778)."},
+  "channelFinderNetworks": "{count, plural, =0{No networks} =1{1 network} other{{count} networks}}",
+  "@channelFinderNetworks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "channelFinderStrongest": "Strongest {dbm} dBm",
+  "@channelFinderStrongest": {
+    "placeholders": {
+      "dbm": {
+        "type": "int"
+      }
+    }
+  },
+  "channelFinderNetworksOnChannel": "Networks on channel {channel}",
+  "@channelFinderNetworksOnChannel": {
+    "placeholders": {
+      "channel": {
+        "type": "int"
+      }
+    }
+  },
+  "channelFinderHiddenNetwork": "Hidden network",
+  "channelFinderNoNetworksOnChannel": "The router heard no networks on this channel.",
+  "channelFinderOpen": "Open Channel Finder",
+  "channelFinderLegendBusy": "50% busy or more",
+  "channelFinderLegendOther": "Other channels",
   "speed": "Speed",
   "speedTest": "Speed Test",
   "ssid": "SSID",
@@ -777,6 +844,7 @@
   "errorInvalidSessionToken": "Your session is invalid. Please sign in again.",
   "errorUnauthorized": "You do not have permission to perform this action.",
   "errorResourceNotFound": "The requested setting could not be found on the router.",
+  "errorDeviceNotOnNetwork": "This device is no longer on the network. Refresh the page and try again.",
   "errorInvalidInput": "The value entered is not valid. Please check and try again.",
   "errorNetwork": "Network error. Please check your connection and try again.",
   "errorConnectivity": "Cannot reach the router. Please check your connection.",
@@ -1305,6 +1373,7 @@
   "dnsPing": "DNS Ping",
   "dnsLookupStep": "DNS Lookup",
   "wifiSignal": "WiFi Signal",
+  "diagnosticsChannelCongestion": "Channel Congestion",
   "diagnosticsRecWanDownTitle": "WAN Connection Down",
   "diagnosticsRecNoIpTitle": "No IP Address",
   "diagnosticsRecDhcpFailTitle": "DHCP Failed",
@@ -1315,6 +1384,7 @@
   "diagnosticsRecSlowDownloadTitle": "Slow Download Speed",
   "diagnosticsRecSlowUploadTitle": "Slow Upload Speed",
   "diagnosticsRecWeakWifiTitle": "Weak WiFi Signal",
+  "diagnosticsRecBusyChannelTitle": "Busy WiFi Channel",
   "diagnosticsRecManyDevicesTitle": "Too Many Devices",
   "diagnosticsRecBandwidthHogTitle": "High Bandwidth Devices",
   "diagnosticsRecBottleneckTitle": "Network Bottleneck Detected",
@@ -1328,6 +1398,97 @@
   "diagnosticsRecSlowDownloadDesc": "Contact your ISP about download speed issues.",
   "diagnosticsRecSlowUploadDesc": "Check for devices uploading large files.",
   "diagnosticsRecWeakWifiDesc": "Move closer to router or add a mesh node.",
+  "diagnosticsRecBusyChannelDesc": "The channel your WiFi is on is busy. Open Channel Finder to see how busy each channel is.",
+  "diagnosticsWanUp": "Up",
+  "@diagnosticsWanUp": {"description": "Diagnostics result card: the WAN link is up (#1778)"},
+  "diagnosticsWanDown": "Down",
+  "@diagnosticsWanDown": {"description": "Diagnostics result card: the WAN link is down (#1778)"},
+  "diagnosticsNoIpAssigned": "No IP assigned",
+  "@diagnosticsNoIpAssigned": {"description": "Diagnostics result card: the WAN has no IP address (#1778)"},
+  "diagnosticsConnectionFailed": "Connection failed",
+  "@diagnosticsConnectionFailed": {"description": "Diagnostics result card: every ping failed (#1778)"},
+  "diagnosticsPacketsReceived": "{received}/{total} packets received",
+  "@diagnosticsPacketsReceived": {"description": "Diagnostics result card: ping replies received out of those sent (#1778)", "placeholders": {"received": {"type": "int"}, "total": {"type": "int"}}},
+  "diagnosticsNoWirelessClients": "No wireless clients",
+  "@diagnosticsNoWirelessClients": {"description": "Diagnostics result card: no device is on WiFi (#1778)"},
+  "diagnosticsClientsOnBand": "{count, plural, =1{1 client on {band}} other{{count} clients on {band}}}",
+  "@diagnosticsClientsOnBand": {"description": "Diagnostics result card: WiFi devices on a band, e.g. 5GHz (#1778)", "placeholders": {"count": {"type": "int"}, "band": {"type": "String"}}},
+  "diagnosticsDhcpPool": "DHCP Pool",
+  "@diagnosticsDhcpPool": {"description": "Diagnostics result card title for the DHCP address pool (#1778)"},
+  "diagnosticsAddressesUsed": "{used} of {capacity} addresses used",
+  "@diagnosticsAddressesUsed": {"description": "Diagnostics result card: DHCP addresses in use out of the pool size (#1778)", "placeholders": {"used": {"type": "int"}, "capacity": {"type": "int"}}},
+  "diagnosticsActiveDevices": "{count} active",
+  "@diagnosticsActiveDevices": {"description": "Diagnostics result card: connected devices that are active (#1778)", "placeholders": {"count": {"type": "int"}}},
+  "diagnosticsAllDevicesHealthy": "All devices healthy",
+  "@diagnosticsAllDevicesHealthy": {"description": "Diagnostics result card: no device has an issue (#1778)"},
+  "diagnosticsTotalDevices": "{count, plural, =1{1 total device} other{{count} total devices}}",
+  "@diagnosticsTotalDevices": {"description": "Diagnostics result card: devices checked for issues (#1778)", "placeholders": {"count": {"type": "int"}}},
+  "diagnosticsDevicesGoodSignal": "{count, plural, =1{1 device with good signal} other{{count} devices with good signal}}",
+  "@diagnosticsDevicesGoodSignal": {"description": "Diagnostics result card: WiFi devices with a good signal (#1778)", "placeholders": {"count": {"type": "int"}}},
+  "diagnosticsDevicesWeakSignal": "{count, plural, =1{1 device with weak signal} other{{count} devices with weak signal}}",
+  "@diagnosticsDevicesWeakSignal": {"description": "Diagnostics result card: WiFi devices with a weak signal (#1778)", "placeholders": {"count": {"type": "int"}}},
+  "diagnosticsResolvedHost": "Resolved {host}",
+  "@diagnosticsResolvedHost": {"description": "Diagnostics result card: the DNS lookup of a host name succeeded (#1778)", "placeholders": {"host": {"type": "String"}}},
+  "diagnosticsConnectionStability": "Connection Stability",
+  "@diagnosticsConnectionStability": {"description": "Diagnostics result card title for the intermittent connection check (#1778)"},
+  "diagnosticsJitterAndLatency": "Jitter: {jitter}ms, Latency: {latency}ms",
+  "@diagnosticsJitterAndLatency": {"description": "Diagnostics result card: jitter and latency in milliseconds (#1778)", "placeholders": {"jitter": {"type": "int"}, "latency": {"type": "int"}}},
+  "diagnosticsMeshBackhaul": "Mesh Backhaul",
+  "@diagnosticsMeshBackhaul": {"description": "Diagnostics result card title for the mesh backhaul check (#1778)"},
+  "diagnosticsNodesUnit": "{count, plural, =1{node} other{nodes}}",
+  "@diagnosticsNodesUnit": {"description": "Diagnostics result card: the unit after a number of mesh nodes, shown beside the large number (#1778)", "placeholders": {"count": {"type": "int"}}},
+  "diagnosticsSingleRouter": "Single router setup",
+  "@diagnosticsSingleRouter": {"description": "Diagnostics result card: the network has no mesh nodes (#1778)"},
+  "diagnosticsPoorNodes": "{count} poor",
+  "@diagnosticsPoorNodes": {"description": "Diagnostics result card: mesh nodes with a poor backhaul (#1778)", "placeholders": {"count": {"type": "int"}}},
+  "diagnosticsWeakNodes": "{count} weak",
+  "@diagnosticsWeakNodes": {"description": "Diagnostics result card: mesh nodes with a weak backhaul (#1778)", "placeholders": {"count": {"type": "int"}}},
+  "diagnosticsAllNodesHealthy": "All nodes healthy",
+  "@diagnosticsAllNodesHealthy": {"description": "Diagnostics result card: every mesh node's backhaul is healthy (#1778)"},
+  "diagnosticsNetworkPath": "Network Path",
+  "@diagnosticsNetworkPath": {"description": "Diagnostics result card title for the traceroute check (#1778)"},
+  "diagnosticsHopsUnit": "{count, plural, =1{hop} other{hops}}",
+  "@diagnosticsHopsUnit": {"description": "Diagnostics result card: the unit after a number of traceroute hops, shown beside the large number (#1778)", "placeholders": {"count": {"type": "int"}}},
+  "diagnosticsAllHopsResponsive": "All hops responsive",
+  "@diagnosticsAllHopsResponsive": {"description": "Diagnostics result card: every traceroute hop answered quickly (#1778)"},
+  "diagnosticsSlowHops": "{count, plural, =1{1 slow hop detected} other{{count} slow hops detected}}",
+  "@diagnosticsSlowHops": {"description": "Diagnostics result card: traceroute hops that answered slowly (#1778)", "placeholders": {"count": {"type": "int"}}},
+  "diagnosticsBusiestChannel": "Busiest: channel {channel} on {band}",
+  "@diagnosticsBusiestChannel": {"description": "Diagnostics result card: the busiest channel a radio is on, e.g. channel 1 on 2.4GHz (#1778)", "placeholders": {"channel": {"type": "int"}, "band": {"type": "String"}}},
+  "diagnosticsNoChannelReading": "No channel reading",
+  "@diagnosticsNoChannelReading": {"description": "Diagnostics result card: no radio reported how busy its channel is (#1778)"},
+  "diagnosticsUploadSpeed": "Upload: {speed} Mbps",
+  "@diagnosticsUploadSpeed": {"description": "Diagnostics result card: the speed test's upload speed (#1778)", "placeholders": {"speed": {"type": "String"}}},
+  "diagnosticsLatencyMs": "Latency: {latency}ms",
+  "@diagnosticsLatencyMs": {"description": "Diagnostics result card: the speed test's latency in milliseconds (#1778)", "placeholders": {"latency": {"type": "int"}}},
+  "diagnosticsStatusOk": "OK",
+  "@diagnosticsStatusOk": {"description": "Diagnostics: the status of a check that passed (#1778)"},
+  "diagnosticsNodesWithIssues": "{count} with issues",
+  "@diagnosticsNodesWithIssues": {"description": "Diagnostics issue card: mesh nodes with a weak or poor backhaul (#1778)", "placeholders": {"count": {"type": "int"}}},
+  "diagnosticsWeakSignalDetected": "Weak signal detected",
+  "@diagnosticsWeakSignalDetected": {"description": "Diagnostics issue card: a WiFi signal is weak (#1778)"},
+  "diagnosticsClients": "{count, plural, =1{1 client} other{{count} clients}}",
+  "@diagnosticsClients": {"description": "Diagnostics: a number of WiFi devices (#1778)", "placeholders": {"count": {"type": "int"}}},
+  "diagnosticsPacketsLost": "{count, plural, =1{1 packet lost} other{{count} packets lost}}",
+  "@diagnosticsPacketsLost": {"description": "Diagnostics issue card: ping requests that got no reply (#1778)", "placeholders": {"count": {"type": "int"}}},
+  "diagnosticsPoolExhausted": "Pool exhausted",
+  "@diagnosticsPoolExhausted": {"description": "Diagnostics issue card: every DHCP address is in use (#1778)"},
+  "diagnosticsNearCapacity": "Near capacity",
+  "@diagnosticsNearCapacity": {"description": "Diagnostics issue card: almost every DHCP address is in use (#1778)"},
+  "diagnosticsLeasesUsed": "{used}/{capacity} used",
+  "@diagnosticsLeasesUsed": {"description": "Diagnostics step list: DHCP addresses in use out of the pool size (#1778)", "placeholders": {"used": {"type": "int"}, "capacity": {"type": "int"}}},
+  "diagnosticsDevices": "{count, plural, =1{1 device} other{{count} devices}}",
+  "@diagnosticsDevices": {"description": "Diagnostics step list: a number of connected devices (#1778)", "placeholders": {"count": {"type": "int"}}},
+  "diagnosticsAverageRssi": "{rssi} dBm (avg)",
+  "@diagnosticsAverageRssi": {"description": "Diagnostics step details: the average WiFi signal strength (#1778)", "placeholders": {"rssi": {"type": "int"}}},
+  "diagnosticsBandChannel": "{band} Ch{channel}",
+  "@diagnosticsBandChannel": {"description": "Diagnostics step details: a band and its channel, e.g. 5GHz Ch48. Ch is short for channel (#1778)", "placeholders": {"band": {"type": "String"}, "channel": {"type": "String"}}},
+  "diagnosticsRadioSignal": "{average} dBm avg / min {min} ({clients})",
+  "@diagnosticsRadioSignal": {"description": "Diagnostics step details: a radio's average and lowest client signal, then its client count from diagnosticsClients (#1778)", "placeholders": {"average": {"type": "int"}, "min": {"type": "int"}, "clients": {"type": "String"}}},
+  "diagnosticsRecommended": "Recommended",
+  "@diagnosticsRecommended": {"description": "Network Diagnostics: the badge on the recommended flow (#1778)"},
+  "diagnosticsNoSignal": "No signal",
+  "@diagnosticsNoSignal": {"description": "Diagnostics: the signal level of a reading of 0 dBm, which means no reading (#1778)"},
   "diagnosticsRecManyDevicesDesc": "Consider enabling QoS or disconnecting unused devices.",
   "diagnosticsRecBandwidthHogDesc": "Some devices are using a lot of bandwidth.",
   "diagnosticsRecBottleneckDesc": "Network latency detected at a specific hop.",

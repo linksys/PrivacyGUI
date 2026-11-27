@@ -13,7 +13,6 @@ import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/sse_manager.dart';
-import 'package:privacy_gui/core/usp/services/sse_subscription_registry.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/framework/mode/credential_strategy.dart';
 import 'package:privacy_gui/framework/mode/proximity_strategy.dart';
@@ -34,9 +33,6 @@ class MockAuthService extends Mock implements AuthService {}
 class MockUspAuthCoordinator extends Mock implements UspAuthCoordinator {}
 
 class MockSseManager extends Mock implements SseManager {}
-
-class MockSseSubscriptionRegistry extends Mock
-    implements SseSubscriptionRegistry {}
 
 class MockRouterFingerprintService extends Mock
     implements RouterFingerprintService {}
@@ -129,7 +125,6 @@ void main() {
   late MockAuthService mockAuthService;
   late MockUspAuthCoordinator mockUspCoordinator;
   late MockSseManager mockSseManager;
-  late MockSseSubscriptionRegistry mockRegistry;
   late MockRouterFingerprintService mockFingerprint;
   late MockSessionService mockSessionService;
   late MockUspClient mockUspClient;
@@ -147,14 +142,11 @@ void main() {
     mockAuthService = MockAuthService();
     mockUspCoordinator = MockUspAuthCoordinator();
     mockSseManager = MockSseManager();
-    mockRegistry = MockSseSubscriptionRegistry();
     mockFingerprint = MockRouterFingerprintService();
     mockSessionService = MockSessionService();
     mockUspClient = MockUspClient();
 
-    when(() => mockSseManager.registry).thenReturn(mockRegistry);
     when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
-    when(() => mockRegistry.unregisterAll()).thenAnswer((_) async {});
     when(() => mockUspCoordinator.syncAfterLogout()).thenAnswer((_) async {});
     when(() => mockUspCoordinator.restoreSession())
         .thenAnswer((_) async => SessionRestoreOutcome.restored);
@@ -502,7 +494,8 @@ void main() {
       container.dispose();
     });
 
-    test('performs cleanup (unregisterAll, USP logout, fingerprint)', () async {
+    test('performs cleanup (SSE disconnect, USP logout, fingerprint)',
+        () async {
       final container = createContainer();
       container.read(authProvider);
       await Future.delayed(Duration.zero);
@@ -510,8 +503,12 @@ void main() {
       final notifier = container.read(authProvider.notifier);
       await notifier.logout();
 
-      verify(() => mockRegistry.unregisterAll()).called(1);
-      verify(() => mockUspCoordinator.syncAfterLogout()).called(1);
+      // The disconnect is what ends the subscriptions, so it goes while the
+      // USP session is still up.
+      verifyInOrder([
+        () => mockSseManager.disconnect(),
+        () => mockUspCoordinator.syncAfterLogout(),
+      ]);
       verify(() => mockFingerprint.clear()).called(1);
       container.dispose();
     });

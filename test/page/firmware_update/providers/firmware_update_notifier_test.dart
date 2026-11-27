@@ -144,20 +144,17 @@ class _FlakyBanksNotifier extends FirmwareBanksDataNotifier {
 
 /// A read that fails with something other than a [ServiceError].
 ///
-/// `TimeoutException` because one raised outside the mutation lock still
-/// arrives bare until #1831 converts the rest of its sources (the lock's own is
-/// a `TimeoutError` now). A codegen parse of an unexpected payload reaches the
-/// same arm with a `TypeError`.
-class _TimingOutBanksNotifier extends FirmwareBanksDataNotifier {
+/// A `TypeError`, which is what a codegen parse of an unexpected payload
+/// throws. A timeout no longer arrives bare: since #1831 the lock, the awaiter
+/// and the throttler raise `TimeoutError`.
+class _UnparseableBanksNotifier extends FirmwareBanksDataNotifier {
   @override
-  Future<FirmwareBanksData> build() async =>
-      throw TimeoutException('banks read', const Duration(seconds: 30));
+  Future<FirmwareBanksData> build() async => throw TypeError();
 
   /// The same failure on the path `verify()` takes. `refresh()` rethrows raw, so
   /// this is what actually arrives at the notifier's own catch.
   @override
-  Future<FirmwareBanksData> refresh() async =>
-      throw TimeoutException('banks read', const Duration(seconds: 30));
+  Future<FirmwareBanksData> refresh() async => throw TypeError();
 }
 
 /// A router that answers the first read and then stops answering.
@@ -476,21 +473,20 @@ void main() {
 
     test('a read failure that is not a ServiceError is still a read error',
         () async {
-      // The bridge does not only fail with `ServiceError`. A `TimeoutException`
-      // raised outside the mutation lock still arrives bare (#1831), and a codegen
-      // parse of an unexpected payload throws a `TypeError` — neither is caught by
-      // an `on ServiceError` arm. Recording nothing for them leaves
+      // The bridge does not only fail with `ServiceError`: a codegen parse of an
+      // unexpected payload throws a `TypeError`, which an `on ServiceError` arm
+      // does not catch (a bare timeout was the other case, until #1831). Recording nothing for them leaves
       // `stateReadError` null with the banks provider in `AsyncError`, and the
       // page's card needs **both**: the result is a firmware page with no card, no
       // error and no explanation.
       final container = createContainer(extra: [
-        firmwareBanksDataProvider.overrideWith(_TimingOutBanksNotifier.new),
+        firmwareBanksDataProvider.overrideWith(_UnparseableBanksNotifier.new),
       ]);
       addTearDown(container.dispose);
 
       await expectLater(
         container.read(firmwareUpdateNotifierProvider.notifier).loadBanks(),
-        throwsA(isA<TimeoutException>()),
+        throwsA(isA<TypeError>()),
       );
 
       final state = container.read(firmwareUpdateNotifierProvider);
@@ -1377,7 +1373,7 @@ void main() {
       // different bugs.
       final container = createContainer(
         extra: [
-          firmwareBanksDataProvider.overrideWith(_TimingOutBanksNotifier.new),
+          firmwareBanksDataProvider.overrideWith(_UnparseableBanksNotifier.new),
         ],
       );
       addTearDown(container.dispose);
@@ -1385,7 +1381,7 @@ void main() {
 
       await expectLater(
         notifier.verify(expectedVersion: '1.0.17.0', expectedActiveInstance: 2),
-        throwsA(isA<TimeoutException>()),
+        throwsA(isA<TypeError>()),
       );
 
       final state = container.read(firmwareUpdateNotifierProvider);
@@ -2227,16 +2223,14 @@ void main() {
         // the browser Back button for the rest of the session, with no card on
         // screen saying why.
         //
-        // Any throw that is not a `ServiceError`. A `TimeoutException`, because one
-        // raised outside the mutation lock still arrives bare (the lock's own has
-        // been a `TimeoutError` since #1831).
+        // Any throw that is not a `ServiceError`: a `TypeError`, what a codegen
+        // parse of an unexpected payload throws. (A timeout was the other case
+        // until #1831 made every source raise `TimeoutError`.)
         when(() => mockOtaInstaller.install(
-                  otaInstance: any(named: 'otaInstance'),
-                  onProgress: any(named: 'onProgress'),
-                  isCancelled: any(named: 'isCancelled'),
-                ))
-            .thenThrow(TimeoutException(
-                'outside the lock', const Duration(seconds: 30)));
+              otaInstance: any(named: 'otaInstance'),
+              onProgress: any(named: 'onProgress'),
+              isCancelled: any(named: 'isCancelled'),
+            )).thenThrow(TypeError());
         final container = createContainer();
         addTearDown(container.dispose);
 
@@ -2244,7 +2238,7 @@ void main() {
           container
               .read(firmwareUpdateNotifierProvider.notifier)
               .triggerRouterOtaInstall(otaInstance: 3),
-          throwsA(isA<TimeoutException>()),
+          throwsA(isA<TypeError>()),
         );
 
         final state = container.read(firmwareUpdateNotifierProvider);
@@ -2709,11 +2703,9 @@ void main() {
         // card, and a throw that is not a `ServiceError` leaves the page exactly as
         // unreadable as a `NetworkError` does.
         when(() => mockOtaInstaller.observe(
-                  onProgress: any(named: 'onProgress'),
-                  isCancelled: any(named: 'isCancelled'),
-                ))
-            .thenThrow(TimeoutException(
-                'outside the lock', const Duration(seconds: 30)));
+              onProgress: any(named: 'onProgress'),
+              isCancelled: any(named: 'isCancelled'),
+            )).thenThrow(TypeError());
         final container = createContainer();
         addTearDown(container.dispose);
 
@@ -2721,7 +2713,7 @@ void main() {
           container
               .read(firmwareUpdateNotifierProvider.notifier)
               .observeRunningOtaInstall(),
-          throwsA(isA<TimeoutException>()),
+          throwsA(isA<TypeError>()),
         );
 
         final state = container.read(firmwareUpdateNotifierProvider);

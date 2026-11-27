@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../mocks/provider_overrides/mock_channel_finder.dart';
 import '../../mocks/provider_overrides/mock_dashboard_cards.dart';
 import '../../mocks/test_data/scenes/cards_scene_data.dart';
+import '../../mocks/test_data/scenes/channel_finder_scene_data.dart';
 
 /// The overflow gate's **second data profile** and the cards it is swept on
 /// (#1267).
@@ -211,6 +213,38 @@ final firewallNewRouterProfile = CardDataProfile(
   markers: const ["You haven't opened any device to the internet"],
 );
 
+/// The Channel Finder card before any scan (#1778): one sentence and the button.
+///
+/// The card's default fixture is a finished scan ([channelFinderDoneState]), and
+/// each of its other states renders a tree that one does not, so each is a
+/// profile of its own rather than a variation the default covers.
+final channelFinderIdleProfile = CardDataProfile(
+  key: 'channel_finder_idle',
+  description: 'no scan this session (channelFinderIdleState)',
+  overrides: () => channelFinderOverrides(channelFinderIdleState),
+  markers: const ['No scan yet'],
+);
+
+/// The Channel Finder card while a second scan measures channels: the loader
+/// and the stage line above the first scan's rows, and a busy button.
+final channelFinderScanningProfile = CardDataProfile(
+  key: 'channel_finder_scanning',
+  description: 'a second scan measuring channels, first result still shown '
+      '(channelFinderScanningState)',
+  overrides: () => channelFinderOverrides(channelFinderScanningState),
+  markers: const ['Measuring how busy each channel is'],
+);
+
+/// The Channel Finder card after a second scan failed: the error above the
+/// first scan's rows, its tallest state.
+final channelFinderFailedProfile = CardDataProfile(
+  key: 'channel_finder_failed',
+  description: 'a second scan that timed out, first result still shown '
+      '(channelFinderFailedState)',
+  overrides: () => channelFinderOverrides(channelFinderFailedState),
+  markers: const ['The operation timed out'],
+);
+
 /// Content the **default** fixture renders only behind a condition, and the card
 /// coordinate it has to reach (#1321).
 ///
@@ -283,6 +317,18 @@ final kDefaultFixtureMarkers = <DefaultFixtureMarker>[
           '`testSystemMonitorWithHistory`. If this fails, the fixture lost '
           '`cpuTemperatureCelsius` and the sweeps measure the hero\'s '
           'manufacturer line without the tag beside it'),
+  DefaultFixtureMarker(
+    cardId: 'channel_finder',
+    tab: 0,
+    pattern: 'GHz',
+    expected: 3,
+    why: 'the card renders one row per band only when `channelFinderProvider` '
+        'holds a result, and the provider is idle unless '
+        '`kitchenSinkOverrides()` pins `channelFinderDoneState`, a three-band '
+        'scan. Without that override every coordinate the gate pumps for this '
+        'card measures the one-sentence idle state, and its rows are never '
+        'measured at all (#1778)',
+  ),
 ];
 
 /// Every non-default sweep the gate runs.
@@ -308,5 +354,22 @@ final kCardDataProfileSweeps = <CardDataProfileSweep>[
     cardId: 'firewall_overview',
     tabs: const [0],
     profile: firewallNewRouterProfile,
+  ),
+  // The default fixture is a finished scan. These are the card's other three
+  // states, each a different tree (#1778).
+  CardDataProfileSweep(
+    cardId: 'channel_finder',
+    tabs: const [0],
+    profile: channelFinderIdleProfile,
+  ),
+  CardDataProfileSweep(
+    cardId: 'channel_finder',
+    tabs: const [0],
+    profile: channelFinderScanningProfile,
+  ),
+  CardDataProfileSweep(
+    cardId: 'channel_finder',
+    tabs: const [0],
+    profile: channelFinderFailedProfile,
   ),
 ];

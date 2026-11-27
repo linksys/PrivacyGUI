@@ -7,6 +7,7 @@ import 'package:privacy_gui/core/capability/device_capability.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/wifi_settings/models/mlo_status.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_advanced_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_advanced_provider.dart';
@@ -134,6 +135,16 @@ void main() {
       expect(valueOf('wifi-advanced-node-steering'), isTrue);
       expect(valueOf('wifi-advanced-mlo'), isFalse);
       expect(switchWith('wifi-advanced-dfs'), findsOneWidget);
+    });
+
+    testWidgets('links to Channel Finder below the switches (#1778)',
+        (tester) async {
+      await pumpPage(tester);
+
+      final link = find.byWidgetPredicate((w) =>
+          w is NavLinkBlock && w.identifier == 'wifi-advanced-channel-finder');
+      expect(link, findsOneWidget);
+      expect(tester.widget<NavLinkBlock>(link).title, 'Channel Finder');
     });
 
     testWidgets('a router without MLO has no MLO card, and the rest stays',

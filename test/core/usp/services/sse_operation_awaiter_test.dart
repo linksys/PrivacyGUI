@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/sse_manager.dart';
 import 'package:privacy_gui/core/usp/services/sse_operation_awaiter.dart';
 import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
@@ -187,7 +188,7 @@ void main() {
       expect(result.outputArgs['AverageResponseTime'], '15');
     });
 
-    test('timeout throws TimeoutException', () async {
+    test('timeout throws TimeoutError', () async {
       await connectManager();
 
       expect(
@@ -196,7 +197,7 @@ void main() {
           referencePath: 'Device.IP.Diagnostics.IPPing()',
           timeout: const Duration(milliseconds: 200),
         ),
-        throwsA(isA<TimeoutException>()),
+        throwsA(isA<TimeoutError>()),
       );
     });
 
@@ -287,7 +288,7 @@ void main() {
       expect(result.isError, isTrue);
     });
 
-    test('timeout throws TimeoutException', () async {
+    test('timeout throws TimeoutError', () async {
       when(() => mockUsp.get(any())).thenAnswer((_) async => {
             'Device.IP.Diagnostics.IPPing.DiagnosticsState': 'Requested',
           });
@@ -298,7 +299,7 @@ void main() {
           referencePath: 'Device.IP.Diagnostics.IPPing()',
           timeout: const Duration(seconds: 3),
         ),
-        throwsA(isA<TimeoutException>()),
+        throwsA(isA<TimeoutError>()),
       );
     });
 
@@ -400,7 +401,7 @@ void main() {
         type: 'OperationComplete',
       ));
 
-      expect(() => future, throwsA(isA<TimeoutException>()));
+      expect(() => future, throwsA(isA<TimeoutError>()));
     });
 
     test('a cmd_failure is a refusal', () async {
@@ -859,7 +860,7 @@ void main() {
       expect(callCount, 2);
     }, timeout: const Timeout(Duration(seconds: 60)));
 
-    test('both operate attempts time out → TimeoutException', () async {
+    test('both operate attempts time out → TimeoutError', () async {
       await connectManager();
       await awaiter.startSharedSession(referencePath: 'Device.IP.Diagnostics.');
 
@@ -875,7 +876,7 @@ void main() {
           operateCommand: 'Device.IP.Diagnostics.IPPing()',
           timeout: const Duration(seconds: 60),
         ),
-        throwsA(isA<TimeoutException>()),
+        throwsA(isA<TimeoutError>()),
       );
     }, timeout: const Timeout(Duration(seconds: 60)));
 

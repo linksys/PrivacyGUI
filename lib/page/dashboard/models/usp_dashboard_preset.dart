@@ -97,6 +97,7 @@ extension UspDashboardPresetX on UspDashboardPreset {
             'time_settings',
             'traffic_analysis',
             'firewall_overview',
+            'channel_finder',
           ],
         UspDashboardPreset.professional => const [
             'stats_panel',
@@ -117,6 +118,7 @@ extension UspDashboardPresetX on UspDashboardPreset {
             'wifi_performance',
             'traffic_analysis',
             'device_analytics',
+            'channel_finder',
           ],
         UspDashboardPreset.monitoring => const [
             'stats_panel',
@@ -127,6 +129,7 @@ extension UspDashboardPresetX on UspDashboardPreset {
             'wifi_performance',
             'firewall_overview',
             'ethernet_ports',
+            'channel_finder',
           ],
         UspDashboardPreset.remote => const [
             'stats_panel',
@@ -178,7 +181,7 @@ List<LayoutItem> _essentialLayout() => [
       _item('wifi_status', x: 0, y: 8, w: 12, h: 4),
     ];
 
-/// Standard: 12 cards — common features at a glance.
+/// Standard: 13 cards — common features at a glance.
 ///
 /// ```
 /// y=0:  StatsPanel (12×1)
@@ -188,6 +191,7 @@ List<LayoutItem> _essentialLayout() => [
 /// y=12: SystemStatus (6×5)        | TrafficAnalysis (6×5)
 /// y=17: ConnectedDevices (6×4)    | WiFiNetworks (6×6)
 /// y=23: TimeSettings (6×3)        | FirewallOverview (6×3)
+/// y=26: ChannelFinder (6×3)
 /// ```
 List<LayoutItem> _standardLayout() => [
       _item('stats_panel', x: 0, y: 0, w: 12, h: 1),
@@ -202,9 +206,10 @@ List<LayoutItem> _standardLayout() => [
       _item('wifi_networks', x: 6, y: 17, w: 6, h: 4),
       _item('time_settings', x: 0, y: 23, w: 6, h: 3),
       _item('firewall_overview', x: 6, y: 23, w: 6, h: 3),
+      _item('channel_finder', x: 0, y: 26, w: 6, h: 3),
     ];
 
-/// Professional: all 18 cards — full feature set.
+/// Professional: all 19 cards — full feature set.
 ///
 /// ```
 /// y=0:  StatsPanel (12×1)
@@ -216,7 +221,7 @@ List<LayoutItem> _standardLayout() => [
 /// y=23: WiFiStatus (6×4)          | WiFiPerformance (6×5)
 /// y=28: WiFiNetworks (6×4)        | FirewallOverview (6×3)
 /// y=32: TimeSettings (6×3)        | DhcpReservations (6×4)
-/// y=36: PortForwarding (6×4)
+/// y=36: PortForwarding (6×4)       | ChannelFinder (6×3)
 /// ```
 List<LayoutItem> _professionalLayout() => [
       _item('stats_panel', x: 0, y: 0, w: 12, h: 1),
@@ -237,9 +242,10 @@ List<LayoutItem> _professionalLayout() => [
       _item('time_settings', x: 0, y: 32, w: 6, h: 3),
       _item('dhcp_reservations', x: 6, y: 32, w: 6, h: 4),
       _item('port_forwarding', x: 0, y: 36, w: 6, h: 4),
+      _item('channel_finder', x: 6, y: 36, w: 6, h: 3),
     ];
 
-/// Monitoring: 8 cards — performance & analytics prominent.
+/// Monitoring: 9 cards — performance & analytics prominent.
 ///
 /// ```
 /// y=0:  StatsPanel (12×1)
@@ -247,6 +253,7 @@ List<LayoutItem> _professionalLayout() => [
 /// y=6:  NetworkHealth (6×4)       | SystemStatus (6×5)
 /// y=11: DeviceAnalytics (6×5)     | WiFiPerformance (6×5)
 /// y=16: FirewallOverview (6×3)    | EthernetPorts (6×3)
+/// y=19: ChannelFinder (6×3)
 /// ```
 List<LayoutItem> _monitoringLayout() => [
       _item('stats_panel', x: 0, y: 0, w: 12, h: 1),
@@ -257,6 +264,7 @@ List<LayoutItem> _monitoringLayout() => [
       _item('wifi_performance', x: 6, y: 11, w: 6, h: 5),
       _item('firewall_overview', x: 0, y: 16, w: 6, h: 3),
       _item('ethernet_ports', x: 6, y: 16, w: 6, h: 3),
+      _item('channel_finder', x: 0, y: 19, w: 6, h: 3),
     ];
 
 /// Remote: 8 cards — view-only mode for remote assistance.

@@ -358,6 +358,27 @@ void main() {
       container.dispose();
     });
 
+    test(
+        'refreshUtilizationOrThrow throws a failed read and keeps the previous '
+        'readings (#1778)', () async {
+      when(() => mockService.fetchUtilizationByRadioPath(any()))
+          .thenThrow(const NetworkError(detail: 'timeout'));
+      final container = createContainer();
+      await container.read(wifiDataProvider.future);
+
+      await expectLater(
+          container.read(wifiDataProvider.notifier).refreshUtilizationOrThrow(),
+          throwsA(isA<NetworkError>()));
+      expect(
+          container
+              .read(wifiDataProvider)
+              .requireValue
+              .radioModels
+              .map((r) => r.utilization),
+          [46, 11]);
+      container.dispose();
+    });
+
     test('a failed read keeps the previous readings', () async {
       when(() => mockService.fetchUtilizationByRadioPath(any()))
           .thenThrow(const NetworkError(detail: 'timeout'));

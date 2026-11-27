@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/models/operate_result.dart';
 import 'dart:ui';
@@ -208,9 +209,9 @@ class SseOperationAwaiter {
         return completer.future;
       }
     }
-    throw TimeoutException(
-      'OperationComplete not received within ${timeout.inSeconds}s '
-      'for $operateCommand',
+    throw TimeoutError(
+      detail: 'OperationComplete not received within ${timeout.inSeconds}s '
+          'for $operateCommand',
     );
   }
 
@@ -249,13 +250,13 @@ class SseOperationAwaiter {
       try {
         return await _usp.operate(operateCommand, args: args).timeout(
               _operateHttpTimeout,
-              onTimeout: () => throw TimeoutException(
-                'HTTP operate ack not received within '
-                '${_operateHttpTimeout.inSeconds}s for $operateCommand '
-                '(attempt ${attempt + 1})',
+              onTimeout: () => throw TimeoutError(
+                detail: 'HTTP operate ack not received within '
+                    '${_operateHttpTimeout.inSeconds}s for $operateCommand '
+                    '(attempt ${attempt + 1})',
               ),
             );
-      } on TimeoutException catch (e) {
+      } on TimeoutError catch (e) {
         lastError = e;
         if (attempt < _operateHttpRetries) {
           logger.w('[USP][SSE][Operate]: HTTP ack timeout for $operateCommand '
@@ -388,11 +389,10 @@ class SseOperationAwaiter {
     final cleanups = <Future<void> Function()>[];
     try {
       for (var i = 0; i < paths.length; i++) {
-        final cleanup = await _manager.subscribe(
+        final cleanup = await _manager.hold(
           subscriptionId: 'operate-shared-$sessionId-$i',
           notifType: 'OperationComplete',
           referenceList: paths[i],
-          onNotification: (_) {},
         );
         cleanups.add(cleanup);
       }
@@ -570,11 +570,10 @@ class SseOperationAwaiter {
     String? expectedKey;
     try {
       // Step 1: Register subscription (OBUSPA + bridge) so the CPE sends events
-      cleanupSubscription = await _manager.subscribe(
+      cleanupSubscription = await _manager.hold(
         subscriptionId: subscriptionId,
         notifType: 'OperationComplete',
         referenceList: referencePath,
-        onNotification: (_) {}, // No-op: actual matching via wildcard below
       );
 
       // Step 2: Register wildcard handler BEFORE firing operate to close the
@@ -706,9 +705,9 @@ class SseOperationAwaiter {
       }
     }
 
-    throw TimeoutException(
-      'Polling fallback timed out after ${timeout.inSeconds}s '
-      'for $operateCommand',
+    throw TimeoutError(
+      detail: 'Polling fallback timed out after ${timeout.inSeconds}s '
+          'for $operateCommand',
     );
   }
 
@@ -812,11 +811,10 @@ class SseOperationAwaiter {
 
     final opId = _uuid.v4().substring(0, 8);
     final subscriptionId = 'watch-op-$opId';
-    final cleanupSubscription = await _manager.subscribe(
+    final cleanupSubscription = await _manager.hold(
       subscriptionId: subscriptionId,
       notifType: 'OperationComplete',
       referenceList: referencePath,
-      onNotification: (_) {}, // No-op: matching happens on the wildcard below.
     );
 
     // **This handler deliberately does not filter on [referencePath], and the

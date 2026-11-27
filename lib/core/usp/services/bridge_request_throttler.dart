@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 
 /// Priority levels for queued requests.
@@ -227,10 +228,13 @@ class BridgeRequestThrottler {
         logger.w('[Throttler]: Request timeout (${requestTimeout.inSeconds}s): '
             '${pending.cacheKey}');
         if (!pending.completer.isCompleted) {
+          // A TimeoutError, not the TimeoutException `.timeout` raised: every
+          // USP GET comes through here, and a service's `on ServiceError` and
+          // `mapUspErrorToServiceError` both have to keep it a timeout (#1831).
           pending.completer.completeError(
-            TimeoutException(
-              'Throttler: request exceeded ${requestTimeout.inSeconds}s',
-              requestTimeout,
+            TimeoutError(
+              detail: 'Throttler: request exceeded '
+                  '${requestTimeout.inSeconds}s',
             ),
           );
         }

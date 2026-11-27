@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/bridge_request_throttler.dart';
 import 'package:test/test.dart';
 
@@ -416,8 +417,10 @@ void main() {
         action: () async => 'done',
       );
 
-      // slow should timeout, then fast should execute
-      expect(slow, throwsA(isA<TimeoutException>()));
+      // slow should timeout, then fast should execute. A TimeoutError, so a
+      // service's `on ServiceError` and the mapper both keep it a timeout
+      // (#1831): every USP GET comes through here.
+      expect(slow, throwsA(isA<TimeoutError>()));
       final fastResult = await fast;
       expect(fastResult, 'done');
       expect(throttler.activeCount, 0);

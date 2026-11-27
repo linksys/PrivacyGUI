@@ -68,8 +68,9 @@ import '../../../util/overflow_probe.dart';
 /// arrives, not when the card does. Every case here supplies one (the fixture is
 /// `kitchenSinkOverrides`), so this file measures the hook and not the gate; a spec
 /// that clicks it straight after load has to wait for the button rather than assume
-/// it. The other eleven are unconditional. Thirteen until #1130 took
-/// `firewall_overview`'s away: its rows open four different pages.
+/// it. The other twelve are unconditional. Thirteen until #1130 took
+/// `firewall_overview`'s away: its rows open four different pages; #1778's
+/// `channel_finder` made it thirteen again.
 const Map<String, String> kCardDetailIdentifiers = {
   'device_info': 'card-detail-device-info',
   'network_status': 'card-detail-network-status',
@@ -83,6 +84,8 @@ const Map<String, String> kCardDetailIdentifiers = {
   'dhcp_reservations': 'card-detail-dhcp-reservations',
   'port_forwarding': 'card-detail-port-forwarding',
   'traffic_analysis': 'card-detail-traffic-analysis',
+  // #1778: the footer's "View details" opens the Channel Finder page.
+  'channel_finder': 'card-detail-channel-finder',
 };
 
 /// Card id → the identifier its **popup tile** must publish.
@@ -91,11 +94,11 @@ const Map<String, String> kCardDetailIdentifiers = {
 /// `cardPopupIdentifierFor` it would agree with any renaming, including one that
 /// pointed two cards at one tile.
 ///
-/// Seventeen, not twelve. A tile is not the detail button — it is the control
+/// Eighteen, not twelve. A tile is not the detail button — it is the control
 /// that opens the presentation — so the set is every card with a popup path, which
 /// is the whole registry except `stats_panel` (`UspWidgetSpecs.cardsWithoutPopupForm`:
 /// it is the one card not built through `DashboardCardTemplate`, so it has no popup
-/// form to render). That deliberately includes the five cards with no detail entry:
+/// form to render). That deliberately includes the six cards with no detail entry:
 /// for them the presentation is the only place their content can be read once
 /// degraded, so the tile is the only handle that matters at all.
 const Map<String, String> kCardPopupIdentifiers = {
@@ -116,6 +119,7 @@ const Map<String, String> kCardPopupIdentifiers = {
   'device_analytics': 'card-popup-device-analytics',
   'network_health': 'card-popup-network-health',
   'wifi_performance': 'card-popup-wifi-performance',
+  'channel_finder': 'card-popup-channel-finder',
 };
 
 /// Every `card-detail-*` identifier declared anywhere in the pumped tree.
@@ -362,7 +366,7 @@ void main() {
   /// than `find.byType(CardPopupForm)` on purpose — it is the E2E path, so a tile
   /// hook that reached the widget but not the semantics tree fails here.
   ///
-  /// Four of these cards have no detail entry, so their third assertion is that the
+  /// Six of these cards have no detail entry, so their third assertion is that the
   /// presentation publishes *nothing*. They are in the group anyway because for
   /// them the tile is the only handle there is.
   ///

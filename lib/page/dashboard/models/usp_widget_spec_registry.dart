@@ -573,6 +573,30 @@ abstract class UspWidgetSpecRegistry {
     },
   );
 
+  static const channelFinder = WidgetSpec(
+    id: 'channel_finder',
+    displayName: 'Channel Finder',
+    // No `normalAbove`, so no compact form: each row is a band, a busyness, a
+    // channel and a count, which wrap rather than cut, and the layout gate
+    // measures all four states clean at both widths the grid gives this card
+    // (260.5px and 288px) in all 26 locales (#1778).
+    constraints: {
+      DisplayMode.normal: WidgetGridConstraints(
+        // Four, like the other Wi-Fi cards: one row per band reads as a list,
+        // and a 3-column span would put it in the popup form by width.
+        minColumns: 4,
+        maxColumns: 8,
+        preferredColumns: 6,
+        // Three rows hold a three-band result at 260.5px. The tallest state,
+        // a failed rescan's error above those rows, scrolls inside the card;
+        // the Scan button is in the footer, so it stays in view.
+        heightStrategy: HeightStrategy.strict(3),
+        minHeightRows: 3,
+        maxHeightRows: 6,
+      ),
+    },
+  );
+
   // Speed Test — disabled: blocked by FW support (#857)
   // static const speedTest = WidgetSpec(
   //   id: 'speed_test',
@@ -612,6 +636,8 @@ abstract class UspWidgetSpecRegistry {
     wifiPerformance,
     trafficAnalysis,
     deviceAnalytics,
+    // Last, so the default layout's existing pairs keep their places (#1778).
+    channelFinder,
     // speedTest, // disabled: blocked by FW support (#857)
   ];
 

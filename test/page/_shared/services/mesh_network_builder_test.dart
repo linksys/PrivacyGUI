@@ -351,7 +351,8 @@ void main() {
     });
 
     // #1688 item 4. A rename writes the agent's own Hosts row, so the slave
-    // has to carry that row's path and the name already on it.
+    // has to say it has one, and carry the name already on it. The rename
+    // finds that row by the agent's ID when it saves (#1840).
     test(
         'carries the agent Hosts row path and the user name onto the slave '
         '(#1688 item 4)', () {
@@ -1128,7 +1129,12 @@ void main() {
       expect(
         mac.hostInstancePaths,
         unorderedEquals(['Device.Hosts.Host.1.', 'Device.Hosts.Host.2.']),
-        reason: 'a rename writes every row of the device',
+        reason: 'the device keeps every row it was built from',
+      );
+      expect(
+        mac.hostRowMacs,
+        unorderedEquals(['80:69:1A:13:43:FC', 'AA:C8:BF:74:39:F6']),
+        reason: 'a rename writes every row of the device, found by MAC',
       );
     });
 
@@ -1289,7 +1295,9 @@ void main() {
       expect(laptop.friendlyName, 'Work laptop');
       expect(laptop.hostInstancePaths,
           ['Device.Hosts.Host.5.', 'Device.Hosts.Host.6.'],
-          reason: 'an edit writes every row, primary first');
+          reason: 'every row is kept, primary first');
+      expect(laptop.hostRowMacs, ['11:22:33:44:55:01', '11:22:33:44:55:02'],
+          reason: 'an edit writes every row, found by MAC, primary first');
     });
 
     test('a merged device with no user values keeps the primary\'s values', () {
@@ -2667,8 +2675,7 @@ void main() {
 
       expect(slave.displayName, 'Office');
       expect(slave.userDeviceName, 'Office');
-      // A rename writes to the row index read earlier, and rows renumber
-      // while a node rejoins (#1840), so an offline node has no row to write.
+      // An offline node is offered no rename, so it carries no row to write.
       expect(slave.hostInstancePath, isNull);
     });
 

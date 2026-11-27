@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../mocks/provider_overrides/mock_channel_finder.dart';
 import '../../mocks/provider_overrides/mock_common.dart';
 import '../../mocks/provider_overrides/mock_dashboard_cards.dart';
 import '../../mocks/test_data/scenes/cards_scene_data.dart';
@@ -9,7 +10,7 @@ import '../../mocks/test_data/scenes/cards_scene_data.dart';
 ///
 /// The per-feature golden tests each override only the one provider their card
 /// reads (e.g. `cardOverrides(wifiData: testWifiData)`), because they render one
-/// card in isolation. This gate renders all 18 cards from one harness, so it
+/// card in isolation. This gate renders all 19 cards from one harness, so it
 /// wants a strict superset: fill in every fixture up front. Cards that read
 /// providers *not* listed here still build fine — the golden suite proves each
 /// card renders without a backend when its own provider is left at default.
@@ -36,4 +37,7 @@ List<Override> kitchenSinkOverrides() => [
         trafficAnalysisState: testTrafficWithHistory,
         deviceAnalyticsState: testDeviceAnalyticsWithData,
       ),
+      // The Channel Finder card's finished scan (#1778). Left at its default the
+      // provider is idle, which is the card's emptiest state, not its widest.
+      ...channelFinderOverrides(),
     ];

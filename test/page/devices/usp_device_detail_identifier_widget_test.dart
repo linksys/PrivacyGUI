@@ -120,7 +120,9 @@ void main() {
 
     // A device merged from two Hosts rows is renamed on both (#1719):
     // devidentd keeps the name per MAC, so naming one row would split the
-    // device on the read-back.
+    // device on the read-back. The save passes the rows' MACs, not their row
+    // numbers: rows renumber, so the service finds them when it writes
+    // (#1840).
     testWidgets('saving a merged device\'s name writes every row',
         (tester) async {
       final notifier = _RecordingDevicesDataNotifier();
@@ -155,8 +157,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       final call = notifier.calls.single;
-      expect(call.hostInstancePaths,
-          ['Device.Hosts.Host.2.', 'Device.Hosts.Host.1.']);
+      expect(call.macs, ['AA:BB:CC:DD:EE:02', '80:69:1A:13:43:FC']);
       expect(call.name, 'Work laptop');
     }, semanticsEnabled: true);
   });
@@ -164,7 +165,7 @@ void main() {
 
 /// Records the renames a test triggers, without writing anything.
 class _RecordingDevicesDataNotifier extends DevicesDataNotifier {
-  final calls = <({List<String> hostInstancePaths, String name})>[];
+  final calls = <({List<String> macs, String name})>[];
 
   @override
   Future<DevicesData> build() async => DevicesData(
@@ -175,10 +176,10 @@ class _RecordingDevicesDataNotifier extends DevicesDataNotifier {
 
   @override
   Future<void> updateIdentity({
-    required List<String> hostInstancePaths,
+    required List<String> macs,
     required String name,
     String? userTypeCode,
   }) async {
-    calls.add((hostInstancePaths: hostInstancePaths, name: name));
+    calls.add((macs: macs, name: name));
   }
 }

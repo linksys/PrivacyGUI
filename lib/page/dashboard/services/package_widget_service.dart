@@ -81,12 +81,12 @@ class PackageWidgetService {
         notifType: subscription.notifType,
         referenceList: subscription.paths.first,
         onNotification: (notification) {
+          // Only a value change carries a value to hand on.
           if (notification.type != 'ValueChange') return;
-          final valueChange =
-              notification.payload['value_change'] as Map<String, dynamic>?;
-          if (valueChange == null) return;
-          final path = valueChange['param_path'] as String?;
+          final path = notification.path;
           if (path == null) return;
+          final valueChange =
+              notification.payload['value_change'] as Map<String, dynamic>;
           onValueChange(path, valueChange['param_value']);
         },
       );
