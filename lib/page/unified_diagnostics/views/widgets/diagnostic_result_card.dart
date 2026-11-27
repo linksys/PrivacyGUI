@@ -335,7 +335,9 @@ class _MetricDisplay extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.baseline,
       textBaseline: TextBaseline.alphabetic,
       children: [
-        AppText.displaySmall(metric, color: color),
+        // Flexible, so a word too wide for the card (a translated "Down", say)
+        // goes on to a second line instead of overflowing (#1778).
+        Flexible(child: AppText.displaySmall(metric, color: color)),
         if (unit.isNotEmpty) ...[
           AppGap.xs(),
           AppText.titleMedium(unit, color: color),
