@@ -8,12 +8,13 @@ import 'usp_bridge_client.dart';
 
 export 'package:privacy_gui/core/usp/models/sse_notification.dart';
 
-/// Demultiplexes raw [SseEvent] instances from the SSE stream and routes
-/// them to registered handlers by `subscription_id`.
+/// Demultiplexes raw [SseEvent] instances from the SSE stream and hands every
+/// notification to every handler.
 ///
-/// Supports:
-/// - Per-subscription handlers (matched by exact subscription_id)
-/// - Wildcard handlers (receive ALL notifications regardless of subscription_id)
+/// Not by `subscription_id`, which is not a key to hear by (see
+/// [SseNotification.subscriptionId]): a handler picks its own by type and
+/// path — [SseNotification.isFor], which `SseManager.subscribe` applies for
+/// its callers.
 ///
 /// Events that are not `notification` type (heartbeat, connected)
 /// are silently ignored — they are handled by [SseConnectionManager].
@@ -22,25 +23,8 @@ class SseEventRouter {
   /// proactive token refresh via [UspAuthCoordinator.ensureAuth].
   VoidCallback? onHeartbeat;
 
-  /// subscription_id → list of handlers
-  final Map<String, List<SseNotificationHandler>> _handlers = {};
-
   /// Handlers that receive ALL notifications regardless of subscription_id.
   final List<SseNotificationHandler> _wildcardHandlers = [];
-
-  /// Register a handler for a specific [subscriptionId].
-  ///
-  /// Returns a [VoidCallback] that removes the handler when called.
-  VoidCallback addHandler(
-      String subscriptionId, SseNotificationHandler handler) {
-    _handlers.putIfAbsent(subscriptionId, () => []).add(handler);
-    return () {
-      _handlers[subscriptionId]?.remove(handler);
-      if (_handlers[subscriptionId]?.isEmpty ?? false) {
-        _handlers.remove(subscriptionId);
-      }
-    };
-  }
 
   /// Register a handler that receives ALL notifications.
   ///
@@ -98,20 +82,9 @@ class SseEventRouter {
     logger.t('[SSE]: $subscriptionId ($type)\n'
         '  ${const JsonEncoder.withIndent('  ').convert(json).replaceAll('\n', '\n  ')}');
 
-    // Route to subscription-specific handlers
-    final handlers = _handlers[subscriptionId];
-    if (handlers != null) {
-      for (final handler in handlers) {
-        try {
-          handler(notification);
-        } catch (e) {
-          logger.w('[SSE]: Handler error for $subscriptionId: $e');
-        }
-      }
-    }
-
-    // Route to wildcard handlers
-    for (final handler in _wildcardHandlers) {
+    // A copy: a handler that removes itself while being notified would
+    // otherwise change the list being iterated.
+    for (final handler in [..._wildcardHandlers]) {
       try {
         handler(notification);
       } catch (e) {
@@ -120,16 +93,12 @@ class SseEventRouter {
     }
   }
 
-  /// Returns the set of subscription IDs that have registered handlers.
-  Set<String> get registeredIds => _handlers.keys.toSet();
-
   /// Returns the number of wildcard handlers.
   int get wildcardHandlerCount => _wildcardHandlers.length;
 
   /// Removes all handlers.
   void dispose() {
     onHeartbeat = null;
-    _handlers.clear();
     _wildcardHandlers.clear();
   }
 }

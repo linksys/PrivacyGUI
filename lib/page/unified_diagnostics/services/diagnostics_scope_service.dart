@@ -47,7 +47,7 @@ class DiagnosticsScopeService {
     try {
       return await _executor.acquireScope();
     } catch (e) {
-      if (e is ServiceError || e is TimeoutException) rethrow;
+      if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }
@@ -78,7 +78,7 @@ class DiagnosticsScopeService {
         timeout: timeout,
       );
     } catch (e) {
-      if (e is ServiceError || e is TimeoutException) rethrow;
+      if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }
@@ -99,7 +99,7 @@ class DiagnosticsScopeService {
         timeout: timeout,
       );
     } catch (e) {
-      if (e is ServiceError || e is TimeoutException) rethrow;
+      if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }
@@ -120,7 +120,7 @@ class DiagnosticsScopeService {
         timeout: timeout,
       );
     } catch (e) {
-      if (e is ServiceError || e is TimeoutException) rethrow;
+      if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }
@@ -139,7 +139,7 @@ class DiagnosticsScopeService {
         timeout: timeout,
       );
     } catch (e) {
-      if (e is ServiceError || e is TimeoutException) rethrow;
+      if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }

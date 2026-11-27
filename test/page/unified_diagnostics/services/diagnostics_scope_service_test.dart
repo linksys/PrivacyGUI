@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
@@ -63,13 +61,13 @@ void main() {
       );
     });
 
-    test('rethrows TimeoutException unchanged', () async {
+    test('rethrows a TimeoutError unchanged', () async {
       when(() => mockExecutor.acquireScope())
-          .thenThrow(TimeoutException('Timed out'));
+          .thenThrow(const TimeoutError(detail: 'Timed out'));
 
       expect(
         () => service.acquireScope(),
-        throwsA(isA<TimeoutException>()),
+        throwsA(isA<TimeoutError>()),
       );
     });
 
@@ -134,16 +132,16 @@ void main() {
       expect(result, testResult);
     });
 
-    test('rethrows TimeoutException unchanged', () async {
+    test('rethrows a TimeoutError unchanged', () async {
       when(() => mockScope.ping(
             host: any(named: 'host'),
             numberOfRepetitions: any(named: 'numberOfRepetitions'),
             timeout: any(named: 'timeout'),
-          )).thenThrow(TimeoutException('Ping timed out'));
+          )).thenThrow(const TimeoutError(detail: 'Ping timed out'));
 
       expect(
         () => service.ping(mockScope, host: '8.8.8.8'),
-        throwsA(isA<TimeoutException>()),
+        throwsA(isA<TimeoutError>()),
       );
     });
 
@@ -188,16 +186,16 @@ void main() {
       expect(result, testResult);
     });
 
-    test('rethrows TimeoutException unchanged', () async {
+    test('rethrows a TimeoutError unchanged', () async {
       when(() => mockScope.traceRoute(
             host: any(named: 'host'),
             maxHopCount: any(named: 'maxHopCount'),
             timeout: any(named: 'timeout'),
-          )).thenThrow(TimeoutException('Traceroute timed out'));
+          )).thenThrow(const TimeoutError(detail: 'Traceroute timed out'));
 
       expect(
         () => service.traceRoute(mockScope, host: '8.8.8.8'),
-        throwsA(isA<TimeoutException>()),
+        throwsA(isA<TimeoutError>()),
       );
     });
 
@@ -229,16 +227,16 @@ void main() {
       expect(result, testResult);
     });
 
-    test('rethrows TimeoutException unchanged', () async {
+    test('rethrows a TimeoutError unchanged', () async {
       when(() => mockScope.nsLookup(
             hostName: any(named: 'hostName'),
             dnsServer: any(named: 'dnsServer'),
             timeout: any(named: 'timeout'),
-          )).thenThrow(TimeoutException('NS Lookup timed out'));
+          )).thenThrow(const TimeoutError(detail: 'NS Lookup timed out'));
 
       expect(
         () => service.nsLookup(mockScope, hostName: 'google.com'),
-        throwsA(isA<TimeoutException>()),
+        throwsA(isA<TimeoutError>()),
       );
     });
   });
@@ -259,18 +257,18 @@ void main() {
       expect(result, testResult);
     });
 
-    test('rethrows TimeoutException unchanged', () async {
+    test('rethrows a TimeoutError unchanged', () async {
       when(() => mockScope.downloadDiagnostic(
             downloadUrl: any(named: 'downloadUrl'),
             timeout: any(named: 'timeout'),
-          )).thenThrow(TimeoutException('Download timed out'));
+          )).thenThrow(const TimeoutError(detail: 'Download timed out'));
 
       expect(
         () => service.downloadDiagnostic(
           mockScope,
           downloadUrl: 'https://example.com/file',
         ),
-        throwsA(isA<TimeoutException>()),
+        throwsA(isA<TimeoutError>()),
       );
     });
 

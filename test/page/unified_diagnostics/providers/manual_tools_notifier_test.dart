@@ -217,7 +217,7 @@ void main() {
             host: any(named: 'host'),
             numberOfRepetitions: any(named: 'numberOfRepetitions'),
             timeout: any(named: 'timeout'),
-          )).thenThrow(TimeoutException('timeout'));
+          )).thenThrow(const TimeoutError(detail: 'timeout'));
 
       final container = createContainer();
       await container.read(manualToolsProvider.future);
@@ -282,7 +282,7 @@ void main() {
             host: any(named: 'host'),
             maxHopCount: any(named: 'maxHopCount'),
             timeout: any(named: 'timeout'),
-          )).thenThrow(TimeoutException('timeout'));
+          )).thenThrow(const TimeoutError(detail: 'timeout'));
 
       final container = createContainer();
       await container.read(manualToolsProvider.future);
@@ -354,7 +354,7 @@ void main() {
             hostName: any(named: 'hostName'),
             dnsServer: any(named: 'dnsServer'),
             timeout: any(named: 'timeout'),
-          )).thenThrow(TimeoutException('timeout'));
+          )).thenThrow(const TimeoutError(detail: 'timeout'));
 
       final container = createContainer();
       await container.read(manualToolsProvider.future);

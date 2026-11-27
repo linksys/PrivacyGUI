@@ -213,13 +213,6 @@ class SpeedTestNotifier extends AutoDisposeAsyncNotifier<SpeedTestState> {
           uploadStatus: 'NotSupported',
         ),
       ));
-    } on TimeoutException catch (e) {
-      logger.w('[USP][SpeedTest]: Timeout: $e');
-      state = AsyncData(state.requireValue.copyWith(
-        step: SpeedTestStep.error,
-        clearProgress: true,
-        error: TimeoutError(detail: e.toString()),
-      ));
     } on ServiceError catch (e) {
       logger.w('[USP][SpeedTest]: Failed: $e');
       state = AsyncData(state.requireValue.copyWith(
