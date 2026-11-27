@@ -157,8 +157,16 @@ class UnauthenticatedTransport implements UspTransport {
   @override
   Future<void> logout() async {}
 
+  /// What [refreshToken] throws, when set: a router that will not refresh the
+  /// session (#1666 AC4 measured the text).
+  Object? refreshFailure;
+
   @override
-  Future<void> refreshToken({String? token}) async => refreshCalls++;
+  Future<void> refreshToken({String? token}) async {
+    refreshCalls++;
+    final failure = refreshFailure;
+    if (failure != null) throw failure;
+  }
 
   /// Counts the request, holds it on [requestGate], and returns the envelope a
   /// failed one resolves with — a 401 while [rejections] last, [failWith]

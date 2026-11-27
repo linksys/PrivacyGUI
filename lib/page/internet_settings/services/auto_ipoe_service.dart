@@ -37,7 +37,7 @@ final autoIPoEServiceProvider = Provider<AutoIPoEService>((ref) {
     storageScope: remoteConfig?.sessionId,
     ensureSession: () async {
       if (loginType == LoginType.remote || client.isAuthenticated) return;
-      await coordinator.restoreSession(isRecovering: true);
+      await coordinator.restoreSession();
       if (!client.isAuthenticated) throw const NotAuthenticatedError();
     },
   );

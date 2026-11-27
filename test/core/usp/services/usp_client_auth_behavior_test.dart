@@ -17,17 +17,32 @@
 //
 // THE FIX THESE TESTS PIN. The decision keys on the existing [AuthBehavior], the
 // same value `UspBridgeClient` has always used for its own REST 401s. Remote:
-// no reauth, [UspClient.onForceLogout], rethrow. Local: unchanged.
+// no reauth, the session ends, rethrow. Local: unchanged. Since #1666 the
+// decision is [SessionAuthGate]'s and this façade acts on it; these tests attach
+// a gate with a session live, as a login or an activation leaves it.
 
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/core/usp/services/session_auth_gate.dart';
+import 'package:privacy_gui/core/usp/services/session_restore_outcome.dart';
 import 'package:privacy_gui/core/usp/services/sse_operation_strategy.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
 import '../mocks.dart';
 
 const _path = 'Device.DeviceInfo.SerialNumber';
+
+/// Attaches a gate in [mode] with a session live, and returns it.
+SessionAuthGate _liveGate(
+  UspClient client,
+  AuthBehavior mode, {
+  required void Function() onEnd,
+}) {
+  final gate = SessionAuthGate(authBehavior: mode, endSession: onEnd)..begin();
+  client.attachAuthGate(gate);
+  return gate;
+}
 
 /// One call per verb that goes through `_withAuthRetry`, so a gate added to one
 /// verb's private helper instead of the shared wrapper cannot pass.
@@ -54,13 +69,15 @@ void main() {
     for (final MapEntry(key: verb, value: send) in _commands.entries) {
       test(verb, () async {
         final transport = UnauthenticatedTransport();
-        final client = UspClient.withTransport(transport)
-          ..authBehavior = AuthBehavior.remote;
+        final client = UspClient.withTransport(transport);
 
         var relogins = 0;
         var forcedLogouts = 0;
-        client.onReauthRequired = () async => relogins++;
-        client.onForceLogout = () => forcedLogouts++;
+        client.onReauthRequired = () async {
+          relogins++;
+          return SessionRestoreOutcome.restored;
+        };
+        _liveGate(client, AuthBehavior.remote, onEnd: () => forcedLogouts++);
 
         // `anything`, not `isA<Exception>()`: every verb's 401 arrives in the
         // envelope, and UspClient throws it as a USP string — Get since #1212,
@@ -84,11 +101,10 @@ void main() {
     test('a failure that is not a 401 does not end the session', () async {
       final transport = UnauthenticatedTransport()
         ..failWith = Exception('Transport error: HTTP error: HTTP 503');
-      final client = UspClient.withTransport(transport)
-        ..authBehavior = AuthBehavior.remote;
+      final client = UspClient.withTransport(transport);
 
       var forcedLogouts = 0;
-      client.onForceLogout = () => forcedLogouts++;
+      _liveGate(client, AuthBehavior.remote, onEnd: () => forcedLogouts++);
 
       await expectLater(client.get([_path]),
           throwsA(predicate((e) => '$e'.contains('HTTP 503'))));
@@ -106,11 +122,10 @@ void main() {
       // the operator out of the new session over it would end a session that is
       // fine.
       final old = UnauthenticatedTransport()..requestGate = Completer<void>();
-      final client = UspClient.withTransport(old)
-        ..authBehavior = AuthBehavior.remote;
+      final client = UspClient.withTransport(old);
 
       var forcedLogouts = 0;
-      client.onForceLogout = () => forcedLogouts++;
+      _liveGate(client, AuthBehavior.remote, onEnd: () => forcedLogouts++);
 
       final inFlight = client.get([_path]);
       client.rebindTransport(UnauthenticatedTransport(rejections: 0),
@@ -122,10 +137,10 @@ void main() {
       expect(forcedLogouts, 0);
     });
 
-    test('an onForceLogout that throws does not replace the 401', () async {
-      final client = UspClient.withTransport(UnauthenticatedTransport())
-        ..authBehavior = AuthBehavior.remote;
-      client.onForceLogout = () => throw StateError('navigation failed');
+    test('ending the session throwing does not replace the 401', () async {
+      final client = UspClient.withTransport(UnauthenticatedTransport());
+      _liveGate(client, AuthBehavior.remote,
+          onEnd: () => throw StateError('navigation failed'));
 
       await expectLater(
         client.get([_path]),
@@ -135,9 +150,16 @@ void main() {
   });
 
   group('UspClient - local: a 401 still refreshes and retries', () {
-    test('the default is local', () {
-      expect(UspClient.withTransport(UnauthenticatedTransport()).authBehavior,
-          same(AuthBehavior.local));
+    // What a client gets before anything attaches a gate: a local session that
+    // has not begun, where a 401 is retried and nothing is ended.
+    test('with no gate attached, a 401 is retried', () async {
+      final transport = UnauthenticatedTransport();
+      final client = UspClient.withTransport(transport);
+
+      await client.get([_path]);
+
+      expect(transport.refreshCalls, 1);
+      expect(transport.requests, 2);
     });
 
     for (final MapEntry(key: verb, value: send) in _commands.entries) {
@@ -146,7 +168,7 @@ void main() {
         final client = UspClient.withTransport(transport);
 
         var forcedLogouts = 0;
-        client.onForceLogout = () => forcedLogouts++;
+        _liveGate(client, AuthBehavior.local, onEnd: () => forcedLogouts++);
 
         await send(client);
 

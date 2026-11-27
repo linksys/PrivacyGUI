@@ -382,9 +382,9 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
   Future<bool> _routerIsBack() async {
     try {
       // Re-login (WASM state lost during WiFi change)
-      await ref.read(uspAuthCoordinatorProvider).restoreSession(
-            isRecovering: true,
-          );
+      // Its outcome is not ours to act on: a router still coming back fails,
+      // and the read below is what says whether it is back (#1666).
+      await ref.read(uspAuthCoordinatorProvider).restoreSession();
       final sn = await _svc.checkRouterIsBack();
       final expectedSn = state.serialNumber;
       if (expectedSn != null && expectedSn.isNotEmpty && sn != expectedSn) {

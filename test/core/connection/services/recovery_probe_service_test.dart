@@ -14,7 +14,7 @@
 //   1. `bridge.health()` — a Guardian endpoint that does not exist.
 //      `BridgeEndpoints.remote()` has a `health` path, Guardian serves nothing
 //      there, so step 1 could only ever fail remotely.
-//   2. `restoreSession(isRecovering: true)` — a refresh of a
+//   2. `restoreSession()` — a refresh of a
 //      `temporaryAccessToken`, which cannot be refreshed. Guardian's answer does
 //      not change with time.
 //   3. `fingerprintService.matches(serial)` — compared against a serial stored at
@@ -50,6 +50,7 @@ import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/core/usp/services/session_restore_outcome.dart';
 
 class MockUspBridgeClient extends Mock implements UspBridgeClient {}
 
@@ -140,8 +141,7 @@ void main() {
       final result = await service.probe();
 
       expect(result, ProbeResult.unreachable);
-      verifyNever(() =>
-          mockAuth.restoreSession(isRecovering: any(named: 'isRecovering')));
+      verifyNever(() => mockAuth.restoreSession());
     });
 
     test('returns unreachable when agent not connected', () async {
@@ -154,8 +154,7 @@ void main() {
       final result = await service.probe();
 
       expect(result, ProbeResult.unreachable);
-      verifyNever(() =>
-          mockAuth.restoreSession(isRecovering: any(named: 'isRecovering')));
+      verifyNever(() => mockAuth.restoreSession());
     });
 
     test('returns unreachable when agent_state is not ready', () async {
@@ -168,8 +167,7 @@ void main() {
       final result = await service.probe();
 
       expect(result, ProbeResult.unreachable);
-      verifyNever(() =>
-          mockAuth.restoreSession(isRecovering: any(named: 'isRecovering')));
+      verifyNever(() => mockAuth.restoreSession());
     });
 
     test('returns unreachable when health response missing agent fields',
@@ -179,14 +177,13 @@ void main() {
       final result = await service.probe();
 
       expect(result, ProbeResult.unreachable);
-      verifyNever(() =>
-          mockAuth.restoreSession(isRecovering: any(named: 'isRecovering')));
+      verifyNever(() => mockAuth.restoreSession());
     });
 
     test('returns unreachable when health OK but login fails', () async {
       when(() => mockBridge.health())
           .thenAnswer((_) async => healthyResponse());
-      when(() => mockAuth.restoreSession(isRecovering: true))
+      when(() => mockAuth.restoreSession())
           .thenThrow(Exception('login failed'));
 
       final result = await service.probe();
@@ -199,8 +196,8 @@ void main() {
         () async {
       when(() => mockBridge.health())
           .thenAnswer((_) async => healthyResponse());
-      when(() => mockAuth.restoreSession(isRecovering: true))
-          .thenAnswer((_) async {});
+      when(() => mockAuth.restoreSession())
+          .thenAnswer((_) async => SessionRestoreOutcome.restored);
       when(() => mockAuth.getSerialNumber()).thenAnswer((_) async => 'ABC123');
       when(() => mockFingerprint.matches('ABC123'))
           .thenAnswer((_) async => true);
@@ -214,8 +211,8 @@ void main() {
         () async {
       when(() => mockBridge.health())
           .thenAnswer((_) async => healthyResponse());
-      when(() => mockAuth.restoreSession(isRecovering: true))
-          .thenAnswer((_) async {});
+      when(() => mockAuth.restoreSession())
+          .thenAnswer((_) async => SessionRestoreOutcome.restored);
       when(() => mockAuth.getSerialNumber()).thenAnswer((_) async => 'XYZ789');
       when(() => mockFingerprint.matches('XYZ789'))
           .thenAnswer((_) async => false);
@@ -229,8 +226,8 @@ void main() {
         () async {
       when(() => mockBridge.health())
           .thenAnswer((_) async => healthyResponse());
-      when(() => mockAuth.restoreSession(isRecovering: true))
-          .thenAnswer((_) async {});
+      when(() => mockAuth.restoreSession())
+          .thenAnswer((_) async => SessionRestoreOutcome.restored);
       when(() => mockAuth.getSerialNumber()).thenThrow(Exception('USP error'));
 
       final result = await service.probe();
@@ -245,8 +242,7 @@ void main() {
       final result = await service.probe(healthOnly: true);
 
       expect(result, ProbeResult.recovered);
-      verifyNever(() =>
-          mockAuth.restoreSession(isRecovering: any(named: 'isRecovering')));
+      verifyNever(() => mockAuth.restoreSession());
       verifyNever(() => mockFingerprint.matches(any()));
     });
 
@@ -258,8 +254,8 @@ void main() {
       // business taking.
       when(() => mockBridge.health())
           .thenAnswer((_) async => healthyResponse());
-      when(() => mockAuth.restoreSession(isRecovering: true))
-          .thenAnswer((_) async {});
+      when(() => mockAuth.restoreSession())
+          .thenAnswer((_) async => SessionRestoreOutcome.restored);
       when(() => mockAuth.getSerialNumber()).thenAnswer((_) async => 'ABC123');
       when(() => mockFingerprint.matches('ABC123'))
           .thenAnswer((_) async => true);
@@ -288,8 +284,7 @@ void main() {
               'produced serialMismatch and a forced logout, because no '
               'fingerprint was ever stored for a support session and '
               'matches(null) is false');
-      verifyNever(() =>
-          mockAuth.restoreSession(isRecovering: any(named: 'isRecovering')));
+      verifyNever(() => mockAuth.restoreSession());
       verifyNever(() => mockFingerprint.matches(any()));
       verifyNever(() => mockAuth.getSerialNumber());
     });
@@ -388,8 +383,7 @@ void main() {
       final result = await service.probe(healthOnly: true);
 
       expect(result, ProbeResult.recovered);
-      verifyNever(() =>
-          mockAuth.restoreSession(isRecovering: any(named: 'isRecovering')));
+      verifyNever(() => mockAuth.restoreSession());
     });
 
     test('no bridge yet is unreachable, not a crash', () async {

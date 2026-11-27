@@ -320,8 +320,9 @@ All errors finally converge into a `ServiceError` in the **service's `catch (e)`
 
 > ⚠ Not in this chart: **lifecycle errors** (login/logout/refreshToken failures) are digested internally by `UspAuthCoordinator`; the **raw string never becomes a `ServiceError` and never flows into this chart**. But the app still learns the result in the form of "authentication state", just not as an error object:
 > - `syncAfterLocalLogin`: after catch only logs and swallows (local login succeeds as usual, USP failure has no impact, falls back to JNAP)
-> - `tryUspLogin` / `restoreSession`: catch → `return false` (the app gets a boolean, not a string)
-> - `ensureAuth` (refreshToken): 401 → triggers the `onForceLogout` callback (forced logout)
+> - `tryUspLogin`: catch → `return false` (the app gets a boolean, not a string)
+> - `restoreSession`: returns a `SessionRestoreOutcome` — restored / rejected / unreachable — and ends nothing itself; `UspClient.reauth` ends the session on `rejected` through `SessionAuthGate` (#1666)
+> - `ensureAuth` (refreshToken): a refresh the router refuses (a 401, or "Authentication token has expired") → the session ends through `SessionAuthGate` (#1666)
 >
 > Design intent: USP is a second authentication channel attached alongside local login; on failure it degrades into an "is it usable" state, and should not make the app blow up with a `ServiceError`.
 

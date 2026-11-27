@@ -9,7 +9,8 @@ import 'package:privacy_gui/core/usp/transport/usp_transport.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 
 import 'bridge_request_throttler.dart';
-import 'sse_operation_strategy.dart';
+import 'session_auth_gate.dart';
+import 'session_restore_outcome.dart';
 
 // Conditional import: use WASM client on Web, stub on other platforms (VM/tests).
 import '../stub/usp_client_stub.dart'
@@ -147,9 +148,9 @@ class UspClient {
   /// - [_lastCallRetried] is only a log label.
   /// - A pending [reauth] is not. Left in place, the next 401 on the **new**
   ///   session would await the **old** session's completer, and the old attempt's
-  ///   eventual failure would call [onForceLogout] — signing the user out of a
-  ///   session that was fine. Bumping [_generation] is what lets that superseded
-  ///   attempt return quietly instead.
+  ///   eventual failure would end the session — signing the user out of one that
+  ///   was fine. Bumping [_generation] is what lets that superseded attempt
+  ///   return quietly instead.
   /// - The [throttler]'s dedup levels are per-connection even though the
   ///   throttler itself is not; see [BridgeRequestThrottler.invalidateSession].
   ///
@@ -258,8 +259,9 @@ class UspClient {
   /// Callback for full re-authentication when token refresh fails.
   /// Set by [UspAuthCoordinator] to `restoreSession()`, which is **token-only**:
   /// the in-memory token first, then the one in sessionStorage. No password is
-  /// stored anywhere, so this cannot re-login from credentials.
-  Future<void> Function()? onReauthRequired;
+  /// stored anywhere, so this cannot re-login from credentials. What it found
+  /// is [reauth]'s to act on: it ends nothing itself.
+  Future<SessionRestoreOutcome> Function()? onReauthRequired;
 
   /// Called after [reauth] Stage 2 (full re-login) succeeds.
   /// Set by [SseManager] to force SSE reconnect with the new session token.
@@ -271,27 +273,28 @@ class UspClient {
   /// NOT related to SSE reconnect — see [onTokenRefreshed] for that.
   VoidCallback? onRefreshTokenSuccess;
 
-  /// Called when the session is unrecoverable: all reauth stages failed, or —
-  /// when [authBehavior] says the credential cannot be refreshed — the first 401.
-  /// Set by provider layer to trigger navigation to login screen.
-  VoidCallback? onForceLogout;
+  /// What a 401 means, and who ends the session it ends (#1666).
+  ///
+  /// The gate answers retry, end or ignore from the mode (a Remote Assistance
+  /// token cannot be refreshed) and from the session the request was sent for;
+  /// see [SessionAuthGate]. This façade only acts on the answer: it retries
+  /// after a [reauth], ends the session through the gate, or lets the 401 reach
+  /// the caller.
+  ///
+  /// Attached by `UspAuthCoordinator`'s constructor, beside [onReauthRequired],
+  /// because the façade is built in `di.dart` and by Remote Assistance's
+  /// `activate()`, outside Riverpod. With none attached (tests that do not need
+  /// one) a 401 is retried and nothing is ended: what a local session that has
+  /// not begun gets.
+  SessionAuthGate? _authGate;
 
-  /// What a 401 from a command means — the same value `UspBridgeClient` has
-  /// always used for its own REST 401s, and #1627 is this façade learning it.
-  ///
-  /// [AuthBehavior.local] (the default, and every local build): the router's
-  /// session token expired and [reauth] can refresh it, so the command is retried.
-  /// [AuthBehavior.remote]: the credential is Guardian's `temporaryAccessToken`,
-  /// minted for one support session, and a 401 means that session is over. There
-  /// is nothing to refresh, so there is no retry — [onForceLogout] fires and the
-  /// error reaches the caller.
-  ///
-  /// Not constructor state, for the same reason as [onForceLogout]: the mode is
-  /// the provider layer's knowledge, and this façade is built in `di.dart` and by
-  /// Remote Assistance's `activate()`, neither of which should have to ask. Set by
-  /// `sseManagerProvider`, beside [onForceLogout], so "whether to retry" and "who
-  /// ends the session" are wired in one place.
-  AuthBehavior authBehavior = AuthBehavior.local;
+  /// Attaches the app's 401 gate (see [_authGate]). Called by
+  /// `UspAuthCoordinator`'s constructor; the last one attached is used.
+  void attachAuthGate(SessionAuthGate gate) => _authGate = gate;
+
+  /// The gate [attachAuthGate] attached, or null before anything has.
+  @visibleForTesting
+  SessionAuthGate? get authGate => _authGate;
 
   /// SSE subscription delegate. Set by [SseManager] to route subscriptions
   /// through SSE instead of polling. When null, falls back to polling.
@@ -335,7 +338,8 @@ class UspClient {
 
   /// A [rebindTransport] since an operation started means the connection it was
   /// working on is gone. Its outcome says nothing about the current session, so
-  /// it must not fire session-level callbacks — most importantly [onForceLogout].
+  /// it must not fire session-level callbacks, and above all must not end the
+  /// session.
   bool _superseded(int generation) => generation != _generation;
 
   /// `complete()` that tolerates the gate having already been settled.
@@ -349,12 +353,21 @@ class UspClient {
     if (!gate.isCompleted) gate.complete();
   }
 
-  /// Two-stage re-authentication: refreshToken first, then full re-login.
+  /// Two-stage re-authentication: refreshToken first, then a session restore.
   /// Uses a Completer lock to prevent concurrent reauth attempts.
   ///
-  /// After successful reauth, notifies [onTokenRefreshed] so that SSE can
-  /// reconnect with the new token (prevents silent subscription routing
-  /// failures when the bridge session changes).
+  /// Completes when the session can be used again and throws when it cannot
+  /// (an exception naming the restore's outcome, or the restore's own error);
+  /// the bridge's own 401 handling reads a throw as "reauth failed". When the
+  /// restore finds the credential **rejected**, the session ends through the
+  /// gate (#1666), with the ticket taken when this attempt started: a reauth
+  /// that outlives its session cannot end the next one. A router that could not
+  /// be asked (**unreachable**) ends nothing; the request fails, and the next
+  /// 401 asks again.
+  ///
+  /// After a restore, notifies [onTokenRefreshed] so that SSE can reconnect
+  /// with the new token (prevents silent subscription routing failures when the
+  /// bridge session changes), unless the session has ended meanwhile.
   Future<void> reauth() async {
     final inFlight = _reauthInProgress;
     if (inFlight != null) {
@@ -366,6 +379,7 @@ class UspClient {
     // would then throw from inside our own error handling.
     final gate = Completer<void>();
     final generation = _generation;
+    final ticket = _authGate?.ticket;
     _reauthInProgress = gate;
     bool didFullRelogin = false;
     try {
@@ -391,18 +405,23 @@ class UspClient {
       // `UspAuthCoordinator.restoreSession` and re-authenticates whatever
       // `_client` is by then. Run superseded, it would validate the *old*
       // session's stored token against the connection that replaced it, and on
-      // failure clear that token and force logout from inside the callback —
-      // where the supersession check below cannot stop it. Stop here instead; a
-      // session that genuinely needs reauth will get a 401 of its own.
+      // failure clear that token. Stop here instead; a session that genuinely
+      // needs reauth will get a 401 of its own.
       if (_superseded(generation)) {
         logger.w('$_tag Reauth abandoned — its connection was replaced');
         _settleReauthGate(gate);
         return;
       }
-      // Stage 2: full session restore (token-only — see restoreSession)
-      final reauth = onReauthRequired;
-      if (reauth != null) {
-        await reauth();
+      // Stage 2: session restore (token-only — see restoreSession). Before
+      // #1666 it never failed: restoreSession returned nothing, so a restore
+      // that found nothing counted as a re-login, and the request was sent
+      // again and SSE reconnected while the session was ending.
+      final restore = onReauthRequired;
+      if (restore != null) {
+        final outcome = await restore();
+        if (outcome != SessionRestoreOutcome.restored) {
+          throw _SessionNotRestoredException(outcome);
+        }
         didFullRelogin = true;
         logger.d('$_tag Full re-login succeeded');
       }
@@ -418,31 +437,29 @@ class UspClient {
       }
       // Only Stage 2 can reach here now, so a superseded failure means the swap
       // landed mid-relogin. We cannot tell "the old connection vanished" from
-      // "the new one cannot authenticate", and `onForceLogout` navigates to the
-      // login screen — which in Remote Assistance ends a live Guardian session.
-      // Take the recoverable reading: if the new connection really is broken, its
-      // own next 401 will say so.
+      // "the new one cannot authenticate", and ending the session navigates to
+      // the login screen — which in Remote Assistance ends a live Guardian
+      // session. Take the recoverable reading: if the new connection really is
+      // broken, its own next 401 will say so.
       //
-      // What is suppressed is the **force logout**, not the error. The failure still
-      // propagates, because the caller's request genuinely did not complete and
-      // `_withAuthRetry` must not report a success it never got; swallowing here
-      // would hand it a `null`-shaped result from a reauth that failed. So the two
-      // halves are deliberate and different: the session survives, the request does
-      // not.
+      // What is suppressed is the **session end**, not the error. The failure
+      // still propagates, because the caller's request genuinely did not
+      // complete; the session survives, the request does not.
       if (_superseded(generation)) {
         logger.w('$_tag Reauth failed on a superseded connection — '
-            'not forcing logout, reporting to the caller');
+            'not ending the session, reporting to the caller');
         rethrow;
       }
-      // The original trigger was a confirmed 401 (token expired/revoked).
-      // Both Stage 1 (refreshToken) and Stage 2 (restoreSession) failed,
-      // so the session is unrecoverable regardless of Stage 2 failure reason
-      // (auth error, network error, or no stored token).
-      logger.w('$_tag All reauth stages failed — forcing logout');
-      try {
-        onForceLogout?.call();
-      } catch (cbError) {
-        logger.w('$_tag onForceLogout callback error: $cbError');
+      // The trigger was a 401 and the refresh failed too. Only a credential
+      // the router refused ends the session; a router that could not be asked
+      // may answer the next request.
+      if (e is _SessionNotRestoredException &&
+          e.outcome == SessionRestoreOutcome.rejected &&
+          ticket != null) {
+        logger.w('$_tag The router refused every token — ending the session');
+        _authGate?.end(ticket);
+      } else {
+        logger.w('$_tag Reauth failed, the session is left as it is: $e');
       }
       rethrow;
     } finally {
@@ -456,6 +473,11 @@ class UspClient {
       // Stage 1 (refreshToken) typically extends the same session, so
       // SSE reconnect is only needed after Stage 2 (full re-login).
       //
+      // Only while a session is live (#1666): `connect()` clears the
+      // intentional-disconnect flag, so a reconnect that lands during or after
+      // a logout reopens a stream nobody will close, and before a session has
+      // begun there is no stream to move to the new token.
+      //
       // Deliberately NOT gated on supersession, unlike everything above. Reaching
       // here past the Stage 2 bail-out means the swap landed *during* the
       // re-login, so that re-login went through the **new** transport and changed
@@ -468,52 +490,59 @@ class UspClient {
       // is unreachable in production and this is a no-op there. Stated because the
       // ungated call looks like an oversight otherwise: it is the correct
       // behaviour for the next caller, not a live path.
-      if (didFullRelogin) {
+      if (didFullRelogin && (_authGate?.isLive ?? true)) {
         onTokenRefreshed?.call();
       }
     }
   }
 
-  /// Wraps an async operation with automatic 401 retry — when [authBehavior]
-  /// says the credential can be refreshed. When it cannot, the 401 ends the
-  /// session instead (#1627).
+  /// Wraps an async operation with the 401 decision (#1666): the gate says
+  /// whether to [reauth] and retry once, to end the session, or to let the 401
+  /// reach the caller. A retry that is answered 401 again reaches the caller as
+  /// it is, and so does the 401 when the reauth fails.
   Future<T> _withAuthRetry<T>(Future<T> Function() action) async {
     final generation = _generation;
+    final ticket = _authGate?.ticket;
     try {
       return await action();
-    } catch (e) {
+    } catch (e, stack) {
       if (!_isAuthError(e)) rethrow;
-      if (!authBehavior.shouldRetryOnFailure) {
-        _endSessionOn401(generation);
-        rethrow;
+      switch (_decideOn401(ticket, generation)) {
+        case AuthDecision.ignore:
+          logger.w('$_tag 401 for a session that is over or not this one — '
+              'failing the request');
+          rethrow;
+        case AuthDecision.end:
+          logger.w('$_tag 401 on a credential that cannot be refreshed — '
+              'ending the session');
+          _authGate!.end(ticket!);
+          rethrow;
+        case AuthDecision.retry:
+          logger.w('$_tag 401 detected, attempting reauth...');
+          try {
+            await reauth();
+          } catch (_) {
+            // The session could not be restored: the 401 is this request's
+            // answer, not the restore's failure.
+            Error.throwWithStackTrace(e, stack);
+          }
+          _lastCallRetried = true;
+          return await action();
       }
-      logger.w('$_tag 401 detected, attempting reauth...');
-      await reauth();
-      _lastCallRetried = true;
-      return await action();
     }
   }
 
-  /// The remote answer to a 401: nothing to refresh, so no [reauth] — its Stage 2
-  /// is `restoreSession()`, whose network-error branch returns without logging
-  /// out, which is how a rejected Guardian token used to fail silently.
+  /// [SessionAuthGate.decideOn401] for a request sent on connection
+  /// [generation], for the session [ticket] names.
   ///
-  /// Only for the connection the request was sent on, by the rule [reauth] keeps:
-  /// a 401 from a transport [rebindTransport] has since replaced is that token
-  /// being dead, not this one, and must not sign the operator out of a new
-  /// support session that is working. The caller still gets its error either way.
-  void _endSessionOn401(int generation) {
-    if (_superseded(generation)) {
-      logger.w('$_tag 401 on a superseded connection — not ending the session');
-      return;
-    }
-    logger.w('$_tag 401 on a credential that cannot be refreshed — '
-        'ending the session');
-    try {
-      onForceLogout?.call();
-    } catch (cbError) {
-      logger.w('$_tag onForceLogout callback error: $cbError');
-    }
+  /// A connection [rebindTransport] has since replaced answered for a token
+  /// that is gone; its 401 says nothing about the current one. With no gate
+  /// attached a 401 is retried, as for a local session that has not begun.
+  AuthDecision _decideOn401(SessionTicket? ticket, int generation) {
+    if (_superseded(generation)) return AuthDecision.ignore;
+    final gate = _authGate;
+    if (gate == null || ticket == null) return AuthDecision.retry;
+    return gate.decideOn401(ticket);
   }
 
   /// Fetches multiple USP paths in a single getMultiple call.
@@ -1576,4 +1605,14 @@ class UspClient {
   void dispose() {
     _client.dispose();
   }
+}
+
+/// [UspClient.reauth]'s failure when the session restore did not restore.
+class _SessionNotRestoredException implements Exception {
+  const _SessionNotRestoredException(this.outcome);
+
+  final SessionRestoreOutcome outcome;
+
+  @override
+  String toString() => 'Session not restored (${outcome.name})';
 }

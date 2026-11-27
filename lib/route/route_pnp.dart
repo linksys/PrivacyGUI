@@ -42,10 +42,12 @@ final _pnpRouteConfig = LinksysRouteConfig(
 ///
 /// **No `loggedOut` escape for the lock**, unlike `_firmwareExitGuard`: the
 /// `/pnp*` redirect passes every location through, and the only wiring of
-/// `listenForCoreSessionExit` is in `usp_dashboard_shell.dart`, so nothing signs
-/// a user out from under the firmware stage. The guard lets one navigation
+/// `listenForCoreSessionExit` is in `usp_dashboard_shell.dart`. A session lost
+/// during setup — a credential the router stopped accepting, ended by the 401
+/// gate since #1666 — is taken to the login page by [_PnpSessionLostExit], which
+/// waits for the firmware stage to finish first. The guard lets one navigation
 /// through without asking, before it reads the phase: the editing branch's own
-/// to the login page ([_pnpLeavingForLoginProvider]).
+/// to the login page, and that one ([_pnpLeavingForLoginProvider]).
 Future<bool> _pnpWizardExitGuard(
     BuildContext context, GoRouterState state) async {
   final container = ProviderScope.containerOf(context);
@@ -88,6 +90,127 @@ Future<bool> _pnpWizardExitGuard(
   }
 }
 
+/// Takes the user to the login page when the session is lost during setup
+/// (#1666).
+///
+/// Elsewhere a signed-out session is the `/usp*` redirect's to send to the
+/// login page; `/pnp*` passes every location through, so before this a session
+/// the router stopped accepting mid-setup left the user on the wizard, signed
+/// out, with every later request ignored.
+///
+/// Only for a session that was **lost** ([EndCause.sessionLost]). The setup's
+/// own ways out — "Log out" from the first step, Log out on the failure screens
+/// — end it as [EndCause.userRequested] and navigate themselves once the
+/// teardown has finished; acting on those too would race their `go`.
+///
+/// Never during the firmware stage (REQ-B2, the same lock as
+/// [_pnpWizardExitGuard]): it waits for that stage to end, then leaves.
+class _PnpSessionLostExit extends ConsumerStatefulWidget {
+  const _PnpSessionLostExit({required this.child});
+
+  final Widget child;
+
+  @override
+  ConsumerState<_PnpSessionLostExit> createState() =>
+      _PnpSessionLostExitState();
+}
+
+class _PnpSessionLostExitState extends ConsumerState<_PnpSessionLostExit> {
+  bool _signedIn = false;
+  ProviderSubscription<PnpState>? _firmwareStage;
+
+  static bool _isSignedIn(AsyncValue<AuthState> auth) =>
+      (auth.value?.loginType ?? LoginType.none) != LoginType.none;
+
+  /// The phases [_pnpWizardExitGuard] locks as the firmware stage. Exhaustive,
+  /// like the guard: a phase added later has to be decided here too.
+  static bool _inFirmwareStage(PnpPhase phase) => switch (phase) {
+        WizardUpdatingFirmware() || WizardCheckingFirmware() => true,
+        WizardSaving() ||
+        WizardSaved() ||
+        WizardTestingReconnect() ||
+        WizardConfiguring() ||
+        WizardNeedsReconnect() ||
+        AdminCheckingInternet() ||
+        AdminInternetConnected() ||
+        AdminReadFailure() ||
+        NoInternet() ||
+        WizardInitializing() ||
+        WizardYourNetwork() ||
+        WizardWifiReady() ||
+        WizardError() =>
+          false,
+      };
+
+  @override
+  void initState() {
+    super.initState();
+    _signedIn = _isSignedIn(ref.read(authProvider));
+    ref.listenManual(authProvider, (_, next) {
+      if (_isSignedIn(next)) {
+        _signedIn = true;
+        return;
+      }
+      // The teardown sets the state twice, loading and then signed out; the
+      // second is the one that says it has finished.
+      if (!_signedIn || next.isLoading || !next.hasValue) return;
+      _signedIn = false;
+      if (ref.read(authProvider.notifier).lastEndCause !=
+          EndCause.sessionLost) {
+        return;
+      }
+      _leaveWhenAllowed();
+    });
+  }
+
+  void _leaveWhenAllowed() {
+    if (!mounted) return;
+    if (_inFirmwareStage(ref.read(pnpProvider).phase)) {
+      _firmwareStage ??= ref.listenManual(pnpProvider, (_, next) {
+        if (_inFirmwareStage(next.phase)) return;
+        _firmwareStage?.close();
+        _firmwareStage = null;
+        _leaveWhenAllowed();
+      });
+      return;
+    }
+    final container = ProviderScope.containerOf(context, listen: false);
+    final at = container
+        .read(routerProvider)
+        .routerDelegate
+        .currentConfiguration
+        .uri
+        .path;
+    // Already out of the setup: something else took the user away.
+    if (!at.startsWith(RoutePath.pnp)) return;
+    _goToLoginFromSetup(container);
+  }
+
+  @override
+  void dispose() {
+    _firmwareStage?.close();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
+/// Goes from the setup to the login page, past the wizard's exit guard.
+///
+/// Sets [_pnpLeavingForLoginProvider] only under `/pnp/pnpConfig`, where the
+/// guard runs and takes it back: set anywhere else, it would outlive this
+/// navigation and let the next run's Back from the first step leave without
+/// asking (#1816 review).
+void _goToLoginFromSetup(ProviderContainer container) {
+  final router = container.read(routerProvider);
+  final at = router.routerDelegate.currentConfiguration.uri.path;
+  if (at.startsWith('${RoutePath.pnp}/${RoutePath.pnpConfig}')) {
+    container.read(_pnpLeavingForLoginProvider.notifier).state = true;
+  }
+  router.go(RoutePath.localLoginPassword);
+}
+
 /// Set just before the editing branch's own `go` to the login page, and taken
 /// back by the guard that lets it through.
 ///
@@ -128,8 +251,7 @@ Future<bool> _leaveSetupByLoggingOut(
     } else {
       await signOut;
     }
-    container.read(_pnpLeavingForLoginProvider.notifier).state = true;
-    container.read(routerProvider).go(RoutePath.localLoginPassword);
+    _goToLoginFromSetup(container);
   });
   return false;
 }
@@ -173,8 +295,9 @@ String? _pnpShellRedirect(BuildContext context, GoRouterState state) {
 /// wizard (adding nodes) goes to the root navigator.
 final pnpShellRoute = ShellRoute(
   redirect: _pnpShellRedirect,
-  builder: (context, state, child) =>
-      PnpFlowShell(location: state.uri, child: child),
+  builder: (context, state, child) => _PnpSessionLostExit(
+    child: PnpFlowShell(location: state.uri, child: child),
+  ),
   routes: [pnpRoute],
 );
 
