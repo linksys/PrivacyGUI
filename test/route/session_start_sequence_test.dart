@@ -3,27 +3,22 @@
 //   again on every later page change;
 // - PrepareDashboardView, which PnP opens once it has logged in.
 //
-// #1904 P2 makes them one sequence. Until then, this pins what each does
-// today, differences included, through seams P2 does not move: the redirect
-// and the page are the way in, and the router, polling and the device cache
-// are the edges. DashboardManagerNotifier and the action table run for real.
+// Since #1904 P2 both run one sequence, DashboardManagerNotifier.startSession.
+// This pins what it leaves behind through seams it does not move: the
+// redirect and the page are the way in, and the router, polling and the
+// device cache are the edges. DashboardManagerNotifier and the action table
+// run for real.
 //
 // Each case lists everything the start leaves behind, so a change to any part
-// of it fails the case that shows it. Where the two places differ today:
-// - the redirect saves the network only when the router changed; the page
-//   saves it every time;
-// - the redirect retries a router that is briefly unreachable; the page
-//   gives up at once;
-// - the redirect sets the model number; the page leaves it unset;
-// - the redirect asks polling to start, forced only when the router changed;
-//   the page stops and starts it;
-// - they fall back to different logins.
+// of it fails the case that shows it. What #1904 P2 settled (2026-11-27):
+// - the network is saved only when the router changed, or none was stored;
+// - a router that is briefly unreachable is retried, twice, 2 s apart;
+// - the model number is set;
+// - polling is asked to start, forced when the router changed or PnP held it;
+// - the device cache loaded is that of the router the phone reaches;
+// - each place keeps its own fallback login.
 //
-// Two of today's behaviours look wrong and are pinned as they are, for P2 to
-// decide:
-// - both load the device cache of the router opened before, when the phone
-//   now reaches another one;
-// - a page change whose device check fails stays on the page.
+// Kept as it is: a page change whose device check fails stays on the page.
 import 'dart:convert';
 import 'dart:io';
 
@@ -249,6 +244,7 @@ void main() {
   Future<(String?, ProviderContainer)> prepareDashboard(
     WidgetTester tester, {
     Map<String, Object> prefs = const {},
+    Duration realTime = const Duration(seconds: 1),
   }) async {
     BuildConfig.forceCommandType = ForceCommand.local;
     SharedPreferences.setMockInitialValues(Map.of(prefs));
@@ -283,8 +279,9 @@ void main() {
       ],
       child: const PrepareDashboardView(),
     ));
-    // The page works through real futures before it navigates.
-    await tester.runAsync(() => Future.delayed(const Duration(seconds: 1)));
+    // The page works through real futures before it navigates: storage, and
+    // for a router briefly unreachable, the retry's delay.
+    await tester.runAsync(() => Future.delayed(realTime));
     await tester.pumpAndSettle();
     expect(find.byKey(_landed), findsOneWidget, reason: 'the page navigated');
     return (landing, container);
@@ -344,7 +341,7 @@ void main() {
         sent: deviceInfoTwice,
         storedSerial: _serial,
         storedNetwork: '',
-        cacheOf: '',
+        cacheOf: _serial,
         tableBuilt: true,
         startChecks: [true],
         restarts: 1,
@@ -384,8 +381,7 @@ void main() {
         sent: deviceInfoTwice,
         storedSerial: _serial,
         storedNetwork: '',
-        // The serial number is read before the new one is saved.
-        cacheOf: _otherSerial,
+        cacheOf: _serial,
         tableBuilt: true,
         startChecks: [true],
         restarts: 1,
@@ -404,7 +400,7 @@ void main() {
         sent: deviceInfoTwice,
         storedSerial: _serial,
         storedNetwork: '',
-        cacheOf: '',
+        cacheOf: _serial,
         tableBuilt: false,
         startChecks: [],
         restarts: 0,
@@ -424,7 +420,7 @@ void main() {
         sent: [...deviceInfoTwice, JNAPAction.getDeviceInfo],
         storedSerial: _serial,
         storedNetwork: '',
-        cacheOf: '',
+        cacheOf: _serial,
         tableBuilt: true,
         startChecks: [true],
         restarts: 1,
@@ -530,11 +526,12 @@ void main() {
         sent: deviceInfoTwice,
         storedSerial: _serial,
         storedNetwork: '',
-        cacheOf: '',
+        cacheOf: _serial,
         tableBuilt: true,
-        startChecks: [],
+        // Forced: PnP held polling while it set the router up.
+        startChecks: [true],
         restarts: 1,
-        modelNumber: '',
+        modelNumber: _model,
       );
     });
 
@@ -548,13 +545,13 @@ void main() {
         landsOn: RoutePath.dashboardHome,
         sent: deviceInfoTwice,
         storedSerial: _serial,
-        // Saved even though the router did not change.
-        storedNetwork: '',
+        // The router did not change, so nothing is saved.
+        storedNetwork: null,
         cacheOf: _serial,
         tableBuilt: true,
-        startChecks: [],
+        startChecks: [true],
         restarts: 1,
-        modelNumber: '',
+        modelNumber: _model,
       );
     });
 
@@ -570,12 +567,11 @@ void main() {
         sent: deviceInfoTwice,
         storedSerial: _serial,
         storedNetwork: '',
-        // The serial number is read before the new one is saved.
-        cacheOf: _otherSerial,
+        cacheOf: _serial,
         tableBuilt: true,
-        startChecks: [],
+        startChecks: [true],
         restarts: 1,
-        modelNumber: '',
+        modelNumber: _model,
       );
     });
 
@@ -590,7 +586,7 @@ void main() {
         sent: deviceInfoTwice,
         storedSerial: _serial,
         storedNetwork: '',
-        cacheOf: '',
+        cacheOf: _serial,
         tableBuilt: false,
         startChecks: [],
         restarts: 0,
@@ -600,21 +596,22 @@ void main() {
 
     testWidgets('when the router is briefly unreachable', (tester) async {
       routerAnswers([_deviceInfoOutput, unreachable, _deviceInfoOutput]);
-      final (landing, container) = await prepareDashboard(tester);
+      final (landing, container) =
+          await prepareDashboard(tester, realTime: const Duration(seconds: 3));
 
       await expectStart(
         container,
         landing: landing,
-        // No retry.
-        landsOn: '/localLoginPassword?error=Unexpected',
-        sent: deviceInfoTwice,
+        // One retry, two seconds later, as from the redirect.
+        landsOn: RoutePath.dashboardHome,
+        sent: [...deviceInfoTwice, JNAPAction.getDeviceInfo],
         storedSerial: _serial,
         storedNetwork: '',
-        cacheOf: '',
-        tableBuilt: false,
-        startChecks: [],
-        restarts: 0,
-        modelNumber: '',
+        cacheOf: _serial,
+        tableBuilt: true,
+        startChecks: [true],
+        restarts: 1,
+        modelNumber: _model,
       );
     });
   });

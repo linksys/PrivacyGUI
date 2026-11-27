@@ -37,7 +37,7 @@ void main() {
 
   setUp(() {
     mockDashboardManagerNotifier = MockDashboardManagerNotifier();
-    when(mockDashboardManagerNotifier.checkDeviceInfo(null)).thenAnswer(
+    when(mockDashboardManagerNotifier.checkDeviceInfo()).thenAnswer(
       (_) async =>
           NodeDeviceInfo.fromJson(jsonDecode(testDeviceInfo)['output']),
     );

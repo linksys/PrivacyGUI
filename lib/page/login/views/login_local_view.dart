@@ -58,7 +58,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
       _getAdminPasswordHint();
       ref
           .read(dashboardManagerProvider.notifier)
-          .checkDeviceInfo(null)
+          .checkDeviceInfo()
           .then((value) {
         _deviceInfo = value;
         if (_p != null) {

@@ -4,15 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:http/http.dart' show ClientException;
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
-import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
-import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
-import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/jnap/access/access_policy.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
@@ -57,7 +52,6 @@ import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_logger.dart';
-import 'package:privacy_gui/providers/global_model_number_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'constants.dart';
 import 'package:privacy_gui/core/jnap/providers/ip_getter/get_local_ip.dart'
@@ -152,12 +146,6 @@ final routerProvider = Provider<GoRouter>((ref) {
 });
 
 class RouterNotifier extends ChangeNotifier {
-  /// Budget for riding out a router service restart while preparing the
-  /// dashboard. Deliberately short: a genuinely missing device must still fail
-  /// fast, and this runs inside a go_router redirect the user is waiting on.
-  static const int _deviceInfoMaxRetries = 2;
-  static const Duration _deviceInfoRetryDelay = Duration(seconds: 2);
-
   final Ref _ref;
   StreamSubscription? _errorSub;
   RouterNotifier(this._ref);
@@ -336,90 +324,29 @@ class RouterNotifier extends ChangeNotifier {
 
   Future<String?> _prepare(GoRouterState state, [String? goToPath]) async {
     logger.d('[Prepare]: prepare data. Go to path: $goToPath');
-    await _ref.read(connectivityProvider.notifier).forceUpdate();
-    final prefs = await SharedPreferences.getInstance();
-    String? serialNumber = prefs.getString(pCurrentSN);
     final loginType =
         _ref.read(authProvider.select((value) => value.value?.loginType));
-    String? naviPath;
-
     if (loginType == LoginType.remote) {
-      final sessionId = prefs.getString(pGRASessionId);
-      naviPath = await _prepareRemote(serialNumber, sessionId);
-    } else if (loginType == LoginType.local) {
-      naviPath = await _prepareLocal(serialNumber);
+      final prefs = await SharedPreferences.getInstance();
+      final naviPath = await _prepareRemote(
+          prefs.getString(pCurrentSN), prefs.getString(pGRASessionId));
+      if (naviPath != null) {
+        logger.i('[Prepare]: naviPath - $naviPath');
+        return naviPath;
+      }
     }
-    //
-    if (naviPath != null) {
-      logger.i('[Prepare]: naviPath - $naviPath');
-      return naviPath;
-    }
-    logger.d('[Prepare]: cache check');
-    await ProviderContainer()
-        .read(linksysCacheManagerProvider)
-        .loadCache(serialNumber: serialNumber ?? '');
-    logger.d('[Prepare]: device info check - $serialNumber');
-    final nodeDeviceInfo = await _checkDeviceInfoWithRetry(serialNumber);
-
-    if (nodeDeviceInfo != null) {
-      logger.d('[Prepare]: SN changed: ${nodeDeviceInfo.serialNumber}');
-      await _ref.read(connectivityProvider.notifier).forceUpdate();
-      logger.d('[Prepare]: Force update connectivity finish!');
-
-      _ref
-          .read(pollingProvider.notifier)
-          .checkAndStartPolling(nodeDeviceInfo.serialNumber != serialNumber);
-
-      final naviPath = goToPath ?? state.uri.toString();
-      logger.d('[Prepare]: Prepare go to $naviPath');
-      return naviPath;
-    } else {
+    // The session's start is the same from here and from PnP (#1904).
+    final nodeDeviceInfo =
+        await _ref.read(dashboardManagerProvider.notifier).startSession();
+    if (nodeDeviceInfo == null) {
       // TODO #LINKSYS Error handling for unable to get deviceinfo
       logger.i('[Prepare]: Error handling for unable to get deviceinfo');
       return _home('error=noDeviceInfo');
     }
+    final naviPath = goToPath ?? state.uri.toString();
+    logger.d('[Prepare]: Prepare go to $naviPath');
+    return naviPath;
   }
-
-  /// Fetches deviceInfo, retrying only while the failure looks like the router
-  /// being temporarily unreachable rather than genuinely absent.
-  ///
-  /// The router drops its HTTP service while it restarts services - the
-  /// make-Master credential rotation is one such window - and the local
-  /// deviceInfo call is issued with `retries: 0` / `timeoutMs: 3000`, so that
-  /// window is guaranteed to surface as a socket/timeout failure. Treating it
-  /// as "no device info" sends the user to the login page with an error they
-  /// can do nothing about, when waiting a couple of seconds would have worked.
-  ///
-  /// Any other failure (JNAP error, unparsable payload) is final: return null
-  /// and let the caller show the error, exactly as before.
-  Future<NodeDeviceInfo?> _checkDeviceInfoWithRetry(
-      String? serialNumber) async {
-    for (var attempt = 0;; attempt++) {
-      try {
-        final nodeDeviceInfo = await _ref
-            .read(dashboardManagerProvider.notifier)
-            .checkDeviceInfo(serialNumber);
-        // Update global model number
-        _ref.read(globalModelNumberProvider.notifier).state =
-            nodeDeviceInfo.modelNumber;
-        return nodeDeviceInfo;
-      } catch (error) {
-        if (!_isRouterTemporarilyUnreachable(error) ||
-            attempt >= _deviceInfoMaxRetries) {
-          logger.e('[Prepare]: device info check failed - $error');
-          return null;
-        }
-        logger.i(
-            '[Prepare]: router temporarily unreachable ($error), retry ${attempt + 1}/$_deviceInfoMaxRetries');
-        await Future.delayed(_deviceInfoRetryDelay);
-      }
-    }
-  }
-
-  /// Connection-class failures, i.e. the request never reached a router that
-  /// could answer it. Mirrors the transient-error test in [PnpNotifier].
-  bool _isRouterTemporarilyUnreachable(Object? error) =>
-      error is ClientException || error is TimeoutException;
 
   Future<String?> _prepareRemote(
       String? serialNumber, String? sessionId) async {
@@ -438,33 +365,6 @@ class RouterNotifier extends ChangeNotifier {
       await _ref.read(authProvider.notifier).logout();
       return _home();
     }
-    return null;
-  }
-
-  Future<String?> _prepareLocal(String? serialNumber) async {
-    logger.i('[Prepare]: local - $serialNumber');
-    if (isSerialNumberChanged(serialNumber)) {
-      return null;
-    }
-
-    final routerRepository = _ref.read(routerRepositoryProvider);
-
-    final newSerialNumber = await routerRepository
-        .send(
-          JNAPAction.getDeviceInfo,
-          fetchRemote: true,
-        )
-        .then<String>(
-            (value) => NodeDeviceInfo.fromJson(value.output).serialNumber);
-    if (serialNumber == newSerialNumber) {
-      return null;
-    }
-
-    // Save serial number if serial number changed
-    await _ref
-        .read(dashboardManagerProvider.notifier)
-        .saveSelectedNetwork(newSerialNumber, '');
-
     return null;
   }
 

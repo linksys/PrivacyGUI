@@ -96,7 +96,7 @@ void main() {
 
       final info = await container
           .read(dashboardManagerProvider.notifier)
-          .checkDeviceInfo(null);
+          .checkDeviceInfo();
 
       expect(info.serialNumber, output['serialNumber']);
       expect(routerServices, Set<String>.from(output['services'] as List));
@@ -154,7 +154,7 @@ void main() {
           () async {
         start(poll: {JNAPAction.getDeviceInfo: _ok(_deviceInfo(_serial))});
 
-        final info = await notifier().checkDeviceInfo(null);
+        final info = await notifier().checkDeviceInfo();
 
         expect(info.serialNumber, _serial);
         expect(router.actions, isEmpty);
@@ -169,7 +169,7 @@ void main() {
         start();
         await app.read(authProvider.future);
 
-        await notifier().checkDeviceInfo(null);
+        await notifier().checkDeviceInfo();
 
         // fetchRemote is the default: the cache may answer.
         expect(deviceInfoReads(), [(false, 3000, 0)]);
@@ -180,7 +180,7 @@ void main() {
         start(auth: _RemoteAuth.new);
         await app.read(authProvider.future);
 
-        await notifier().checkDeviceInfo(null);
+        await notifier().checkDeviceInfo();
 
         expect(deviceInfoReads(), [(false, 10000, 1)]);
       });
@@ -190,7 +190,7 @@ void main() {
         start();
 
         await expectLater(
-            notifier().checkDeviceInfo(null), throwsA(isA<JNAPError>()));
+            notifier().checkDeviceInfo(), throwsA(isA<JNAPError>()));
 
         expect(routerServices, isEmpty);
       });
