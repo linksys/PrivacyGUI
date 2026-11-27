@@ -527,6 +527,8 @@
   "channelFinderInUse": "Används",
   "channelFinderBusy": "{percent} % belastad",
   "channelFinderBusyUnknown": "Belastning inte uppmätt",
+  "channelFinderBandRefused": "Routern mätte inte hur belastade kanalerna i det här bandet är.",
+  "channelFinderBandUnanswered": "Mätningen av hur belastade kanalerna i det här bandet är slutfördes inte. Skanna igen för att försöka på nytt.",
   "channelFinderNetworks": "{count, plural, =0{Inga nätverk} =1{1 nätverk} other{{count} nätverk}}",
   "channelFinderStrongest": "Starkast {dbm} dBm",
   "channelFinderNetworksOnChannel": "Nätverk på kanal {channel}",

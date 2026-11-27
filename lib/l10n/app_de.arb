@@ -527,6 +527,8 @@
   "channelFinderInUse": "In Verwendung",
   "channelFinderBusy": "{percent}% ausgelastet",
   "channelFinderBusyUnknown": "Auslastung nicht gemessen",
+  "channelFinderBandRefused": "Der Router hat die Auslastung der Kanäle dieses Bands nicht gemessen.",
+  "channelFinderBandUnanswered": "Die Messung der Kanalauslastung dieses Bands wurde nicht abgeschlossen. Scannen Sie erneut, um es noch einmal zu versuchen.",
   "channelFinderNetworks": "{count, plural, =0{Keine Netzwerke} =1{1 Netzwerk} other{{count} Netzwerke}}",
   "channelFinderStrongest": "Stärkstes {dbm} dBm",
   "channelFinderNetworksOnChannel": "Netzwerke auf Kanal {channel}",

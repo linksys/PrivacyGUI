@@ -528,6 +528,8 @@
   "channelFinderInUse": "使用中",
   "channelFinderBusy": "忙碌程度 {percent}%",
   "channelFinderBusyUnknown": "未測量忙碌程度",
+  "channelFinderBandRefused": "路由器未測量此頻段各通道的忙碌程度。",
+  "channelFinderBandUnanswered": "此頻段各通道忙碌程度的測量未完成。請重新掃描再試一次。",
   "channelFinderNetworks": "{count, plural, =0{沒有網路} =1{1 個網路} other{{count} 個網路}}",
   "channelFinderStrongest": "最強 {dbm} dBm",
   "channelFinderNetworksOnChannel": "通道 {channel} 上的網路",

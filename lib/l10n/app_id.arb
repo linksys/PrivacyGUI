@@ -525,6 +525,8 @@
   "channelFinderInUse": "Digunakan",
   "channelFinderBusy": "Sibuk {percent}%",
   "channelFinderBusyUnknown": "Kesibukan tidak diukur",
+  "channelFinderBandRefused": "Router tidak mengukur seberapa sibuk kanal pada band ini.",
+  "channelFinderBandUnanswered": "Pengukuran kesibukan kanal pada band ini tidak selesai. Pindai lagi untuk mencoba sekali lagi.",
   "channelFinderNetworks": "{count, plural, =0{Tidak ada jaringan} =1{1 jaringan} other{{count} jaringan}}",
   "channelFinderStrongest": "Terkuat {dbm} dBm",
   "channelFinderNetworksOnChannel": "Jaringan di kanal {channel}",

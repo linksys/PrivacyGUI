@@ -525,6 +525,8 @@
   "channelFinderInUse": "Используется",
   "channelFinderBusy": "Загрузка {percent}%",
   "channelFinderBusyUnknown": "Загрузка не измерена",
+  "channelFinderBandRefused": "Маршрутизатор не измерил загрузку каналов этого диапазона.",
+  "channelFinderBandUnanswered": "Измерение загрузки каналов этого диапазона не завершилось. Выполните сканирование ещё раз.",
   "channelFinderNetworks": "{count, plural, =0{Нет сетей} =1{{count} сеть} few{{count} сети} many{{count} сетей} other{{count} сети}}",
   "channelFinderStrongest": "Сильнейший сигнал {dbm} dBm",
   "channelFinderNetworksOnChannel": "Сети на канале {channel}",

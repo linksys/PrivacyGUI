@@ -525,6 +525,8 @@
   "channelFinderInUse": "Kullanımda",
   "channelFinderBusy": "%{percent} yoğun",
   "channelFinderBusyUnknown": "Yoğunluk ölçülmedi",
+  "channelFinderBandRefused": "Yönlendirici bu banttaki kanalların yoğunluğunu ölçmedi.",
+  "channelFinderBandUnanswered": "Bu banttaki kanalların yoğunluk ölçümü tamamlanmadı. Tekrar denemek için yeniden tarayın.",
   "channelFinderNetworks": "{count, plural, =0{Ağ yok} =1{1 ağ} other{{count} ağ}}",
   "channelFinderStrongest": "En güçlü {dbm} dBm",
   "channelFinderNetworksOnChannel": "Kanal {channel} üzerindeki ağlar",

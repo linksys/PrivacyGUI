@@ -527,6 +527,8 @@
   "channelFinderInUse": "Utilisé",
   "channelFinderBusy": "Occupé à {percent} %",
   "channelFinderBusyUnknown": "Occupation non mesurée",
+  "channelFinderBandRefused": "Le routeur n'a pas mesuré l'occupation des canaux de cette bande.",
+  "channelFinderBandUnanswered": "La mesure de l'occupation des canaux de cette bande n'a pas abouti. Balayez de nouveau pour réessayer.",
   "channelFinderNetworks": "{count, plural, =0{Aucun réseau} =1{1 réseau} other{{count} réseaux}}",
   "channelFinderStrongest": "Le plus fort : {dbm} dBm",
   "channelFinderNetworksOnChannel": "Réseaux sur le canal {channel}",

@@ -528,6 +528,8 @@
   "channelFinderInUse": "使用中",
   "channelFinderBusy": "混雑度 {percent}%",
   "channelFinderBusyUnknown": "混雑度は未測定",
+  "channelFinderBandRefused": "ルーターはこの帯域のチャネルの混雑度を測定しませんでした。",
+  "channelFinderBandUnanswered": "この帯域のチャネルの混雑度の測定が完了しませんでした。もう一度スキャンしてください。",
   "channelFinderNetworks": "{count, plural, =0{ネットワークなし} =1{ネットワーク 1 件} other{ネットワーク {count} 件}}",
   "channelFinderStrongest": "最も強い信号 {dbm} dBm",
   "channelFinderNetworksOnChannel": "チャネル {channel} のネットワーク",

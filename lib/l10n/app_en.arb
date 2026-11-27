@@ -587,6 +587,10 @@
     }
   },
   "channelFinderBusyUnknown": "Busyness not measured",
+  "channelFinderBandRefused": "The router did not measure how busy this band's channels are.",
+  "@channelFinderBandRefused": {"description": "Channel Finder: above a band's chart when the router refused to measure its channels' busyness (#1778)."},
+  "channelFinderBandUnanswered": "Measuring how busy this band's channels are did not finish. Scan again to try once more.",
+  "@channelFinderBandUnanswered": {"description": "Channel Finder: above a band's chart when measuring its channels' busyness did not finish (#1778)."},
   "channelFinderNetworks": "{count, plural, =0{No networks} =1{1 network} other{{count} networks}}",
   "@channelFinderNetworks": {
     "placeholders": {

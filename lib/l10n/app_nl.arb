@@ -527,6 +527,8 @@
   "channelFinderInUse": "In gebruik",
   "channelFinderBusy": "{percent}% bezet",
   "channelFinderBusyUnknown": "Drukte niet gemeten",
+  "channelFinderBandRefused": "De router heeft niet gemeten hoe druk de kanalen in deze band zijn.",
+  "channelFinderBandUnanswered": "Het meten van hoe druk de kanalen in deze band zijn, is niet voltooid. Scan opnieuw om het nog eens te proberen.",
   "channelFinderNetworks": "{count, plural, =0{Geen netwerken} =1{1 netwerk} other{{count} netwerken}}",
   "channelFinderStrongest": "Sterkste {dbm} dBm",
   "channelFinderNetworksOnChannel": "Netwerken op kanaal {channel}",

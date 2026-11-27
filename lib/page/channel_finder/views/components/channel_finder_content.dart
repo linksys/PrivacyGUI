@@ -135,6 +135,21 @@ class _BandView extends StatelessWidget {
           ),
           AppGap.md(),
         ],
+        if (_measurementNote(context, band.measurement) case final note?) ...[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppIcon.font(Icons.info_outline,
+                  size: 16, color: Theme.of(context).colorScheme.outline),
+              AppGap.sm(),
+              Expanded(
+                child: AppText.bodySmall(note,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant),
+              ),
+            ],
+          ),
+          AppGap.md(),
+        ],
         AppCard(
           padding: const EdgeInsets.all(AppSpacing.md),
           child: ChannelFinderChart(band: band),
@@ -160,6 +175,17 @@ class _BandView extends StatelessWidget {
       ],
     );
   }
+
+  /// Why a band has no busyness, or null when it was measured. The rows
+  /// already say "not measured"; this says whether scanning again can help.
+  static String? _measurementNote(
+          BuildContext context, ChannelBandMeasurement measurement) =>
+      switch (measurement) {
+        ChannelBandMeasurement.measured => null,
+        ChannelBandMeasurement.refused => loc(context).channelFinderBandRefused,
+        ChannelBandMeasurement.unanswered =>
+          loc(context).channelFinderBandUnanswered,
+      };
 }
 
 class _ScanCard extends StatelessWidget {

@@ -528,6 +528,8 @@
   "channelFinderInUse": "قيد الاستخدام",
   "channelFinderBusy": "ازدحام {percent}%",
   "channelFinderBusyUnknown": "لم يتم قياس الازدحام",
+  "channelFinderBandRefused": "لم يقِس جهاز التوجيه مدى ازدحام قنوات هذا النطاق.",
+  "channelFinderBandUnanswered": "لم يكتمل قياس مدى ازدحام قنوات هذا النطاق. أعد الفحص للمحاولة مرة أخرى.",
   "channelFinderNetworks": "{count, plural, =0{لا توجد شبكات} =1{شبكة واحدة} =2{شبكتان} few{{count} شبكات} many{{count} شبكة} other{{count} شبكة}}",
   "channelFinderStrongest": "أقوى إشارة {dbm} dBm",
   "channelFinderNetworksOnChannel": "الشبكات على القناة {channel}",

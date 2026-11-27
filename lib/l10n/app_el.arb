@@ -525,6 +525,8 @@
   "channelFinderInUse": "Σε χρήση",
   "channelFinderBusy": "Φόρτος {percent}%",
   "channelFinderBusyUnknown": "Ο φόρτος δεν μετρήθηκε",
+  "channelFinderBandRefused": "Ο δρομολογητής δεν μέτρησε πόσο φορτωμένα είναι τα κανάλια αυτής της ζώνης.",
+  "channelFinderBandUnanswered": "Η μέτρηση του φόρτου των καναλιών αυτής της ζώνης δεν ολοκληρώθηκε. Σαρώστε ξανά για να δοκιμάσετε πάλι.",
   "channelFinderNetworks": "{count, plural, =0{Κανένα δίκτυο} =1{1 δίκτυο} other{{count} δίκτυα}}",
   "channelFinderStrongest": "Ισχυρότερο {dbm} dBm",
   "channelFinderNetworksOnChannel": "Δίκτυα στο κανάλι {channel}",

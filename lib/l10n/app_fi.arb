@@ -525,6 +525,8 @@
   "channelFinderInUse": "Käytössä",
   "channelFinderBusy": "Kuormitus {percent} %",
   "channelFinderBusyUnknown": "Kuormitusta ei mitattu",
+  "channelFinderBandRefused": "Reititin ei mitannut tämän taajuusalueen kanavien kuormitusta.",
+  "channelFinderBandUnanswered": "Tämän taajuusalueen kanavien kuormituksen mittaus ei valmistunut. Skannaa uudelleen yrittääksesi uudestaan.",
   "channelFinderNetworks": "{count, plural, =0{Ei verkkoja} =1{1 verkko} other{{count} verkkoa}}",
   "channelFinderStrongest": "Vahvin {dbm} dBm",
   "channelFinderNetworksOnChannel": "Verkot kanavalla {channel}",

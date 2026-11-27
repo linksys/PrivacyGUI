@@ -525,6 +525,8 @@
   "channelFinderInUse": "사용 중",
   "channelFinderBusy": "혼잡도 {percent}%",
   "channelFinderBusyUnknown": "혼잡도 측정 안 됨",
+  "channelFinderBandRefused": "라우터가 이 대역 채널의 혼잡도를 측정하지 않았습니다.",
+  "channelFinderBandUnanswered": "이 대역 채널의 혼잡도 측정이 끝나지 않았습니다. 다시 스캔해 보세요.",
   "channelFinderNetworks": "{count, plural, =0{네트워크 없음} =1{네트워크 1개} other{네트워크 {count}개}}",
   "channelFinderStrongest": "가장 강한 신호 {dbm} dBm",
   "channelFinderNetworksOnChannel": "채널 {channel}의 네트워크",

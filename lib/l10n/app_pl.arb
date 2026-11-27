@@ -525,6 +525,8 @@
   "channelFinderInUse": "W użyciu",
   "channelFinderBusy": "Obciążenie {percent}%",
   "channelFinderBusyUnknown": "Nie zmierzono obciążenia",
+  "channelFinderBandRefused": "Router nie zmierzył obciążenia kanałów w tym paśmie.",
+  "channelFinderBandUnanswered": "Pomiar obciążenia kanałów w tym paśmie nie został ukończony. Skanuj ponownie, aby spróbować jeszcze raz.",
   "channelFinderNetworks": "{count, plural, =0{Brak sieci} =1{1 sieć} few{{count} sieci} many{{count} sieci} other{{count} sieci}}",
   "channelFinderStrongest": "Najsilniejsza {dbm} dBm",
   "channelFinderNetworksOnChannel": "Sieci na kanale {channel}",

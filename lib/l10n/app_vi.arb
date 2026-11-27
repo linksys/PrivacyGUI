@@ -525,6 +525,8 @@
   "channelFinderInUse": "Đang dùng",
   "channelFinderBusy": "Bận {percent}%",
   "channelFinderBusyUnknown": "Chưa đo mức độ bận",
+  "channelFinderBandRefused": "Router không đo mức độ bận của các kênh trong băng tần này.",
+  "channelFinderBandUnanswered": "Việc đo mức độ bận của các kênh trong băng tần này chưa hoàn tất. Hãy quét lại để thử lần nữa.",
   "channelFinderNetworks": "{count, plural, =0{Không có mạng} =1{1 mạng} other{{count} mạng}}",
   "channelFinderStrongest": "Mạnh nhất {dbm} dBm",
   "channelFinderNetworksOnChannel": "Các mạng trên kênh {channel}",
