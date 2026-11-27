@@ -194,7 +194,7 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
     logger.d('[USP][WiFi]: Fetching WiFi data...');
 
     // Read from WiFi Data Provider (Layer 1) to avoid duplicate fetch.
-    // wifiDataProvider may throw (e.g. TimeoutException when the bridge is
+    // wifiDataProvider may throw (e.g. a TimeoutError when the bridge is
     // temporarily unavailable). Catch and return error status so the UI exits
     // loading and displays the error instead of hanging.
     final WifiData wifiData;

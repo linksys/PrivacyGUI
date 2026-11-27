@@ -21,10 +21,8 @@ export 'package:privacy_gui/core/usp/models/invalidation_domain.dart';
 /// and map them to domains based on the TR-181 `param_path` / `obj_path`
 /// in the notification payload.
 ///
-/// NOTE: We cannot rely on `subscription_id` for matching because the CPE
-/// uses its own internal IDs (e.g., "cpe-15") rather than the client-assigned
-/// IDs (e.g., "wifi-ssid-valuechange"). This is the same issue documented in
-/// [SseOperationAwaiter] for OperationComplete events.
+/// NOTE: not by `subscription_id`, which is not a key to hear by — see
+/// [SseNotification.subscriptionId].
 final sseInvalidationProvider = StreamProvider<InvalidationEvent>((ref) {
   final manager = ref.watch(sseManagerProvider);
   if (manager == null) return const Stream.empty();
@@ -63,7 +61,7 @@ final sseInvalidationProvider = StreamProvider<InvalidationEvent>((ref) {
     // exactly that reason. If a future investigation needs console visibility again,
     // add the `print` deliberately and temporarily rather than assuming this line covers
     // it.
-    final path = _extractPath(notification);
+    final path = notification.path;
     if (path != null && path.contains('.Stats.')) {
       logger.t('[SSE] notification $path → filtered (.Stats.)');
     } else {
@@ -102,7 +100,7 @@ final _meshNodeRow =
 /// hardcoding the instance index; null matches no WAN status.
 InvalidationDomain? _mapToDomain(
     SseNotification notification, String? wanPath) {
-  final path = _extractPath(notification);
+  final path = notification.path;
   if (path == null || path.isEmpty) return null;
 
   // Skip high-frequency stats counter changes
@@ -186,27 +184,4 @@ InvalidationDomain? _mapToDomain(
   // OperationComplete and unrecognized paths don't map to invalidation
   // domains — they use the Direct Data Delivery pattern.
   return null;
-}
-
-/// Extracts the TR-181 path from a notification payload.
-///
-/// Each notification type stores its path under a different key:
-/// - ValueChange → `value_change.param_path`
-/// - ObjectCreation → `obj_creation.obj_path`
-/// - ObjectDeletion → `obj_deletion.obj_path`
-String? _extractPath(SseNotification notification) {
-  final payload = notification.payload;
-  switch (notification.type) {
-    case 'ValueChange':
-      final vc = payload['value_change'] as Map<String, dynamic>?;
-      return vc?['param_path'] as String?;
-    case 'ObjectCreation':
-      final oc = payload['obj_creation'] as Map<String, dynamic>?;
-      return oc?['obj_path'] as String?;
-    case 'ObjectDeletion':
-      final od = payload['obj_deletion'] as Map<String, dynamic>?;
-      return od?['obj_path'] as String?;
-    default:
-      return null;
-  }
 }
