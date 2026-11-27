@@ -25,6 +25,7 @@ import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/route/route_model.dart';
 
 import '../../../common/di.dart';
+import '../../../common/semantics_identifiers.dart';
 import '../../../common/testable_router.dart';
 import '../../../mocks/_index.dart';
 import '../../../test_data/device_info_test_data.dart';
@@ -86,6 +87,32 @@ void main() {
         tester, {'attemptsRemaining': 4, 'delayTimeRemaining': 5});
 
     expect(find.textContaining('Remaining attempts: 4'), findsOneWidget);
+  });
+
+  // E2E tests locate the login controls by these (constitution 11.2, 11.3).
+  testWidgets('a test logs in by identifiers alone', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await pumpLoginLocal(tester, null);
+
+    const ids = [
+      'login-password',
+      'login-password-visibility',
+      'login-hint',
+      'login-forgot-password',
+      'login-submit',
+    ];
+    final found = identifierCounts(ids);
+    await tester.enterText(
+        find.bySemanticsIdentifier('login-password'), 'admin123');
+    await tester.pump();
+    await tester.tap(find.bySemanticsIdentifier('login-submit'));
+    await tester.pump();
+    // Before any expect: flutter_test checks for a live handle before
+    // tear-down runs.
+    semantics.dispose();
+
+    expect(found.values, everyElement(1), reason: '$found');
+    verify(mockAuthNotifier.localLogin('admin123')).called(1);
   });
 
   testWidgets('a router with nothing to report is left alone', (tester) async {

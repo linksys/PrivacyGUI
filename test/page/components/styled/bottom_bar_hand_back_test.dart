@@ -29,11 +29,13 @@ import '../../../test_data/_index.dart';
 
 const _readOnly = AccessPolicy(canWrite: false);
 
-/// The bottom bar's positive button, found by the identifier the shared page
-/// view stamps on it rather than by its label, which differs per page.
-final _positive = find.byWidgetPredicate((w) =>
-    (w is AppFilledButton || w is AppFilledButtonWithLoading) &&
-    (w as dynamic).identifier == 'now-page-bottom-button-positive');
+/// The bottom bar's positive button, found by its identifier rather than by
+/// its label, which differs per page: `page-save` unless the page passes its
+/// own (constitution 11.2).
+Finder _positive([String identifier = 'page-save']) => find.byWidgetPredicate(
+    (w) =>
+        (w is AppFilledButton || w is AppFilledButtonWithLoading) &&
+        (w as dynamic).identifier == identifier);
 
 // #1637: a bar that writes is guarded in read-only mode. These bars only hand a
 // value back to the page that opened them - a rule editor, a picker - and that
@@ -61,9 +63,12 @@ void main() {
     }
   }
 
-  void expectUnguarded() {
-    expect(_positive, findsOneWidget, reason: 'precondition: the bar is up');
-    expect(find.ancestor(of: _positive, matching: find.byType(WriteGuard)),
+  void expectUnguarded({String positive = 'page-save'}) {
+    expect(_positive(positive), findsOneWidget,
+        reason: 'precondition: the bar is up');
+    expect(
+        find.ancestor(
+            of: _positive(positive), matching: find.byType(WriteGuard)),
         findsNothing);
     expect(find.byTooltip('This feature is unavailable in remote mode'),
         findsNothing);
@@ -78,7 +83,8 @@ void main() {
           overrides: [
             singlePortForwardingListProvider.overrideWith(() => list),
           ]);
-      expectUnguarded();
+      // Its button reads Add or Update, so it has its own identifier.
+      expectUnguarded(positive: 'pf-single-submit');
     });
 
     testWidgets('port range forwarding', (tester) async {
@@ -236,7 +242,7 @@ void main() {
         ]);
     expectUnguarded();
 
-    await tester.tap(_positive);
+    await tester.tap(_positive());
     await tester.pump();
     verify(healthCheck.resetState()).called(1);
   });
