@@ -145,7 +145,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
   Widget _mobildSettingsView(
       StaticRoutingState state, List<String> submaskToken, String prefixIP) {
     // return Center();
-    return EditableCardListsettingsView<NamedStaticRouteEntry>(
+    return AppEditableCardListSettingsView<NamedStaticRouteEntry>(
         title: loc(context).staticRouting,
         emptyMessage: loc(context).noAdvancedRouting,
         addLabel: loc(context).add,

@@ -109,6 +109,7 @@ class _AddRuleContentViewState
         isWrite: false,
         isPositiveEnabled: _notifier.isRuleValid(),
         positiveLabel: _isEdit ? loc(context).update : loc(context).add,
+        positiveIdentifier: 'pf-single-submit',
         onPositiveTap: () {
           final rule = ref.read(singlePortForwardingRuleProvider).rule;
           context.pop(rule);
@@ -141,6 +142,7 @@ class _AddRuleContentViewState
         title: AppText.labelLarge(loc(context).ruleEnabled),
         trailing: AppSwitch(
           semanticLabel: 'rule enabled',
+          identifier: 'pf-single-enabled',
           value: state.rule?.isEnabled ?? true,
           onChanged: (value) {
             _notifier.updateRule(state.rule?.copyWith(isEnabled: value));
@@ -158,6 +160,7 @@ class _AddRuleContentViewState
     final submaskToken = subnetMask.split('.');
     return [
       AppTextField(
+        identifier: 'pf-single-description',
         headerText: loc(context).applicationName,
         border: const OutlineInputBorder(),
         controller: _ruleNameController,
@@ -182,6 +185,7 @@ class _AddRuleContentViewState
         children: [
           Expanded(
             child: AppTextField.minMaxNumber(
+              identifier: 'pf-single-internal-port',
               headerText: loc(context).internalPort,
               inputType: TextInputType.number,
               border: const OutlineInputBorder(),
@@ -198,6 +202,7 @@ class _AddRuleContentViewState
           const AppGap.small1(),
           Expanded(
             child: AppTextField.minMaxNumber(
+              identifier: 'pf-single-external-port',
               headerText: loc(context).externalPort,
               inputType: TextInputType.number,
               border: const OutlineInputBorder(),
@@ -217,6 +222,8 @@ class _AddRuleContentViewState
       ),
       const AppGap.large2(),
       AppDropdownButton(
+        identifier: 'pf-single-protocol',
+        itemKey: protocolIdentifierKey,
         title: loc(context).protocol,
         initial: state.rule?.protocol ?? 'Both',
         items: const ['TCP', 'UDP', 'Both'],
@@ -230,6 +237,7 @@ class _AddRuleContentViewState
       const AppGap.medium(),
       AppIPFormField(
         semanticLabel: 'ip address',
+        identifier: 'pf-single-internal-ip',
         controller: _deviceIpAddressController,
         border: const OutlineInputBorder(),
         octet1ReadOnly: submaskToken[0] == '255',
@@ -254,6 +262,7 @@ class _AddRuleContentViewState
       const AppGap.large2(),
       AppTextButton(
         loc(context).selectDevices,
+        identifier: 'pf-single-select-device',
         onTap: () async {
           final result = await context.pushNamed<List<DeviceListItem>?>(
               RouteNamed.devicePicker,

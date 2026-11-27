@@ -30,7 +30,6 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacygui_widgets/widgets/label/status_label.dart';
 
 import 'package:privacygui_widgets/widgets/panel/general_section.dart';
@@ -59,6 +58,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
         PageMenuItem(
             label: loc(context).restartNetwork,
             icon: LinksysIcons.restartAlt,
+            identifier: 'menu-restart-network',
             isWrite: true,
             onTap: () {
               _restartNetwork();
@@ -66,6 +66,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
         PageMenuItem(
             label: loc(context).menuSetupANewProduct,
             icon: LinksysIcons.add,
+            identifier: 'menu-setup-new-product',
             onTap: () {
               context.pushNamed(RouteNamed.addNodes);
             })
@@ -123,6 +124,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           description: item.description,
           status: item.status,
           isBeta: item.isBeta,
+          identifier: item.identifier,
           onTap: item.onTap,
         ),
       ),
@@ -146,6 +148,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
 
     return [
       AppSectionItemData(
+          identifier: 'menu-incredible-wifi',
           title: loc(context).incredibleWiFi,
           description: loc(context).incredibleWiFiDesc,
           iconData: LinksysIcons.wifi,
@@ -153,6 +156,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
             _navigateTo(RouteNamed.menuIncredibleWiFi);
           }),
       AppSectionItemData(
+          identifier: 'menu-instant-admin',
           title: loc(context).instantAdmin,
           description: loc(context).instantAdminDesc,
           iconData: LinksysIcons.accountCircle,
@@ -160,6 +164,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
             _navigateTo(RouteNamed.menuInstantAdmin);
           }),
       AppSectionItemData(
+          identifier: 'menu-instant-topology',
           title: loc(context).instantTopology,
           description: loc(context).instantTopologyDesc,
           iconData: LinksysIcons.router,
@@ -167,6 +172,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
             _navigateTo(RouteNamed.menuInstantTopology);
           }),
       AppSectionItemData(
+          identifier: 'menu-instant-safety',
           title: loc(context).instantSafety,
           description: loc(context).instantSafetyDesc,
           iconData: LinksysIcons.encrypted,
@@ -176,6 +182,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
             _navigateTo(RouteNamed.menuInstantSafety);
           }),
       AppSectionItemData(
+          identifier: 'menu-instant-privacy',
           title: loc(context).instantPrivacy,
           description: loc(context).instantPrivacyDesc,
           iconData: LinksysIcons.smartLock,
@@ -185,6 +192,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
             _navigateTo(RouteNamed.menuInstantPrivacy);
           }),
       AppSectionItemData(
+          identifier: 'menu-instant-devices',
           title: loc(context).instantDevices,
           description: loc(context).instantDevicesDesc,
           iconData: LinksysIcons.devices,
@@ -192,12 +200,14 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
             _navigateTo(RouteNamed.menuInstantDevices);
           }),
       AppSectionItemData(
+          identifier: 'menu-advanced-settings',
           title: loc(context).advancedSettings,
           iconData: LinksysIcons.settings,
           onTap: () {
             _navigateTo(RouteNamed.menuAdvancedSettings);
           }),
       AppSectionItemData(
+          identifier: 'menu-instant-verify',
           title: loc(context).instantVerify,
           description: loc(context).instantVerifyDesc,
           iconData: LinksysIcons.technician,
@@ -206,6 +216,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           }),
       if (isSupportVPN)
         AppSectionItemData(
+            identifier: 'menu-vpn',
             title: loc(context).vpn,
             description: loc(context).vpnDesc,
             iconData: LinksysIcons.smartLock,
@@ -215,6 +226,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
       if (showSpeedTest) ...[
         if (!isSupportHealthCheck && isBehindRouter)
           AppSectionItemData(
+              identifier: 'menu-external-speed-test',
               title: loc(context).externalSpeedText,
               description: loc(context).speedTestInternetToDeviceDesc,
               iconData: LinksysIcons.networkCheck,
@@ -223,6 +235,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
               }),
         if (isSupportHealthCheck)
           AppSectionItemData(
+              identifier: 'menu-speed-test',
               title: loc(context).speedTest,
               description: loc(context).speedTestInternetToRouterDesc,
               iconData: LinksysIcons.networkCheck,
@@ -298,6 +311,7 @@ class AppMenuCard extends StatelessWidget {
     this.borderColor,
     this.status,
     this.isBeta = false,
+    this.identifier,
   });
 
   final IconData? iconData;
@@ -308,6 +322,7 @@ class AppMenuCard extends StatelessWidget {
   final Color? borderColor;
   final bool? status;
   final bool isBeta;
+  final String? identifier;
 
   @override
   Widget build(BuildContext context) {
@@ -316,7 +331,7 @@ class AppMenuCard extends StatelessWidget {
       color: color,
       borderColor: borderColor,
       explicitChildNodes: false,
-      identifier: 'now-menu-${title?.kebab()}',
+      identifier: identifier,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.stretch,

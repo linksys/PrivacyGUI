@@ -3,8 +3,8 @@
 //
 // The real loop, over an executor that records what reaches it, so that its
 // delays, stop rules and error mapping are pinned in one place. Provider tests
-// that copy the loop into a mock (router_boundary.dart,
-// firmware_update_provider_test.dart) lean on what is pinned here.
+// run the same loop, `scheduledLoop`, through router_boundary.dart, on its
+// table and without the delays (#1904 P2).
 //
 // A loop can be tied to the login its work began in (#1904 P1): a logout then
 // ends it before its next request. The "tied to a login" group pins that.

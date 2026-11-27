@@ -71,8 +71,6 @@ void main() {
   late RouterBoundary router;
   late RecordingPolling polling;
   late ProviderContainer container;
-  late List<List<JNAPResult>> scheduledAnswers;
-  late List<JNAPAction> scheduledActions;
 
   FirmwareUpdateNotifier notifier() =>
       container.read(firmwareUpdateProvider.notifier);
@@ -96,6 +94,16 @@ void main() {
     }
   }
 
+  /// The router answers the status reads of [action] with [answers] in turn,
+  /// through `RouterRepository`'s own loop (#1904). Each list is what one check
+  /// or install reads before its condition holds. The next one carries on
+  /// from there, and the last answer stands from then on.
+  void statusReadsInTurn(JNAPAction action, List<List<JNAPResult>> answers) =>
+      router.holdsInTurn(action, [
+        for (final answer in answers.expand((reads) => reads))
+          answer is JNAPSuccess ? answer.output : answer,
+      ]);
+
   setUp(() {
     SharedPreferences.setMockInitialValues({});
     when(services.isSupportNodeFirmwareUpdate()).thenReturn(false);
@@ -104,46 +112,6 @@ void main() {
       // Both start a check or an install; neither answers with anything.
       ..holds(JNAPAction.updateFirmwareNow, const {})
       ..holds(JNAPAction.nodesUpdateFirmwareNow, const {});
-    scheduledAnswers = [];
-    scheduledActions = [];
-    // The status checks, as RouterRepository.scheduledCommand runs them: each
-    // answer is yielded, then checked against the stop condition, and the
-    // caller is told at the end whether the retries ran out.
-    when(router.repo.scheduledCommand(
-      action: anyNamed('action'),
-      retryDelayInMilliSec: anyNamed('retryDelayInMilliSec'),
-      maxRetry: anyNamed('maxRetry'),
-      firstDelayInMilliSec: anyNamed('firstDelayInMilliSec'),
-      data: anyNamed('data'),
-      condition: anyNamed('condition'),
-      onCompleted: anyNamed('onCompleted'),
-      requestTimeoutOverride: anyNamed('requestTimeoutOverride'),
-      auth: anyNamed('auth'),
-      logoutGeneration: anyNamed('logoutGeneration'),
-    )).thenAnswer((invocation) {
-      final named = invocation.namedArguments;
-      scheduledActions.add(named[#action] as JNAPAction);
-      final answers = scheduledAnswers.isEmpty
-          ? <JNAPResult>[]
-          : scheduledAnswers.removeAt(0);
-      final maxRetry = named[#maxRetry] as int;
-      final condition = named[#condition] as bool Function(JNAPResult)?;
-      final onCompleted = named[#onCompleted] as Function(bool)?;
-      Stream<JNAPResult> run() async* {
-        var exceeded = true;
-        for (final (index, answer) in answers.indexed) {
-          if (maxRetry != -1 && index >= maxRetry) break;
-          yield answer;
-          if (condition?.call(answer) ?? false) {
-            exceeded = false;
-            break;
-          }
-        }
-        onCompleted?.call(exceeded);
-      }
-
-      return run();
-    });
   });
 
   tearDown(() {
@@ -270,34 +238,34 @@ void main() {
   group('checking for updates', () {
     test('asks the router to check, then shows what it found', () async {
       start({});
-      scheduledAnswers = [
+      statusReadsInTurn(JNAPAction.getFirmwareUpdateStatus, [
         [_ok(_status(update: true))],
-      ];
+      ]);
 
       await notifier().fetchAvailableFirmwareUpdates();
 
       expect(router.payloadsOf(JNAPAction.updateFirmwareNow).single,
           {'onlyCheck': true});
-      expect(scheduledActions, [JNAPAction.getFirmwareUpdateStatus]);
+      expect(router.polls, [JNAPAction.getFirmwareUpdateStatus]);
       expect(notifier().getAvailableUpdateNumber(), 1);
     });
 
     test('asks every node on a router that updates its nodes', () async {
       when(services.isSupportNodeFirmwareUpdate()).thenReturn(true);
       start({});
-      scheduledAnswers = [
+      statusReadsInTurn(JNAPAction.getNodesFirmwareUpdateStatus, [
         [
           _ok({
             'firmwareUpdateStatus': [_nodeStatus('master-uuid', update: true)],
           }),
         ],
-      ];
+      ]);
 
       await notifier().fetchAvailableFirmwareUpdates();
 
       expect(router.payloadsOf(JNAPAction.nodesUpdateFirmwareNow).single,
           {'onlyCheck': true});
-      expect(scheduledActions, [JNAPAction.getNodesFirmwareUpdateStatus]);
+      expect(router.polls, [JNAPAction.getNodesFirmwareUpdateStatus]);
       expect(page().nodesStatus!.single, isA<NodesFirmwareUpdateStatus>());
     });
 
@@ -307,15 +275,15 @@ void main() {
 
       await notifier().fetchAvailableFirmwareUpdates();
 
-      expect(scheduledActions, isEmpty);
+      expect(router.polls, isEmpty);
       expect(page().nodesStatus, isEmpty);
     });
 
     test('shows no updates when the check gets no answer', () async {
       start({JNAPAction.getFirmwareUpdateStatus: _ok(_status(update: true))});
-      scheduledAnswers = [
+      statusReadsInTurn(JNAPAction.getFirmwareUpdateStatus, [
         [const JNAPError(result: 'ErrorUnknown')],
-      ];
+      ]);
 
       await notifier().fetchAvailableFirmwareUpdates();
 
@@ -339,13 +307,18 @@ void main() {
         JNAPAction.getFirmwareUpdateStatus:
             _ok(_status(checkedAt: _isoMinutesAgo(10))),
       });
-      scheduledAnswers = [
+      statusReadsInTurn(JNAPAction.getFirmwareUpdateStatus, [
         [_ok(_status())],
-      ];
+      ]);
 
       await notifier().fetchFirmwareUpdateStream().toList();
 
-      expect(router.actions, [JNAPAction.updateFirmwareNow]);
+      // The check, then its status reads. A check has no stop condition, so
+      // it reads as many times as its retries, 3 by default.
+      expect(router.actions, [
+        JNAPAction.updateFirmwareNow,
+        for (var i = 0; i < 3; i++) JNAPAction.getFirmwareUpdateStatus,
+      ]);
     });
   });
 
@@ -353,7 +326,7 @@ void main() {
     test('installs, follows the progress, and finishes once nothing is pending',
         () async {
       start({JNAPAction.getFirmwareUpdateStatus: _ok(_status(update: true))});
-      scheduledAnswers = [
+      statusReadsInTurn(JNAPAction.getFirmwareUpdateStatus, [
         // The install.
         [
           _ok(_status(update: true, progress: 40)),
@@ -362,7 +335,7 @@ void main() {
         ],
         // The check that follows it.
         [_ok(_status())],
-      ];
+      ]);
 
       await notifier().updateFirmware();
 
@@ -387,10 +360,10 @@ void main() {
     test('keeps the router status from before the install as candidates',
         () async {
       start({JNAPAction.getFirmwareUpdateStatus: _ok(_status(update: true))});
-      scheduledAnswers = [
+      statusReadsInTurn(JNAPAction.getFirmwareUpdateStatus, [
         [_ok(_status())],
         [_ok(_status())],
-      ];
+      ]);
 
       await notifier().updateFirmware();
 
@@ -409,28 +382,28 @@ void main() {
       final done = _ok({
         'firmwareUpdateStatus': [_nodeStatus('master-uuid')],
       });
-      scheduledAnswers = [
+      statusReadsInTurn(JNAPAction.getNodesFirmwareUpdateStatus, [
         [done],
         [done],
-      ];
+      ]);
 
       await notifier().updateFirmware();
       await settle();
 
       expect(router.payloadsOf(JNAPAction.nodesUpdateFirmwareNow).first,
           {'onlyCheck': false});
-      expect(scheduledActions.first, JNAPAction.getNodesFirmwareUpdateStatus);
+      expect(router.polls.first, JNAPAction.getNodesFirmwareUpdateStatus);
       expect(page().isUpdating, isFalse);
     });
 
     test('stops and says so when the router never reports the install done',
         () async {
       start({JNAPAction.getFirmwareUpdateStatus: _ok(_status(update: true))});
-      scheduledAnswers = [
+      statusReadsInTurn(JNAPAction.getFirmwareUpdateStatus, [
         [
           for (var i = 0; i < 60; i++) _ok(_status(update: true, progress: 50)),
         ],
-      ];
+      ]);
 
       await notifier().updateFirmware();
       await settle();
@@ -450,13 +423,13 @@ void main() {
       await expectLater(notifier().updateFirmware(), throwsA(isA<JNAPError>()));
 
       expect(polling.stopped, 0);
-      expect(scheduledActions, isEmpty);
+      expect(router.polls, isEmpty);
     });
 
     test('rides out the status reads that fail while the router restarts',
         () async {
       start({JNAPAction.getFirmwareUpdateStatus: _ok(_status(update: true))});
-      scheduledAnswers = [
+      statusReadsInTurn(JNAPAction.getFirmwareUpdateStatus, [
         [
           _ok(_status(update: true, progress: 90)),
           // The router is rebooting into the new firmware.
@@ -464,7 +437,7 @@ void main() {
           _ok(_status()),
         ],
         [_ok(_status())],
-      ];
+      ]);
 
       await notifier().updateFirmware();
       await settle();

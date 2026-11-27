@@ -16,6 +16,10 @@ String getProtocolTitle(BuildContext context, String key) {
   }
 }
 
+/// The key of a protocol in identifiers (constitution 11.3): its JNAP value
+/// (`TCP`, `UDP` or `Both`) in lower case, never its translated title.
+String protocolIdentifierKey(String protocol) => protocol.toLowerCase();
+
 Future<String?> showSelectProtocolModal(
   BuildContext context,
   String value,
