@@ -171,18 +171,17 @@ class MockDashboardManagerNotifier
       ) as _i12.Future<void>);
 
   @override
-  _i12.Future<_i4.NodeDeviceInfo> checkDeviceInfo(String? serialNumber) =>
-      (super.noSuchMethod(
+  _i12.Future<_i4.NodeDeviceInfo> checkDeviceInfo() => (super.noSuchMethod(
         Invocation.method(
           #checkDeviceInfo,
-          [serialNumber],
+          [],
         ),
         returnValue:
             _i12.Future<_i4.NodeDeviceInfo>.value(_FakeNodeDeviceInfo_2(
           this,
           Invocation.method(
             #checkDeviceInfo,
-            [serialNumber],
+            [],
           ),
         )),
         returnValueForMissingStub:
@@ -190,10 +189,22 @@ class MockDashboardManagerNotifier
           this,
           Invocation.method(
             #checkDeviceInfo,
-            [serialNumber],
+            [],
           ),
         )),
       ) as _i12.Future<_i4.NodeDeviceInfo>);
+
+  @override
+  _i12.Future<_i4.NodeDeviceInfo?> startSession({bool? forcePolling = false}) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #startSession,
+          [],
+          {#forcePolling: forcePolling},
+        ),
+        returnValue: _i12.Future<_i4.NodeDeviceInfo?>.value(),
+        returnValueForMissingStub: _i12.Future<_i4.NodeDeviceInfo?>.value(),
+      ) as _i12.Future<_i4.NodeDeviceInfo?>);
 
   @override
   bool isHealthCheckModuleSupported(String? module) => (super.noSuchMethod(

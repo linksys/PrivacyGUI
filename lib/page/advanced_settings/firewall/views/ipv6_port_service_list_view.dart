@@ -79,7 +79,7 @@ class _Ipv6PortServiceListViewState
   }
 
   Widget _mobildSettingsView(Ipv6PortServiceListState state) {
-    return EditableCardListsettingsView<IPv6FirewallRule>(
+    return AppEditableCardListSettingsView<IPv6FirewallRule>(
         title: loc(context).ipv6PortServices,
         emptyMessage: loc(context).noIPv6PortService,
         addEnabled: !_notifier.isExceedMax(),

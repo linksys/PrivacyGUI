@@ -89,9 +89,8 @@ class _ScriptedBridge extends Fake implements AutoIPoEInternetSettingsBridge {
 
 /// The bottom bar's Save button, found by the identifier the shared page view
 /// stamps on it rather than by its label, which is localized.
-final saveButton = find.byWidgetPredicate((widget) =>
-    widget is AppFilledButton &&
-    widget.identifier == 'now-page-bottom-button-positive');
+final saveButton = find.byWidgetPredicate(
+    (widget) => widget is AppFilledButton && widget.identifier == 'page-save');
 
 const terminalDialog = ValueKey('autoIpoeTerminalFailureDialog');
 

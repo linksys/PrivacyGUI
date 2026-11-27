@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart';
 import 'package:intl/intl.dart';
 import 'package:privacy_gui/constants/_constants.dart';
+import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
@@ -14,6 +18,8 @@ import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/bench_mark.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
+import 'package:privacy_gui/providers/connectivity/connectivity_provider.dart';
+import 'package:privacy_gui/providers/global_model_number_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final dashboardManagerProvider =
@@ -158,7 +164,7 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
   /// This is where a logged-in flow builds the table, and the gates read the
   /// same services. PnP builds its own, in `fetchDeviceInfo`
   /// (pnp_provider.dart).
-  Future<NodeDeviceInfo> checkDeviceInfo(String? serialNumber) async {
+  Future<NodeDeviceInfo> checkDeviceInfo() async {
     final benchMark = BenchMarkLogger(name: 'checkDeviceInfo');
     benchMark.start();
     NodeDeviceInfo? nodeDeviceInfo = state.deviceInfo;
@@ -178,6 +184,99 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
     buildBetterActions(nodeDeviceInfo.services);
     return nodeDeviceInfo;
   }
+
+  /// Budget for riding out a router service restart while a session starts.
+  /// Deliberately short: a genuinely missing device must still fail fast, and
+  /// the router's redirect, which the user is waiting on, runs this.
+  static const int _deviceInfoMaxRetries = 2;
+  static const Duration _deviceInfoRetryDelay = Duration(seconds: 2);
+
+  /// The one sequence that starts a session on the router the app reaches
+  /// (#1904). The router's redirect runs it for a local or a remote login, as
+  /// the app opens and on every later page change. PrepareDashboardView runs
+  /// it once PnP has logged in.
+  ///
+  /// 1. A local login finds out which router the app reaches. When polling
+  ///    already knows the stored one, nothing is asked. A router other than
+  ///    the stored one, or the first one, is saved as the selected network. A
+  ///    remote login's router is the one its Guardian session names, which
+  ///    the redirect has saved already.
+  /// 2. The device cache of that router is loaded.
+  /// 3. Its device info is read ([checkDeviceInfo]), again while the router
+  ///    is briefly unreachable, and its model number is shown.
+  /// 4. Polling is asked to start: forced when the router changed, or when
+  ///    [forcePolling] says the caller held it, as PnP does.
+  ///
+  /// Returns the device info, or null when the router gives none.
+  Future<NodeDeviceInfo?> startSession({bool forcePolling = false}) async {
+    await ref.read(connectivityProvider.notifier).forceUpdate();
+    final prefs = await SharedPreferences.getInstance();
+    final storedSerial = prefs.getString(pCurrentSN);
+    var serialNumber = storedSerial;
+    final loginType = ref.read(authProvider).value?.loginType;
+    final known =
+        storedSerial != null && storedSerial == state.deviceInfo?.serialNumber;
+    if (loginType == LoginType.local && !known) {
+      logger.i('[Prepare]: local - $storedSerial');
+      final reached = await ref
+          .read(routerRepositoryProvider)
+          .send(JNAPAction.getDeviceInfo, fetchRemote: true)
+          .then<String>(
+              (value) => NodeDeviceInfo.fromJson(value.output).serialNumber);
+      if (reached != storedSerial) {
+        await saveSelectedNetwork(reached, '');
+      }
+      serialNumber = reached;
+    }
+    logger.d('[Prepare]: cache check - $serialNumber');
+    await ref
+        .read(linksysCacheManagerProvider)
+        .loadCache(serialNumber: serialNumber ?? '');
+    final nodeDeviceInfo = await _checkDeviceInfoWithRetry();
+    if (nodeDeviceInfo == null) {
+      return null;
+    }
+    ref.read(globalModelNumberProvider.notifier).state =
+        nodeDeviceInfo.modelNumber;
+    await ref.read(connectivityProvider.notifier).forceUpdate();
+    ref.read(pollingProvider.notifier).checkAndStartPolling(
+        forcePolling || nodeDeviceInfo.serialNumber != storedSerial);
+    return nodeDeviceInfo;
+  }
+
+  /// Reads the device info, retrying only while the failure looks like the
+  /// router being temporarily unreachable rather than genuinely absent.
+  ///
+  /// The router drops its HTTP service while it restarts services - the
+  /// make-Master credential rotation is one such window - and the local
+  /// deviceInfo call is issued with `retries: 0` / `timeoutMs: 3000`, so that
+  /// window is guaranteed to surface as a socket/timeout failure. Treating it
+  /// as "no device info" sends the user to the login page with an error they
+  /// can do nothing about, when waiting a couple of seconds would have worked.
+  ///
+  /// Any other failure (JNAP error, unparsable payload) is final: return null
+  /// and let the caller show the error.
+  Future<NodeDeviceInfo?> _checkDeviceInfoWithRetry() async {
+    for (var attempt = 0;; attempt++) {
+      try {
+        return await checkDeviceInfo();
+      } catch (error) {
+        if (!_isRouterTemporarilyUnreachable(error) ||
+            attempt >= _deviceInfoMaxRetries) {
+          logger.e('[Prepare]: device info check failed - $error');
+          return null;
+        }
+        logger.i(
+            '[Prepare]: router temporarily unreachable ($error), retry ${attempt + 1}/$_deviceInfoMaxRetries');
+        await Future.delayed(_deviceInfoRetryDelay);
+      }
+    }
+  }
+
+  /// Connection-class failures, i.e. the request never reached a router that
+  /// could answer it. Mirrors the transient-error test in `PnpNotifier`.
+  bool _isRouterTemporarilyUnreachable(Object? error) =>
+      error is ClientException || error is TimeoutException;
 
   bool isHealthCheckModuleSupported(String module) {
     return state.healthCheckModules.contains(module);
