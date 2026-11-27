@@ -88,7 +88,7 @@ class _DeviceCheck extends DashboardManagerNotifier {
   DashboardManagerState build() => const DashboardManagerState();
 
   @override
-  Future<NodeDeviceInfo> checkDeviceInfo(String? serialNumber) async {
+  Future<NodeDeviceInfo> checkDeviceInfo() async {
     checks++;
     if (failures.isNotEmpty) throw failures.removeAt(0);
     return _deviceInfo;
