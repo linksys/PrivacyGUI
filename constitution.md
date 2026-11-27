@@ -1,7 +1,7 @@
 # The 1.x Constitution
 
-**Version:** 1.8
-**Last amended:** 2026-11-20 (#1802, readability guards)
+**Version:** 1.9
+**Last amended:** 2026-11-25 (#1935, E2E identifiers)
 **Applies to:** the 1.x line of PrivacyGUI: `dev-1.*`, `release-1.*`, and `main` while it ships 1.x. 2.x has its own `constitution.md`; nothing here binds 2.x, and nothing in 2.x's binds 1.x.
 
 ## Preamble
@@ -30,6 +30,7 @@ Where this document and another document in the repository disagree, this one wi
 | VIII | Simplicity; no wrappers around the framework; stay in scope | Review |
 | IX | Amendments state version, date and reason; the team approves them | Team approval |
 | X | A scrolling page's content needs no bounded height | CI for flex children on pages with a case, through #1802's layout gate; review for the rest |
+| XI | A control a test drives carries a kebab-case `identifier`; `semanticLabel` is screen-reader text only | Test for the page, label and widget tables; review for the rest |
 
 *Amended 2026-11-18 (#1802): **CI** names the two checks that #1802 P1 added, and VI and VII no longer wait on P1, because 1.x has PR checks now.*
 
@@ -201,7 +202,7 @@ The table lists the pages that have no case, and each row says why the page need
 | `lib/page/components/picker/number_picker_view.dart` | `NumberPickerView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/components/picker/time_picker_view.dart` | `TimePickerView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/components/settings_view/editable_card_list_edit_view.dart` | `EditableCardListEditView` | Permanent while unreachable: nothing navigates to its route, `cardListEdit`, and opened without the route's arguments it throws. Give it a case once something does. |
-| `lib/page/components/settings_view/editable_card_list_settings_view.dart` | `EditableCardListsettingsView` | Permanent: a component, not a page. The advanced settings lists build it; the IPv6 port service and static routing cases sweep it. |
+| `lib/page/components/settings_view/editable_card_list_settings_view.dart` | `AppEditableCardListSettingsView` | Permanent: a component, not a page. The advanced settings lists build it; the IPv6 port service and static routing cases sweep it. |
 | `lib/page/components/settings_view/editable_table_settings_view.dart` | `AppEditableTableSettingsView` | Permanent: a component, not a page. The advanced settings lists build it; the IPv6 port service and static routing cases sweep it. |
 | `lib/page/components/styled/styled_tab_page_view.dart` | `StyledAppTabPageView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/components/views/arguments_view.dart` | `ArgumentsBaseConsumerStatefulView` | Permanent: a base class for views, not a page. |
@@ -469,6 +470,320 @@ This article has no exceptions. When it was added, the code of every scrolling p
 
 ---
 
+## Article XI: E2E Test Hooks (Semantics Identifiers)
+
+1.x is tested end to end with Playwright against a release web build. The build draws on a canvas, so a test reaches a widget only through the semantics tree, which the web engine mirrors in the DOM. A control that a test drives needs a hook there that is stable, silent to screen readers, and the same in every locale.
+
+This article follows 2.x's Article XVI, and each section names the 2.x section it matches. 2.x's E2E repository and its selector generator have no counterpart in 1.x.
+
+### 11.1 `identifier`, not `semanticLabel` (2.x 16.1)
+
+The hook is an `identifier`: the `identifier` parameter of a component that forwards it, or a raw `Semantics(identifier:)`. The web engine writes it as the DOM attribute `flt-semantics-identifier`, which Playwright locates.
+
+| Property | In the DOM | Screen reader | Changes with |
+|---|---|---|---|
+| `identifier` | `flt-semantics-identifier` | Silent | Nothing |
+| `semanticLabel` | `aria-label` | Read aloud | The locale and the copy |
+
+`semanticLabel` holds only screen-reader text from the ARB files, read through `loc(context)` (6.1). It never holds a test string (issue #1935, Decision 1).
+
+```dart
+// Right: silent, and the same in every locale.
+AppIconButton(
+  icon: Icons.add,
+  identifier: 'pf-add',
+  onTap: _add,
+)
+
+// Wrong: read aloud, in English in every locale.
+AppIconButton(
+  icon: Icons.add,
+  semanticLabel: 'add rule',
+  onTap: _add,
+)
+```
+
+#### 11.1.1 A component that forwards `identifier` (2.x 16.1.1)
+
+The hook is `identifier`. A test string goes in no `semanticLabel`, and a control does not carry both an `identifier` and a `semanticLabel` that repeats it for tests: remove the `semanticLabel`.
+
+#### 11.1.2 A component that does not forward it (replaces 2.x 16.1.2)
+
+2.x tolerates a kebab-case `semanticLabel` as the hook of a component without `identifier` passthrough. 1.x does not: a `semanticLabel` is never the fallback.
+
+The component gets passthrough in `plugins/widgets` instead (11.4), and until it does, a page's call of it keeps its row in the 11.2 table. A raw `Semantics(identifier:)` around the call does not take the call out of the table: the identifier belongs on the component, and the page scanner counts an `identifier:` on the call only.
+
+A raw `Semantics(container: true, identifier:)` is the hook where no component is involved, such as a raw `InkWell` or `GestureDetector`, and it is how a component puts its identifier on a node of its own (11.4). It takes `identifier:`, never `label:`: a `label` is read aloud.
+
+#### 11.1.3 Literal `semanticLabel` strings (no 2.x counterpart)
+
+Before this article, 1.x located controls by `semanticLabel`. Flutter has `identifier` since 3.19, but the web engine writes it to the DOM only from 3.24 (flutter/engine PR #53278), and 1.x moved to 3.19.2 in 2024-08. Those labels are hard-coded English: a screen reader reads them in English in every locale, and on a control with visible text the string replaces the translated text.
+
+They are converted page by page into an `identifier` (issue #1935, Decision 7):
+
+- on a control with visible text, the `semanticLabel` is removed;
+- on a control without, such as an icon button or a switch whose label is a separate text, it stays for later accessibility work.
+
+The table lists, as a file and a count, every string literal in `lib/` that a `semanticLabel:` can hold: the argument itself, either branch of a conditional, or either side of `??`. Each literal counted is an exception. Lowering a count or deleting a row deletes exceptions because the code was fixed, which is not an amendment (9.1); raising a count or adding a row adds one, which is.
+
+<!-- semantic-label-literals:begin -->
+| File | Literals |
+|---|---|
+| `lib/page/advanced_settings/administration/views/administration_settings_view.dart` | `6` |
+| `lib/page/advanced_settings/apps_and_gaming/ports/views/port_range_forwarding_rule_view.dart` | `2` |
+| `lib/page/advanced_settings/apps_and_gaming/ports/views/port_range_triggering_rule_view.dart` | `1` |
+| `lib/page/advanced_settings/apps_and_gaming/ports/views/single_port_forwarding_rule_view.dart` | `2` |
+| `lib/page/advanced_settings/dmz/views/dmz_settings_view.dart` | `4` |
+| `lib/page/advanced_settings/firewall/views/firewall_view.dart` | `9` |
+| `lib/page/advanced_settings/firewall/views/ipv6_port_service_rule_view.dart` | `2` |
+| `lib/page/advanced_settings/internet_settings/views/internet_settings_view.dart` | `13` |
+| `lib/page/advanced_settings/local_network_settings/views/dhcp_reservations_edit_view.dart` | `2` |
+| `lib/page/advanced_settings/local_network_settings/views/dhcp_reservations_view.dart` | `2` |
+| `lib/page/advanced_settings/local_network_settings/views/dhcp_server_view.dart` | `6` |
+| `lib/page/advanced_settings/local_network_settings/views/local_network_settings_view.dart` | `2` |
+| `lib/page/advanced_settings/static_routing/static_routing_list_view.dart` | `2` |
+| `lib/page/advanced_settings/static_routing/static_routing_rule_view.dart` | `3` |
+| `lib/page/components/base_components/option_card.dart` | `1` |
+| `lib/page/components/shared_widgets.dart` | `2` |
+| `lib/page/components/styled/menus/widgets/bottom_navigation_menu.dart` | `1` |
+| `lib/page/components/widgets/wifi_qr/wifi_qr_cards.dart` | `2` |
+| `lib/page/components/widgets/wifi_qr/wifi_qr_warning_card.dart` | `2` |
+| `lib/page/dashboard/views/components/networks.dart` | `3` |
+| `lib/page/dashboard/views/components/port_and_speed.dart` | `3` |
+| `lib/page/dashboard/views/components/quick_panel.dart` | `1` |
+| `lib/page/dashboard/views/components/wifi_grid.dart` | `3` |
+| `lib/page/firmware_update/views/firmware_update_process_view.dart` | `1` |
+| `lib/page/firmware_update/views/firmware_update_table.dart` | `1` |
+| `lib/page/instant_admin/views/instant_admin_view.dart` | `3` |
+| `lib/page/instant_admin/views/timezone_view.dart` | `2` |
+| `lib/page/instant_device/views/device_detail_view.dart` | `1` |
+| `lib/page/instant_device/views/device_list_widget.dart` | `2` |
+| `lib/page/instant_privacy/views/instant_privacy_view.dart` | `4` |
+| `lib/page/instant_safety/views/instant_safety_view.dart` | `1` |
+| `lib/page/instant_setup/model/impl/guest_wifi_step.dart` | `1` |
+| `lib/page/instant_setup/model/impl/night_mode_step.dart` | `1` |
+| `lib/page/instant_setup/model/impl/personal_wifi_step.dart` | `1` |
+| `lib/page/instant_setup/pnp_admin_view.dart` | `3` |
+| `lib/page/instant_setup/pnp_setup_view.dart` | `3` |
+| `lib/page/instant_setup/troubleshooter/views/call_support/call_support_main_region_view.dart` | `1` |
+| `lib/page/instant_setup/troubleshooter/views/call_support/call_support_more_region_view.dart` | `1` |
+| `lib/page/instant_setup/troubleshooter/views/isp_settings/pnp_static_ip_view.dart` | `5` |
+| `lib/page/instant_setup/troubleshooter/views/pnp_no_internet_connection_view.dart` | `1` |
+| `lib/page/instant_setup/troubleshooter/views/pnp_waiting_modem_view.dart` | `1` |
+| `lib/page/instant_setup/widgets/pnp_auto_master_waiting_view.dart` | `3` |
+| `lib/page/instant_topology/views/widgets/tree_node_item.dart` | `1` |
+| `lib/page/instant_verify/views/components/ping_network_modal.dart` | `1` |
+| `lib/page/instant_verify/views/components/speed_test_widget.dart` | `2` |
+| `lib/page/instant_verify/views/instant_verify_view.dart` | `7` |
+| `lib/page/login/views/local_router_recovery_view.dart` | `1` |
+| `lib/page/nodes/views/node_detail_view.dart` | `3` |
+| `lib/page/troubleshooting/views/troubleshooting_view.dart` | `2` |
+| `lib/page/wifi_settings/views/mac_filtered_devices_view.dart` | `1` |
+| `lib/page/wifi_settings/views/mac_filtering_view.dart` | `1` |
+| `lib/page/wifi_settings/views/widgets/guest_wifi_card.dart` | `3` |
+| `lib/page/wifi_settings/views/widgets/main_wifi_card.dart` | `6` |
+| `lib/page/wifi_settings/views/widgets/wifi_name_field.dart` | `2` |
+| `lib/page/wifi_settings/views/widgets/wifi_password_field.dart` | `2` |
+| `lib/page/wifi_settings/views/wifi_advanced_settings_view.dart` | `5` |
+| `lib/page/wifi_settings/views/wifi_list_simple_mode_view.dart` | `2` |
+| `lib/page/wifi_settings/views/wifi_list_view.dart` | `2` |
+| `lib/page/wifi_settings/views/wifi_share_detail_view.dart` | `1` |
+<!-- semantic-label-literals:end -->
+
+### 11.2 When an identifier is required (2.x 16.2)
+
+Every `App*` call under `lib/page/` that gets an interaction callback passes an `identifier` (issue #1935, Decision 3):
+
+- An `App*` call is a call of any constructor of a class whose name is `App` and a capital: `AppCard` and `AppTextButton.noPadding`, not `AppsGamingSettingsView`.
+- An interaction callback is any named argument `on…` (`onTap`, `onChanged`, `onFocusChanged`, `onSubmitted`, …) that is not the literal `null`.
+
+A labelled button needs one too. Its text is ARB copy, so a test that finds it by its text fails in other locales and on the next copy change.
+
+Something a test only reads or waits for, such as a status, an error, a snackbar or a dialog, gets an identifier when a test needs it, as in 2.x 16.2. Content that no test touches gets none: static text, headings, decorative icons, layout containers.
+
+**The page bottom bar** (issue #1935, Decision 6). The buttons of `PageBottomBar` are `page-save` and `page-cancel`, as in 2.x. Those stand for their default labels, `loc(context).save` and `loc(context).cancel`. A bottom bar that passes another label, as `positiveLabel` or `negitiveLable`, passes its own identifier with it, as `positiveIdentifier` or `negativeIdentifier`, such as `speed-test-again`.
+
+Unlike 2.x 16.2, the rule applies to the calls that predate it. Those are rows in the table: one per file under `lib/page/`, with the count of its findings. A finding is an `App*` call that breaks the rule above, an identifier literal that breaks 11.3, or a bottom bar that breaks its rule. Each finding counted is an exception. Lowering a count or deleting a row deletes exceptions because the code was fixed, which is not an amendment (9.1); raising a count or adding a row adds one, which is.
+
+<!-- identifier-pages:begin -->
+| File | Findings |
+|---|---|
+| `lib/page/advanced_settings/administration/views/administration_settings_view.dart` | `6` |
+| `lib/page/advanced_settings/advanced_settings_view.dart` | `8` |
+| `lib/page/advanced_settings/apps_and_gaming/ddns/views/ddns_settings_view.dart` | `2` |
+| `lib/page/advanced_settings/apps_and_gaming/ddns/views/dyn_ddns_form.dart` | `7` |
+| `lib/page/advanced_settings/apps_and_gaming/ddns/views/no_ip_ddns_form.dart` | `3` |
+| `lib/page/advanced_settings/apps_and_gaming/ddns/views/tzo_ddns_form.dart` | `3` |
+| `lib/page/advanced_settings/apps_and_gaming/ports/views/port_range_forwarding_list_view.dart` | `7` |
+| `lib/page/advanced_settings/apps_and_gaming/ports/views/port_range_forwarding_rule_view.dart` | `7` |
+| `lib/page/advanced_settings/apps_and_gaming/ports/views/port_range_triggering_list_view.dart` | `7` |
+| `lib/page/advanced_settings/apps_and_gaming/ports/views/port_range_triggering_rule_view.dart` | `6` |
+| `lib/page/advanced_settings/apps_and_gaming/ports/views/widgets/add_rule_card.dart` | `1` |
+| `lib/page/advanced_settings/apps_and_gaming/ports/views/widgets/protocol_utils.dart` | `3` |
+| `lib/page/advanced_settings/apps_and_gaming/ports/views/widgets/rule_item_card.dart` | `1` |
+| `lib/page/advanced_settings/dmz/views/dmz_settings_view.dart` | `8` |
+| `lib/page/advanced_settings/firewall/views/firewall_view.dart` | `9` |
+| `lib/page/advanced_settings/firewall/views/ipv6_port_service_list_view.dart` | `8` |
+| `lib/page/advanced_settings/firewall/views/ipv6_port_service_rule_view.dart` | `7` |
+| `lib/page/advanced_settings/internet_settings/views/auto_ipoe_section.dart` | `4` |
+| `lib/page/advanced_settings/internet_settings/views/internet_settings_view.dart` | `40` |
+| `lib/page/advanced_settings/local_network_settings/views/dhcp_reservations_edit_view.dart` | `6` |
+| `lib/page/advanced_settings/local_network_settings/views/dhcp_reservations_view.dart` | `7` |
+| `lib/page/advanced_settings/local_network_settings/views/dhcp_server_view.dart` | `11` |
+| `lib/page/advanced_settings/local_network_settings/views/local_network_settings_view.dart` | `3` |
+| `lib/page/advanced_settings/static_routing/static_routing_list_view.dart` | `2` |
+| `lib/page/advanced_settings/static_routing/static_routing_rule_view.dart` | `5` |
+| `lib/page/advanced_settings/static_routing/static_routing_view.dart` | `8` |
+| `lib/page/advanced_settings/widgets/internet_setting_card.dart` | `1` |
+| `lib/page/auto_ipoe/views/auto_ipoe_optional_pane.dart` | `1` |
+| `lib/page/auto_ipoe/views/auto_ipoe_recovery_ui.dart` | `6` |
+| `lib/page/components/customs/hidden_password_widget.dart` | `1` |
+| `lib/page/components/pwa/install_prompt_banner.dart` | `2` |
+| `lib/page/components/pwa/ios_install_instruction_sheet.dart` | `1` |
+| `lib/page/components/pwa/mac_safari_install_instruction_sheet.dart` | `1` |
+| `lib/page/components/shortcuts/dialogs.dart` | `16` |
+| `lib/page/components/styled/general_settings_widget/general_settings_widget.dart` | `6` |
+| `lib/page/components/styled/remote_assistance/remote_assistance_dialog.dart` | `1` |
+| `lib/page/components/styled/styled_page_view.dart` | `3` |
+| `lib/page/components/styled/styled_tab_page_view.dart` | `2` |
+| `lib/page/components/styled/top_bar.dart` | `2` |
+| `lib/page/components/widgets/wifi_qr/wifi_qr_cards.dart` | `6` |
+| `lib/page/components/widgets/wifi_qr/wifi_qr_warning_card.dart` | `2` |
+| `lib/page/dashboard/views/components/home_title.dart` | `1` |
+| `lib/page/dashboard/views/components/internet_status.dart` | `1` |
+| `lib/page/dashboard/views/components/networks.dart` | `1` |
+| `lib/page/dashboard/views/components/port_and_speed.dart` | `5` |
+| `lib/page/dashboard/views/components/quick_panel.dart` | `1` |
+| `lib/page/dashboard/views/components/wifi_grid.dart` | `7` |
+| `lib/page/dashboard/views/dashboard_menu_view.dart` | `2` |
+| `lib/page/firmware_update/views/firmware_update_detail_view.dart` | `1` |
+| `lib/page/health_check/views/speed_test_external.dart` | `4` |
+| `lib/page/health_check/views/speed_test_view.dart` | `2` |
+| `lib/page/instant_admin/views/instant_admin_view.dart` | `10` |
+| `lib/page/instant_admin/views/manual_firmware_update_view.dart` | `2` |
+| `lib/page/instant_admin/views/timezone_view.dart` | `4` |
+| `lib/page/instant_device/views/device_detail_view.dart` | `6` |
+| `lib/page/instant_device/views/device_list_widget.dart` | `3` |
+| `lib/page/instant_device/views/devices_filter_widget.dart` | `1` |
+| `lib/page/instant_device/views/instant_device_view.dart` | `8` |
+| `lib/page/instant_device/views/select_device_view.dart` | `3` |
+| `lib/page/instant_privacy/views/instant_privacy_view.dart` | `6` |
+| `lib/page/instant_safety/views/instant_safety_view.dart` | `4` |
+| `lib/page/instant_setup/model/impl/guest_wifi_step.dart` | `1` |
+| `lib/page/instant_setup/model/impl/night_mode_step.dart` | `1` |
+| `lib/page/instant_setup/model/impl/personal_wifi_step.dart` | `2` |
+| `lib/page/instant_setup/model/impl/safe_browsing_step.dart` | `2` |
+| `lib/page/instant_setup/model/impl/your_network_step.dart` | `1` |
+| `lib/page/instant_setup/model/pnp_step.dart` | `2` |
+| `lib/page/instant_setup/pnp_admin_view.dart` | `6` |
+| `lib/page/instant_setup/pnp_setup_view.dart` | `3` |
+| `lib/page/instant_setup/troubleshooter/views/call_support/call_support_main_region_view.dart` | `1` |
+| `lib/page/instant_setup/troubleshooter/views/call_support/call_support_more_region_view.dart` | `1` |
+| `lib/page/instant_setup/troubleshooter/views/isp_settings/pnp_ipoe_view.dart` | `1` |
+| `lib/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_auth_view.dart` | `4` |
+| `lib/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_type_selection_view.dart` | `3` |
+| `lib/page/instant_setup/troubleshooter/views/isp_settings/pnp_pppoe_view.dart` | `3` |
+| `lib/page/instant_setup/troubleshooter/views/isp_settings/pnp_static_ip_view.dart` | `7` |
+| `lib/page/instant_setup/troubleshooter/views/pnp_modem_lights_off_view.dart` | `2` |
+| `lib/page/instant_setup/troubleshooter/views/pnp_no_internet_connection_view.dart` | `4` |
+| `lib/page/instant_setup/troubleshooter/views/pnp_unplug_modem_view.dart` | `2` |
+| `lib/page/instant_setup/troubleshooter/views/pnp_waiting_modem_view.dart` | `1` |
+| `lib/page/instant_setup/widgets/pnp_auto_master_waiting_view.dart` | `1` |
+| `lib/page/instant_setup/widgets/pnp_stepper.dart` | `1` |
+| `lib/page/instant_setup/widgets/wifi_password_widget.dart` | `1` |
+| `lib/page/instant_setup/widgets/wifi_ssid_widget.dart` | `1` |
+| `lib/page/instant_topology/views/instant_topology_view.dart` | `7` |
+| `lib/page/instant_topology/views/widgets/tree_node_item.dart` | `2` |
+| `lib/page/instant_verify/views/components/ping_network_modal.dart` | `3` |
+| `lib/page/instant_verify/views/components/speed_test_external_widget.dart` | `4` |
+| `lib/page/instant_verify/views/components/speed_test_widget.dart` | `3` |
+| `lib/page/instant_verify/views/components/traceroute_modal.dart` | `3` |
+| `lib/page/instant_verify/views/instant_verify_view.dart` | `4` |
+| `lib/page/login/views/local_reset_router_password_view.dart` | `5` |
+| `lib/page/login/views/local_router_recovery_view.dart` | `2` |
+| `lib/page/login/views/login_cloud_auth_view.dart` | `3` |
+| `lib/page/nodes/views/add_nodes_view.dart` | `7` |
+| `lib/page/nodes/views/blink_node_light_widget.dart` | `1` |
+| `lib/page/nodes/views/change_node_name_view.dart` | `2` |
+| `lib/page/nodes/views/node_detail_view.dart` | `13` |
+| `lib/page/nodes/views/node_name_edit_view.dart` | `1` |
+| `lib/page/nodes/views/node_restart_view.dart` | `2` |
+| `lib/page/troubleshooting/views/troubleshooting_ping_view.dart` | `2` |
+| `lib/page/troubleshooting/views/troubleshooting_view.dart` | `12` |
+| `lib/page/vpn/views/vpn_settings_page.dart` | `17` |
+| `lib/page/vpn/views/vpn_status_tile.dart` | `2` |
+| `lib/page/wifi_settings/views/mac_filtered_devices_view.dart` | `8` |
+| `lib/page/wifi_settings/views/mac_filtering_view.dart` | `2` |
+| `lib/page/wifi_settings/views/widgets/guest_wifi_card.dart` | `3` |
+| `lib/page/wifi_settings/views/widgets/main_wifi_card.dart` | `8` |
+| `lib/page/wifi_settings/views/widgets/wifi_name_field.dart` | `1` |
+| `lib/page/wifi_settings/views/widgets/wifi_password_field.dart` | `1` |
+| `lib/page/wifi_settings/views/widgets/wifi_qr_dialog.dart` | `1` |
+| `lib/page/wifi_settings/views/widgets/wifi_setting_modal_mixin.dart` | `12` |
+| `lib/page/wifi_settings/views/wifi_advanced_settings_view.dart` | `7` |
+| `lib/page/wifi_settings/views/wifi_list_simple_mode_view.dart` | `3` |
+| `lib/page/wifi_settings/views/wifi_list_view.dart` | `3` |
+| `lib/page/wifi_settings/views/wifi_share_detail_view.dart` | `1` |
+<!-- identifier-pages:end -->
+
+### 11.3 Naming (2.x 16.3)
+
+An identifier is kebab-case `{page-or-feature}-{control}[-{instance-key}]`, with no `now-` prefix: `login-password`, `pf-add`, `pf-edit-web-server` (issue #1935, Decision 4).
+
+- A feature that 2.x also has uses 2.x's prefix, such as `pf-` for port forwarding.
+- An instance key comes from the item's data, through a pure function with unit tests (3.2), and never from a row index or translated text. `pf-edit-0` is a position wearing an identifier's name, and `'menu-${title.kebab()}'`, with `title` from `loc(context)`, is a different identifier in every locale.
+- A part of a composite component is `{parent identifier}-{part}`, such as `login-password-visibility` (issue #1935, Decision 5). An identifier does not change with state: the password field's toggle is `-visibility` whether it shows or hides the password. An index is allowed only in a fixed structure, such as the four octets of an IP address field, `{id}-octet-0` to `{id}-octet-3`.
+
+The page scanner checks every string literal under `lib/page/` passed as `identifier:`, or as an argument whose name ends in `Identifier`, such as `positiveIdentifier:`: one that is not kebab-case, or starts with `now-`, is a finding in the 11.2 table. An interpolated expression counts as a word. Where a key comes from is review.
+
+### 11.4 Layers (2.x 16.4)
+
+- **`plugins/widgets`** owns passthrough (issue #1935, Decision 2). Every component accepts `identifier` and makes it reach the DOM, except pure layout, spacing and animation helpers. A change goes on a new PrivacyGUI-Widgets branch cut from the version that `plugins/widgets` pins, as `v1.2.11` to `v1.2.13` were, and the app's PR moves the submodule (issue #1935, Decision 9).
+- **`lib/`** owns the identifier values, including those on raw `Semantics(identifier:)` nodes.
+
+An identifier is a contract with the tests that locate it: a change that renames one changes those tests too. So does a change that moves a hook from `semanticLabel` to `identifier`, even with the same string: a test that found the control by its label, as `find.bySemanticsLabel` or by accessible name, has to find it by `find.bySemanticsIdentifier` or by `flt-semantics-identifier` instead (2.x 16.4).
+
+**The 3.27.2 web engine drops the identifier of a text field node.** `SemanticRole.update()` returns before it writes `flt-semantics-identifier` when the role has no behaviours, and among the engine's roles only the text field role has none (`flutter_web_sdk/lib/_engine/engine/semantics/semantics.dart` and `text_field.dart` in the SDK cache). The heading, image, slider and route roles add behaviours, so they keep the attribute. The engine picks the role from the node's flags and actions: a node with `isTextField` is a text field unless it is a platform view or a heading, which it checks first. Later engines fixed this. A component therefore puts the identifier on a node of its own:
+
+- Around a text field, `Semantics(container: true, explicitChildNodes: true, identifier:)`. With `container: true` alone, the wrapper merges into the text field node, and the attribute is dropped again. `explicitChildNodes: true` keeps the text field a child node.
+- Around any other control, `Semantics(container: true, identifier:)` is enough.
+- Each octet of `AppIPFormField` is a text field of its own, so each one needs the text field wrapper.
+
+A widget test does not see this by itself: `find.bySemanticsIdentifier` finds an identifier on a text field node, which the browser drops.
+
+**The roster.** `test/constitution/widget_identifier_roster_test.dart` pumps every public constructor of each component in its roster with an identifier, and checks each identifier the component exposes: `find.bySemanticsIdentifier` finds one node, and the node the engine receives, which is that node or the parent it merges into, carries the identifier and is not a text field. PrivacyGUI-Widgets has no CI of its own, and 7.1 leaves `plugins/**` out of analysis, so this test in this repository is what holds a component to passthrough.
+
+The roster holds the components the pilot pages use (issue #1935); issue #1936 adds the rest. An identifier that a component does not expose yet, from every constructor, is a row of the table: the component, the identifier as a pattern over `{id}`, and why. Deleting a row because the component was fixed is not an amendment (9.1). Adding one is.
+
+<!-- identifier-roster:begin -->
+| Component | Identifier | Why |
+|---|---|---|
+<!-- identifier-roster:end -->
+
+### 11.5 Code review checklist (2.x 16.5)
+
+Review checks that:
+
+- every control a test drives has an `identifier`, labelled buttons included, and also where the page scanner cannot see it: a raw `InkWell` or `GestureDetector`, or a text field with a controller and no callback (11.2);
+- no `semanticLabel` holds a test string, and no control carries both an `identifier` and a `semanticLabel` that repeats it (11.1.1);
+- a raw `Semantics` hook takes `identifier:`, not `label:` (11.1.2);
+- a change that renames an identifier, or moves a hook from `semanticLabel` to `identifier`, changes the tests that locate it in the same change (11.4);
+- identifiers follow 11.3, and an instance key comes from the item's data through a pure, unit-tested function, never from a row index or translated text;
+- content that no test touches has no identifier (11.2);
+- a new or changed component in `plugins/widgets` passes the roster, or has its row (11.4).
+
+**Enforced by**: Test, for the three tables; review for the rest (11.5).
+
+- `test/constitution/e2e_identifier_test.dart` compares what its scanners find in `lib/` with the tables in 11.1.3 and 11.2. It fails when a file's findings have no row, or a different count, and when a row no longer matches. It lists each finding of a file whose count is wrong, by line.
+- `test/constitution/widget_identifier_roster_test.dart` compares the roster with the table in 11.4. It fails when a component has no row for an identifier it does not expose, when a row's identifier is exposed now, and when a row names no component and identifier in the roster.
+- `test/constitution/identifier_scanner_test.dart` and `semantics_identifier_test.dart` test the scanners and the check on the node the engine receives. The latter also holds that check to what a browser showed: the wrappers above.
+
+As in 1.5, the tests cannot tell a new row from an old one. That the tables only shrink is enforced by Article IX.
+
+*Amended 2026-11-25 (#1935): new article. E2E tests locate 1.x controls by `identifier` instead of `semanticLabel`, now that Flutter 3.27.2 writes it to the DOM (issue #1935, Decisions 1 to 8). It follows 2.x Article XVI, without 16.1.2's `semanticLabel` fallback and without 2.x's E2E repository. A rule is added, for which 9.2 asks a major number. The version moves to 1.9 instead, as Articles VII and X kept the major number (issue #1935, Decision 10). The team decides whether that holds (9.3).*
+
+---
+
 ## Not Covered
 
 ### Not carried over from 2.x
@@ -478,8 +793,10 @@ This article has no exceptions. When it was added, the code of every scrolling p
 - **IV** (USP provider architecture): 1.x talks JNAP.
 - **VI** and **XIII** (service layer, `ServiceError`): 1.x notifiers call `RouterRepository` directly, and its errors are `JNAPError`, `JNAPSideEffectError` and the retry exceptions in `lib/core/`. Requiring a service layer would be a refactor, not a description of the code.
 - **XIV** and **XV** (layout blocks, the UI kit principle): 1.x has no `ui_kit_library`.
-- **XVI** and **XVII** (E2E semantics identifiers, app modes).
+- **XVII** (app modes).
+
+Article XVI (E2E semantics identifiers) is carried over as Article XI.
 
 ### Deferred
 
-Rules for `plugins/widgets` components, for E2E identifiers in `integration_test/`, and for app modes such as remote assistance are to be evaluated after #1804 (Decision 3).
+Rules for `plugins/widgets` components other than Article XI's, and for app modes such as remote assistance, are to be evaluated after issue #1804 (Decision 3).

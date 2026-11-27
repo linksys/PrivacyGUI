@@ -265,7 +265,7 @@ class StyledAppTabPageView extends ConsumerWidget {
   Widget _createMenuWidget(BuildContext context, [double? maxWidth]) {
     return Semantics(
       explicitChildNodes: true,
-      identifier: 'now-page-menu-container',
+      identifier: 'page-menu',
       child: Container(
         constraints:
             maxWidth != null ? BoxConstraints(maxWidth: maxWidth) : null,
@@ -279,7 +279,7 @@ class StyledAppTabPageView extends ConsumerWidget {
                   padding: const EdgeInsets.only(
                       left: 24.0, right: 24.0, top: 24.0, bottom: 0.0),
                   child: Semantics(
-                      identifier: 'now-page-menu-title',
+                      identifier: 'page-menu-title',
                       child: AppText.titleSmall(menu?.title ?? '')),
                 ),
                 const AppGap.medium(),

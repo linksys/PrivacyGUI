@@ -116,10 +116,14 @@ void main() {
             PageMenuItem(
                 label: 'Restart',
                 icon: null,
+                identifier: 'menu-restart',
                 isWrite: true,
                 onTap: () => writes++),
             PageMenuItem(
-                label: 'Open page', icon: null, onTap: () => navigations++),
+                label: 'Open page',
+                icon: null,
+                identifier: 'menu-open-page',
+                onTap: () => navigations++),
           ]),
         );
 
