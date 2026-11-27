@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_provider.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
@@ -55,6 +57,19 @@ final _guardianSession = GRASessionInfo.fromMap(const {
   'currentTime': 1722240580739,
 });
 
+/// Remote Assistance, recording each time it is ended. [onEnd] is what an end
+/// waits on: by default, one that succeeds at once.
+class _RemoteAssistance extends RemoteClientNotifier {
+  int ends = 0;
+  Future<void> Function() onEnd = () async {};
+
+  @override
+  Future<void> endRemoteAssistance() {
+    ends++;
+    return onEnd();
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   mockDependencyRegister();
@@ -62,6 +77,7 @@ void main() {
   late RouterBoundary router;
   late CloudBoundary cloud;
   late RecordingPolling polling;
+  late _RemoteAssistance remoteAssistance;
   late ProviderContainer container;
 
   AuthNotifier notifier() => container.read(authProvider.notifier);
@@ -94,11 +110,13 @@ void main() {
       ..holds(JNAPAction.pnpCheckAdminPassword, const {});
     cloud = CloudBoundary();
     polling = RecordingPolling();
+    remoteAssistance = _RemoteAssistance();
     container = ProviderContainer(overrides: [
       routerRepositoryProvider.overrideWithValue(router.repo),
       cloudRepositoryProvider
           .overrideWithValue(LinksysCloudRepository(httpClient: cloud)),
       pollingProvider.overrideWith(() => polling),
+      remoteClientProvider.overrideWith(() => remoteAssistance),
     ]);
   }
 
@@ -355,6 +373,42 @@ void main() {
       expect(notifier().logoutGeneration, isNot(before));
       expect(notifier().loggedOutSince(before), isTrue);
       expect(notifier().loggedOutSince(notifier().logoutGeneration), isFalse);
+    });
+
+    // Every logout ends Remote Assistance (#1904): the idle logout, polling's
+    // and the redirect's call logout() alone, and before, only the top bar's
+    // "End" ended it.
+    test('ends Remote Assistance', () async {
+      start(secure: {pLocalPassword: 'TestAdmin1!'});
+
+      await notifier().logout();
+
+      expect(remoteAssistance.ends, 1);
+    });
+
+    test('does not wait for Remote Assistance to end', () async {
+      // Ending it may wait on the cloud, which a logout does not.
+      start(secure: {pLocalPassword: 'TestAdmin1!'});
+      final cloudAnswer = Completer<void>();
+      remoteAssistance.onEnd = () => cloudAnswer.future;
+
+      await notifier().logout();
+
+      expect(remoteAssistance.ends, 1);
+      expect(auth().value?.loginType, LoginType.none);
+      cloudAnswer.complete();
+    });
+
+    test('logs out when ending Remote Assistance fails', () async {
+      start(secure: {pLocalPassword: 'TestAdmin1!'});
+      remoteAssistance.onEnd = () async => throw Exception('the cloud is down');
+
+      await notifier().logout();
+      await pumpEventQueue();
+
+      expect(remoteAssistance.ends, 1);
+      expect(auth().value?.loginType, LoginType.none);
+      expect(await stored(pLocalPassword), isNull);
     });
   });
 
