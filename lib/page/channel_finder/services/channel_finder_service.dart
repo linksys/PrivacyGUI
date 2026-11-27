@@ -73,6 +73,16 @@ final channelFinderServiceProvider = Provider<ChannelFinderService>((ref) {
 ///
 /// A radio whose channel scan fails or times out keeps its neighbours and reads
 /// no busyness; a neighbour scan that fails fails the whole scan.
+///
+/// Neither command goes through `uspMutationLockProvider`: they change no
+/// setting, and the destructive-operation roster records why
+/// (`destructive_operation_roster_test.dart`, `_notDestructive`). So a scan
+/// can overlap a WiFi save, a firmware update or a reboot that another page
+/// started. Not measured; what the code does then: a neighbour scan whose
+/// OperationComplete never arrives ends as a [TimeoutError] after
+/// [ChannelFinderTimings.neighborScanTimeout], and a channel scan the router
+/// refuses or never answers leaves that band unmeasured. Either way nothing is
+/// written, and the user can scan again.
 class ChannelFinderService {
   static const neighborScanCommand = 'Device.WiFi.NeighboringWiFiDiagnostic()';
 
