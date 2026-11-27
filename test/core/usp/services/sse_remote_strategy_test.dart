@@ -255,14 +255,12 @@ void main() {
     });
 
     test('a 401 here cannot end the session', () async {
-      // Logout reaches this through `unregisterAll()` after `session.end()` has
-      // spent the credential, so a 401 is the expected answer — the same one that
-      // looped 770 times on QA when the disconnect cleanup reported it. Today
-      // `disconnect()` empties the registry first and the list is empty by the
-      // time it gets here; this is what keeps the loop closed if those two steps
-      // are ever reordered (review of #1600). A live single unregister is
-      // cleanup whose failure is ignored too, and the reads that depend on the
-      // token still report it.
+      // A release can arrive after `session.end()` has spent the credential, so
+      // a 401 is the expected answer — the same one that looped 770 times on QA
+      // when the disconnect cleanup reported it (review of #1600). Logout itself
+      // sends nothing here: its `disconnect()` forgets every subscription first.
+      // A live single unregister is cleanup whose failure is ignored too, and
+      // the reads that depend on the token still report it.
       await strategy.unregisterSubscriptions(['sub-1']);
 
       verifyNever(() => mockBridge.unsubscribe(subscriptionId: 'remote-sub-1'));

@@ -6,6 +6,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/usp/models/sse_connection_state.dart';
 import 'package:privacy_gui/core/usp/services/sse_manager.dart';
 import 'package:privacy_gui/core/usp/models/core_subscription_state.dart';
+import 'package:privacy_gui/core/usp/models/sse_notification.dart';
 import 'package:privacy_gui/core/usp/services/sse_remote_strategy.dart';
 import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
@@ -95,7 +96,7 @@ void main() {
       // Add a handler to router and verify it receives events through
       // the connection → router wiring
       int handlerCalled = 0;
-      manager.router.addHandler('sub-1', (_) => handlerCalled++);
+      manager.router.addWildcardHandler((_) => handlerCalled++);
 
       await manager.connect();
       streamController.add(notificationEvent(
@@ -193,7 +194,7 @@ void main() {
         onNotification: (_) {},
       );
 
-      expect(manager.router.registeredIds, contains('test-sub'));
+      expect(manager.router.wildcardHandlerCount, 1);
 
       await manager.dispose();
     });
@@ -210,7 +211,7 @@ void main() {
 
       await cleanup();
 
-      expect(manager.router.registeredIds, isNot(contains('test-sub')));
+      expect(manager.router.wildcardHandlerCount, 0);
 
       await manager.dispose();
     });
@@ -247,12 +248,219 @@ void main() {
       streamController.add(notificationEvent(
         subscriptionId: 'test-sub',
         type: 'ValueChange',
+        valueChange: {'param_path': 'Device.Test.Value', 'param_value': '1'},
       ));
       await Future.delayed(Duration.zero);
 
       expect(handlerCalled, 1);
 
       await manager.dispose();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Several holders of one subscription id (#1887)
+  // ---------------------------------------------------------------------------
+  group('holders of one subscription id', () {
+    // Package widgets share one id per widget, `pkg-<widgetId>-valuechange`:
+    // two live notifiers keyed by two templates of one widget hold it at once.
+    Future<Future<void> Function()> hold(
+      SseManager manager, {
+      SseNotificationHandler? onNotification,
+    }) =>
+        manager.subscribe(
+          subscriptionId: 'pkg-w1-valuechange',
+          notifType: 'ValueChange',
+          referenceList: 'Device.X.',
+          onNotification: onNotification ?? (_) {},
+        );
+
+    test(
+        'one holder cleaning up leaves the other subscribed and hearing, with '
+        'no unregister sent', () async {
+      final manager = createManager();
+      addTearDown(manager.dispose);
+      var heard = 0;
+      final first = await hold(manager);
+      await hold(manager, onNotification: (_) => heard++);
+
+      await first();
+      await manager.connect();
+      streamController.add(notificationEvent(
+        subscriptionId: 'pkg-w1-valuechange',
+        type: 'ValueChange',
+        valueChange: {'param_path': 'Device.X.Value', 'param_value': '1'},
+      ));
+      await Future.delayed(Duration.zero);
+
+      verifyNever(() => mockBridge.unsubscribe(
+            subscriptionId: 'pkg-w1-valuechange',
+          ));
+      expect(manager.registry.activeIds, contains('pkg-w1-valuechange'));
+      expect(heard, 1);
+    });
+
+    test('the last holder to clean up unregisters the id, once', () async {
+      final manager = createManager();
+      addTearDown(manager.dispose);
+      final first = await hold(manager);
+      final second = await hold(manager);
+
+      await first();
+      await second();
+
+      verify(() => mockBridge.unsubscribe(
+            subscriptionId: 'pkg-w1-valuechange',
+          )).called(1);
+      expect(manager.registry.activeIds, isNot(contains('pkg-w1-valuechange')));
+    });
+
+    test('two holders registering one id at once send one registration',
+        () async {
+      final gate = Completer<Map<String, dynamic>>();
+      when(() => mockBridge.subscribe(
+            subscriptionId: any(named: 'subscriptionId'),
+            path: any(named: 'path'),
+            notifType: any(named: 'notifType'),
+          )).thenAnswer((_) => gate.future);
+      final manager = createManager();
+      addTearDown(manager.dispose);
+
+      final both = Future.wait([hold(manager), hold(manager)]);
+      await Future.delayed(Duration.zero);
+      gate.complete({});
+      await both;
+
+      verify(() => mockBridge.subscribe(
+            subscriptionId: 'pkg-w1-valuechange',
+            path: any(named: 'path'),
+            notifType: any(named: 'notifType'),
+          )).called(1);
+    });
+
+    test('calling one cleanup twice counts once', () async {
+      final manager = createManager();
+      addTearDown(manager.dispose);
+      final first = await hold(manager);
+      await hold(manager);
+
+      await first();
+      await first();
+
+      verifyNever(() => mockBridge.unsubscribe(
+            subscriptionId: 'pkg-w1-valuechange',
+          ));
+      expect(manager.registry.activeIds, contains('pkg-w1-valuechange'));
+    });
+
+    test(
+        'a cleanup from before an intentional disconnect does not cancel the '
+        'next session\'s holder of the id', () async {
+      final manager = createManager();
+      addTearDown(manager.dispose);
+      final stale = await hold(manager);
+      await manager.disconnect();
+      await hold(manager);
+      clearInteractions(mockBridge);
+
+      await stale();
+
+      verifyNever(() => mockBridge.unsubscribe(
+            subscriptionId: any(named: 'subscriptionId'),
+          ));
+      expect(manager.registry.activeIds, contains('pkg-w1-valuechange'));
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Hearing a subscription: by type and path, not by id (#1887)
+  // ---------------------------------------------------------------------------
+  group('hearing a subscription', () {
+    // Guardian sends a notification under `remote-<id>`, the id the remote
+    // strategy registered there (measured on QA Guardian, 2026-11-26), so a
+    // handler keyed by our id never heard it under Remote Assistance. See
+    // SseNotification.subscriptionId for why no id is a key to hear by.
+    Future<int Function()> listen(
+      SseManager manager, {
+      String notifType = 'ValueChange',
+      required String referenceList,
+    }) async {
+      var heard = 0;
+      await manager.subscribe(
+        subscriptionId: 'pkg-w1-valuechange',
+        notifType: notifType,
+        referenceList: referenceList,
+        onNotification: (_) => heard++,
+      );
+      await manager.connect();
+      return () => heard;
+    }
+
+    void push(String path, {String type = 'ValueChange'}) {
+      streamController.add(notificationEvent(
+        subscriptionId: 'remote-pkg-w1-valuechange',
+        type: type,
+        valueChange: type == 'ValueChange'
+            ? {'param_path': path, 'param_value': 'v'}
+            : null,
+        objCreation: type == 'ObjectCreation' ? {'obj_path': path} : null,
+      ));
+    }
+
+    test(
+        'a value change Guardian sends under its remote- id reaches the handler',
+        () async {
+      final manager = createManager();
+      addTearDown(manager.dispose);
+      final heard = await listen(manager, referenceList: 'Device.X.');
+
+      push('Device.X.1.Value');
+      await Future.delayed(Duration.zero);
+
+      expect(heard(), 1);
+    });
+
+    test('a reference list with a wildcard instance matches each instance',
+        () async {
+      final manager = createManager();
+      addTearDown(manager.dispose);
+      final heard = await listen(
+        manager,
+        referenceList: 'Device.WiFi.SSID.*.SSID',
+      );
+
+      push('Device.WiFi.SSID.1.SSID');
+      push('Device.WiFi.SSID.2.SSID');
+      push('Device.WiFi.SSID.2.Status');
+      await Future.delayed(Duration.zero);
+
+      expect(heard(), 2);
+    });
+
+    test('a parameter reference list does not match a longer parameter name',
+        () async {
+      final manager = createManager();
+      addTearDown(manager.dispose);
+      final heard = await listen(manager, referenceList: 'Device.X.Enable');
+
+      push('Device.X.Enable');
+      push('Device.X.EnableExtra');
+      await Future.delayed(Duration.zero);
+
+      expect(heard(), 1);
+    });
+
+    test('a notification of another type or under another path is not heard',
+        () async {
+      final manager = createManager();
+      addTearDown(manager.dispose);
+      final heard = await listen(manager, referenceList: 'Device.X.');
+
+      push('Device.X.1.', type: 'ObjectCreation');
+      push('Device.Y.1.Value');
+      await Future.delayed(Duration.zero);
+
+      expect(heard(), 0);
     });
   });
 
@@ -410,11 +618,9 @@ void main() {
     test('calls router.dispose', () async {
       final manager = createManager();
       manager.addWildcardHandler((_) {});
-      manager.router.addHandler('test', (_) {});
 
       await manager.dispose();
 
-      expect(manager.router.registeredIds, isEmpty);
       expect(manager.router.wildcardHandlerCount, 0);
     });
 
@@ -873,6 +1079,39 @@ void main() {
 
       expect(manager.coreSubscriptions.value,
           const CoreSubscriptionsReady(registered: 1, failed: 1));
+    });
+
+    test(
+        'a second registration while one is in flight joins it: one '
+        'registration per id, and both end ready', () async {
+      // The orchestrator registers the core set again when it rebuilds.
+      final gate = Completer<Map<String, dynamic>>();
+      when(() => mockBridge.subscribe(
+            subscriptionId: any(named: 'subscriptionId'),
+            path: any(named: 'path'),
+            notifType: any(named: 'notifType'),
+          )).thenAnswer((_) => gate.future);
+      final manager = createManager();
+      addTearDown(manager.dispose);
+      manager.setCoreSubscriptions([('sub-1', 'ValueChange', 'Device.X.')]);
+
+      var secondDone = false;
+      final first = manager.registerCoreSubscriptions();
+      final second =
+          manager.registerCoreSubscriptions().then((_) => secondDone = true);
+      await Future.delayed(Duration.zero);
+      expect(secondDone, isFalse, reason: 'it waits for the first');
+
+      gate.complete({});
+      await Future.wait([first, second]);
+
+      verify(() => mockBridge.subscribe(
+            subscriptionId: 'sub-1',
+            path: any(named: 'path'),
+            notifType: any(named: 'notifType'),
+          )).called(1);
+      expect(manager.coreSubscriptions.value,
+          const CoreSubscriptionsReady(registered: 1, failed: 0));
     });
 
     test('an intentional disconnect puts it back to pending', () async {
