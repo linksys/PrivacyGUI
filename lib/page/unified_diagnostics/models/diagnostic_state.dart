@@ -80,6 +80,9 @@ enum DiagnosticStep {
   /// Checking WiFi signal strength and channel.
   checkingWifiSignal,
 
+  /// Checking how busy the channel each radio is on is (#1778).
+  checkingChannelCongestion,
+
   /// Checking connected device count and bandwidth usage.
   checkingConnectedDevices,
 
@@ -127,6 +130,11 @@ class RecommendationUIModel extends Equatable {
 
   /// Optional action callback identifier (e.g., 'renewDhcp', 'restartModem').
   final String? actionId;
+
+  /// The [actionId] whose card offers a button that opens Channel Finder
+  /// (#1778). The only action a card acts on so far; the others only name
+  /// what the user could do.
+  static const openChannelFinder = 'openChannelFinder';
 
   const RecommendationUIModel({
     required this.id,

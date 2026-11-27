@@ -11,6 +11,7 @@ export 'data_elements_network_info.g.dart';
 export 'data_elements_network_operations.g.dart';
 export 'mac_filter_network_operations.g.dart';
 export 'data_elements_network.g.dart';
+export 'data_elements_scan_results.g.dart';
 export 'mac_filter_network.g.dart';
 export 'mac_filter_access_points.g.dart';
 export 'mesh_mlo.g.dart';

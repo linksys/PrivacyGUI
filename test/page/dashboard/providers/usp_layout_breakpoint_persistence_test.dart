@@ -348,7 +348,7 @@ void main() {
 
       expect(
           container.read(uspSliverDashboardControllerProvider).exportLayout(),
-          hasLength(18));
+          hasLength(19));
       expect((await storedEnvelope()).slotCounts, containsAll([12, 8, 4]));
     });
 

@@ -152,6 +152,22 @@ void main() {
       expect(report, contains('Target: google.com, Hops: 1'));
     });
 
+    test('renders channel congestion per band, with -- for what was not read',
+        () {
+      final congestion = ChannelCongestionCheckUIModel(radios: const [
+        ChannelCongestionRadioUIModel(
+            band: '2.4GHz', channel: 1, utilization: 184),
+        ChannelCongestionRadioUIModel(
+            band: '5GHz', channel: null, utilization: null),
+      ]);
+      final report = service
+          .buildTextReport(UnifiedDiagnosticsState(results: [congestion]));
+
+      expect(report, contains('[WARN] Channel Congestion'));
+      expect(report,
+          contains('2.4GHz: channel 1, 72% busy; 5GHz: channel --, --% busy'));
+    });
+
     test('severity icons map correctly', () {
       DiagnosticStepUIModel make(DiagnosticSeverity sev) =>
           DiagnosticStepUIModel(

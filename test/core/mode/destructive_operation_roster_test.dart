@@ -243,6 +243,10 @@ const _commandCallSites = <String, List<String>>{
     'BleOnboardingOperations.start',
     'BleOnboardingOperations.stop',
   ],
+  // #1778: a scan of one controller radio's channels, waived in _notDestructive.
+  'lib/page/channel_finder/services/channel_finder_service.dart': [
+    'DataElementsNetworkOperations.channelScanRequest',
+  ],
   'lib/page/admin/services/usp_admin_service.dart': [
     // The whole-network pair and the router-only pair are one operation each,
     // behind the same two seams: which pair goes out is read from the router
@@ -370,7 +374,25 @@ const _unguardedByDesign = <({String file, String command})>{};
 ///   not reach these calls in any case: `SurfaceStrategy.addNodesEntry` offers the
 ///   flow on the local surface only. `scan` is declared by codegen and called
 ///   from nowhere; it lists the nodes in range and onboards none.
+/// * `DataElementsNetworkOperations.channelScanRequest` (#1778) — Channel
+///   Finder asks one of the controller's radios to scan a list of channels for
+///   100 ms each and store what it saw. It changes no setting, and the radio
+///   returns to its channel by itself. Measured 2026-11-26 on an M60 on the FW
+///   test image 2.0.4.26112521: three scans from a wired client of the
+///   controller finished without an error, and the same session went on to the
+///   dashboard, the diagnostics and Wi-Fi Settings. The requests were not
+///   recorded, so "untouched" is that observation, not a capture. FW measured
+///   a wireless backhaul during a neighbour scan, which takes the radios off
+///   channel for longer: no lost pings, round-trip time up to about 170 ms
+///   (FWDEV#277). Not measured: what a Wi-Fi client of the radio notices.
+///   `NeighboringWiFiDiagnostic()` is not censused here: it is not a codegen
+///   call, and the page runs it through `SseOperationAwaiter` like the manual
+///   diagnostics.
 const _notDestructive = <({String file, String command})>{
+  (
+    file: 'lib/page/channel_finder/services/channel_finder_service.dart',
+    command: 'DataElementsNetworkOperations.channelScanRequest',
+  ),
   (
     file: 'lib/page/add_nodes/services/add_nodes_service.dart',
     command: 'BleOnboardingOperations.start',

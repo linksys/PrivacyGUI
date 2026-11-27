@@ -580,8 +580,10 @@ void main() {
       // page, and one of the four exclusion candidates that wave kept because it was
       // reachable in every debug build. Its find was fixed in #1380 and its file is
       // gone, so the row goes with the file. 52 → 51.
+      // #1778 adds the Channel Finder page, straight to `swept` with the `lib/`
+      // change that made it. 51 → 52.
       expect(
-          roster.withDisposition(PageRosterDisposition.swept), hasLength(51));
+          roster.withDisposition(PageRosterDisposition.swept), hasLength(52));
       expect(
         roster.withDisposition(PageRosterDisposition.queued).map((r) => r.path),
         isEmpty,
@@ -722,6 +724,9 @@ void main() {
         'lib/page/advanced_settings/views/usp_advanced_settings_view.dart',
         'lib/page/ai_assistant/views/router_assistant_view.dart',
         'lib/page/apps/views/usp_apps_view.dart',
+        // #1778: the Channel Finder page, declared with the `lib/` change that
+        // creates it.
+        'lib/page/channel_finder/views/channel_finder_view.dart',
         'lib/page/dashboard/views/usp_dashboard_view.dart',
         'lib/page/dashboard/views/usp_sliver_dashboard_view.dart',
         'lib/page/ddns/views/usp_ddns_view.dart',

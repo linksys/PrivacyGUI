@@ -21,7 +21,7 @@ import '../../../util/overflow_probe.dart';
 ///
 /// The #1183 gate (`dashboard_card_overflow_test.dart`) pins no density, so
 /// every card selects its own form from the width the grid gives it — which for
-/// 10 of the 18 cards is still always normal, because they declare no
+/// 11 of the 19 cards is still always normal, because they declare no
 /// `normalAbove` (#1240 AC 1). The other **eight** declare one (#1288-#1291,
 /// #1321, #1130), and they are the cards a width can put into this form.
 ///
@@ -75,14 +75,14 @@ import '../../../util/overflow_probe.dart';
 /// 4-column floor, and 288px for anything wider (a full-width card clamped to the
 /// 4-column mobile grid). Only the first is under 200px.
 ///
-/// So nine of the eighteen registered widgets can never select popup at any
+/// So ten of the nineteen registered widgets can never select popup at any
 /// width, whatever they declare — [densityForWidth] compares the *rendered*
 /// width against the threshold, and their own `minColumns` floors them above it.
 /// Sweeping a popup form for them would be measuring a state production cannot
 /// produce.
 ///
 /// That is worth stating plainly because it decides what the middle band is for:
-/// **compact is the only degraded form those nine cards can reach.** #1232's
+/// **compact is the only degraded form those ten cards can reach.** #1232's
 /// measurement found the compact band had no consumers and this ticket's popup
 /// form does not change that — but it is not dead by construction, it is the
 /// only degradation available to half the dashboard.
@@ -139,6 +139,7 @@ void main() {
       'wifi_performance',
       'traffic_analysis',
       'device_analytics',
+      'channel_finder',
     ];
 
     test('is every card the grid can make narrow enough to degrade', () {
@@ -165,7 +166,7 @@ void main() {
     // an inventory that three tickets kept changing, so it went stale silently
     // and was read as current.
     test('the header\'s counts are the specs\' counts', () {
-      expect(UspWidgetSpecs.all, hasLength(18));
+      expect(UspWidgetSpecs.all, hasLength(19));
       expect(
         UspWidgetSpecs.all.where((s) => s.normalAbove != null).length,
         8,
@@ -179,7 +180,7 @@ void main() {
       expect(
         UspWidgetSpecs.all.where(canBePickedIntoPopup).length -
             UspWidgetSpecs.all.where(canReachPopupBand).length,
-        8,
+        9,
         reason:
             'the cards with a popup form no width sweep can reach, which is '
             'what the pick sweep exists for',
@@ -338,7 +339,7 @@ void main() {
 
   runOverflowSweep(
     family: const PickedPopupDialogFamily(),
-    expectedCellCount: 51,
+    expectedCellCount: 54,
   );
 
   /// What the tile actually says, which no overflow probe can see.

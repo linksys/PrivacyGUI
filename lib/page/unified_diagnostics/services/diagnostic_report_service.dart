@@ -105,6 +105,7 @@ class DiagnosticReportService {
       DiagnosticStep.dnsLookup => 'DNS Lookup',
       DiagnosticStep.runningSpeedTest => 'Speed Test',
       DiagnosticStep.checkingWifiSignal => 'WiFi Signal',
+      DiagnosticStep.checkingChannelCongestion => 'Channel Congestion',
       DiagnosticStep.checkingConnectedDevices => 'Connected Devices',
       DiagnosticStep.runningTraceroute => 'Traceroute',
       _ => step.name,
@@ -128,6 +129,10 @@ class DiagnosticReportService {
         'Host: ${r.hostName}, Resolved: ${r.resolvedIps.join(", ")}',
       TracerouteCheckUIModel r =>
         'Target: ${r.targetHost}, Hops: ${r.hops.length}',
+      ChannelCongestionCheckUIModel r => r.radios
+          .map((radio) => '${radio.band}: channel ${radio.channel ?? '--'}, '
+              '${radio.utilizationPercent ?? '--'}% busy')
+          .join('; '),
       _ => '',
     };
   }

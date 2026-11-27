@@ -39,6 +39,18 @@ void main() {
       expect(RecommendationCatalog.description('unknown_desc'), 'unknown_desc');
     });
 
+    test('the busy channel entry reads as the in-app card does (#1778)', () {
+      // The report's English must match diagnosticsRecBusyChannelTitle /
+      // Desc in app_en.arb, which write "WiFi".
+      expect(RecommendationCatalog.title('diagnostics_rec_busy_channel_title'),
+          'Busy WiFi Channel');
+      expect(
+          RecommendationCatalog.description(
+              'diagnostics_rec_busy_channel_desc'),
+          'The channel your WiFi is on is busy. Open Channel Finder to see how '
+          'busy each channel is.');
+    });
+
     test('every title key has a matching description key', () {
       const expectedTitleKeys = [
         'diagnostics_rec_wan_down_title',
@@ -54,6 +66,7 @@ void main() {
         'diagnostics_rec_many_devices_title',
         'diagnostics_rec_bandwidth_hog_title',
         'diagnostics_rec_bottleneck_title',
+        'diagnostics_rec_busy_channel_title',
       ];
       for (final titleKey in expectedTitleKeys) {
         // Title exists and is not the fallback (key itself).

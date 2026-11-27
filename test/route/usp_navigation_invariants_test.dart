@@ -354,6 +354,7 @@ const _fallbackRoutes = <String>[
   RouteNamed.uspStatistics,
   RouteNamed.uspWifiSettings,
   RouteNamed.uspApps,
+  RouteNamed.uspChannelFinder,
   RouteNamed.uspDeviceList,
   // Nested — the URL parent is always rebuilt, so the fallback is unreachable.
   RouteNamed.uspNodeDetail,
@@ -477,6 +478,7 @@ void main() {
             '/uspAdvancedSettings/uspIpv6PortService',
         RouteNamed.uspWifiSettings: '/uspWifiSettings',
         RouteNamed.uspApps: '/uspApps',
+        RouteNamed.uspChannelFinder: '/uspChannelFinder',
         RouteNamed.uspAiAssistant: '/uspAiAssistant',
       };
 
@@ -540,6 +542,7 @@ void main() {
             RouteNamed.uspStatistics: RouteNamed.uspMenu,
             RouteNamed.uspWifiSettings: RouteNamed.uspMenu,
             RouteNamed.uspApps: RouteNamed.uspMenu,
+            RouteNamed.uspChannelFinder: RouteNamed.uspMenu,
             RouteNamed.uspDeviceList: RouteNamed.uspMenu,
           },
           reason: 'these are shell children, so on a cold URL there is nothing '

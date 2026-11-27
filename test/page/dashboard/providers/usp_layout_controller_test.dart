@@ -97,13 +97,13 @@ void main() {
   // Initialization
   // ---------------------------------------------------------------------------
   group('Initialization', () {
-    test('no saved layout → creates 18 default items', () async {
+    test('no saved layout → creates 19 default items', () async {
       final container = await createInitializedContainer();
       addTearDown(container.dispose);
 
       final controller = container.read(uspSliverDashboardControllerProvider);
       final layout = controller.exportLayout();
-      expect(layout.length, 18);
+      expect(layout.length, 19);
     });
 
     test('no saved layout → saves default to prefs', () async {
@@ -188,7 +188,7 @@ void main() {
 
       final controller = container.read(uspSliverDashboardControllerProvider);
       final layout = controller.exportLayout();
-      expect(layout.length, 18);
+      expect(layout.length, 19);
     });
 
     test('malformed JSON → saves default to prefs', () async {
@@ -201,7 +201,7 @@ void main() {
       final saved = prefs.getString(pUspSliverDashboardLayout);
       expect(saved, isNotNull);
       final decoded = _savedDesktopLayout(saved!);
-      expect(decoded.length, 18);
+      expect(decoded.length, 19);
     });
 
     // Well-formed JSON holding a well-formed envelope holding an item the grid
@@ -209,7 +209,7 @@ void main() {
     // table; this is the consequence at the boot it happens on, which is the
     // part that made #1310's third trap worth fixing rather than noting.
     //
-    // `expect(layout.length, 18)` is deliberately not the assertion. It passes
+    // `expect(layout.length, 19)` is deliberately not the assertion. It passes
     // either way, and for opposite reasons: with the fix, because the reject
     // path reseeds the default; without it, because `LayoutItem.fromMap` threw
     // inside `_importQuietly` *before* `_swapController`, leaving the grid on
@@ -240,7 +240,7 @@ void main() {
       expect(saved, isNot(corrupt),
           reason: 'the unreadable value is still stored, so every future boot '
               'reads it again');
-      expect(_savedDesktopLayout(saved!).length, 18);
+      expect(_savedDesktopLayout(saved!).length, 19);
     });
 
     test('saved layout with fewer cards (preset) is valid', () async {
@@ -379,7 +379,7 @@ void main() {
   // resetLayout
   // ---------------------------------------------------------------------------
   group('resetLayout', () {
-    test('creates new default controller with 18 items', () async {
+    test('creates new default controller with 19 items', () async {
       final container = await createInitializedContainer();
       addTearDown(container.dispose);
 
@@ -401,7 +401,7 @@ void main() {
               .read(uspSliverDashboardControllerProvider)
               .exportLayout()
               .length,
-          18); // speedTest disabled (#857)
+          19); // speedTest disabled (#857)
     });
 
     test('removes prefs key', () async {
@@ -842,7 +842,7 @@ void main() {
       // `?? fromCols` absorbs it.
       //
       // Reached through the `spec:` parameter because that is the real one: it
-      // exists for widgets outside `UspWidgetSpecs`, all 18 of which declare
+      // exists for widgets outside `UspWidgetSpecs`, all 19 of which declare
       // `DisplayMode.normal` constraints. `PackageWidgetTemplate.toWidgetSpec`
       // happens to fill `DisplayMode.normal` too, so no caller supplies this
       // shape today — which is why the throw was latent rather than reported.
@@ -928,7 +928,7 @@ void main() {
       expect(layout.length, 6);
     });
 
-    test('monitoring → 8 items', () async {
+    test('monitoring → 9 items', () async {
       final container = await createInitializedContainer();
       addTearDown(container.dispose);
 
@@ -938,10 +938,10 @@ void main() {
 
       final layout =
           container.read(uspSliverDashboardControllerProvider).exportLayout();
-      expect(layout.length, 8);
+      expect(layout.length, 9);
     });
 
-    test('professional → 18 items', () async {
+    test('professional → 19 items', () async {
       final container = await createInitializedContainer();
       addTearDown(container.dispose);
 
@@ -951,7 +951,7 @@ void main() {
 
       final layout =
           container.read(uspSliverDashboardControllerProvider).exportLayout();
-      expect(layout.length, 18);
+      expect(layout.length, 19);
     });
 
     test('saves preset layout to prefs', () async {
@@ -1132,7 +1132,7 @@ void main() {
               .read(uspSliverDashboardControllerProvider)
               .exportLayout()
               .length,
-          18); // speedTest disabled (#857)
+          19); // speedTest disabled (#857)
 
       await notifier.applyPreset(UspDashboardPreset.monitoring);
       expect(
@@ -1140,7 +1140,7 @@ void main() {
               .read(uspSliverDashboardControllerProvider)
               .exportLayout()
               .length,
-          8);
+          9);
     });
 
     test('multiple adds work sequentially', () async {
@@ -1736,7 +1736,7 @@ void main() {
       // `DashboardItemWidget` rebuilds its two intent maps whenever the config
       // is not `identical` to the one it cached (`dashboard_item_widget.dart:449`),
       // and every card holds its own cache. Handing each controller a freshly
-      // built config would re-key all 18 of them on every preset and every
+      // built config would re-key all 19 of them on every preset and every
       // membership change.
       final container = await createInitializedContainer();
       addTearDown(container.dispose);
