@@ -449,12 +449,18 @@ void main() {
     expect(router.received.where(_isInstallRequest), hasLength(1),
         reason: 'the install did start while logged in');
     expect(container.read(firmwareUpdateProvider).isUpdating, isTrue);
+    expect(container.read(firmwareUpdateCandidateProvider), isNotNull,
+        reason: 'the install saved the nodes it updates');
 
     final after = await logOut(tester);
     await started;
 
     expect(after.where((r) => r.carriesCredential), isEmpty);
     expect(container.read(firmwareUpdateProvider).isUpdating, isFalse);
+    // From the review of #1956 (W3): the next login, maybe to another router,
+    // would show these nodes in place of its own.
+    expect(container.read(firmwareUpdateCandidateProvider), isNull,
+        reason: "the install's saved nodes go with its login");
   });
 
   /// Logged in, with one update found and its install started. The router
@@ -520,11 +526,15 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
     }
     expect(checkIsOut(), isTrue, reason: "the completion's check is out");
+    expect(container.read(firmwareUpdateCandidateProvider), isNotNull,
+        reason: 'the install saved the nodes it updates');
 
     final after = await logOut(tester);
 
     expect(after.where((r) => r.carriesCredential), isEmpty);
     expect(container.read(firmwareUpdateProvider).isUpdating, isFalse);
+    expect(container.read(firmwareUpdateCandidateProvider), isNull,
+        reason: "a finished install's saved nodes go with its login too");
     // Polling started again would not show at the router here: its polls are
     // answered from the command cache, whose expiry reads the real clock. Its
     // state would, since logout() reset it and any poll writes it again.

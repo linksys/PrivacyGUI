@@ -277,10 +277,13 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
         if (error is JNAPError) return;
         if (error is LoggedOutException) {
           // The router goes on installing, but nothing here follows it any
-          // more, so nothing else would ever turn the spinner off.
+          // more, so nothing else would ever turn the spinner off. The nodes
+          // the install saved are not put back, as a refused install's are:
+          // the logout has cleared them.
           logger.i('[FIRMWARE]: Update firmware: no longer followed, '
               'logged out');
           state = state.copyWith(isUpdating: false);
+          benchmark.end();
           return;
         }
         logger.e('[FIRMWARE]: Update firmware: status check failed',
