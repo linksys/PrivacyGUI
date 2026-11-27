@@ -378,16 +378,10 @@ class ChannelCongestionRadioUIModel extends Equatable {
   });
 
   /// [utilization] as a whole percentage, or null when unknown.
-  int? get utilizationPercent {
-    final value = utilization;
-    return value == null ? null : (value * 100 / 255).round();
-  }
+  int? get utilizationPercent => utilizationToPercent(utilization);
 
   /// Whether the channel is at or above [busyChannelUtilization] (50 %).
-  bool get isBusy {
-    final value = utilization;
-    return value != null && value >= busyChannelUtilization;
-  }
+  bool get isBusy => isBusyUtilization(utilization);
 
   @override
   List<Object?> get props => [band, channel, utilization];

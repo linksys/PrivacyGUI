@@ -85,3 +85,14 @@ List<int> filterDfsChannels(
 /// and the diagnostics congestion step warns when the channel a radio is on
 /// reaches it (#1778).
 const busyChannelUtilization = 128;
+
+/// A channel utilization (0–255) as a whole percentage of the channel's
+/// airtime, or null when it is unknown. The one conversion for the Channels
+/// tab, Channel Finder and the diagnostics congestion step (#1778).
+int? utilizationToPercent(int? utilization) =>
+    utilization == null ? null : (utilization * 100 / 255).round();
+
+/// Whether a channel utilization (0–255) is at or above
+/// [busyChannelUtilization]. Unknown is not busy.
+bool isBusyUtilization(int? utilization) =>
+    utilization != null && utilization >= busyChannelUtilization;

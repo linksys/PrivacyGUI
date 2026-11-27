@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/core/utils/wifi_channel.dart';
 import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 
 /// Presentation Layer Model for a WiFi radio with its access points.
@@ -87,8 +88,7 @@ class WifiRadioUIModel extends Equatable with DiagnosticLoggable {
 
   /// [utilization] as a whole percent of the channel's airtime, or null when
   /// it is unknown.
-  int? get utilizationPercent =>
-      utilization == null ? null : (utilization! * 100 / 255).round();
+  int? get utilizationPercent => utilizationToPercent(utilization);
 
   /// This radio with [utilization] replaced — null makes it unknown — and
   /// everything else as it was: the Channels tab's refresh re-reads only that

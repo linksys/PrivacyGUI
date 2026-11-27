@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/core/utils/wifi_channel.dart';
 
 /// Which part of a scan is running, for the progress text.
 enum ChannelFinderScanStage {
@@ -59,10 +60,7 @@ class ChannelScanUIModel extends Equatable {
   });
 
   /// [utilization] as a whole percentage, or null when unknown.
-  int? get utilizationPercent {
-    final value = utilization;
-    return value == null ? null : (value * 100 / 255).round();
-  }
+  int? get utilizationPercent => utilizationToPercent(utilization);
 
   /// Signal of the strongest network on this channel, or null when none.
   int? get strongestSignalDbm =>

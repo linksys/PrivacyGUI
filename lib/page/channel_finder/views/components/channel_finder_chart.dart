@@ -88,7 +88,7 @@ class ChannelFinderChart extends StatelessWidget {
   final other = <double>[];
   for (final channel in band.channels) {
     final value = (channel.utilizationPercent ?? 0).toDouble();
-    final isBusy = (channel.utilization ?? 0) >= busyChannelUtilization;
+    final isBusy = isBusyUtilization(channel.utilization);
     busy.add(isBusy ? value : 0);
     inUse.add(!isBusy && channel.isInUse ? value : 0);
     other.add(!isBusy && !channel.isInUse ? value : 0);

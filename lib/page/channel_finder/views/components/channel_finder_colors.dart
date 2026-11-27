@@ -16,7 +16,7 @@ Color channelBusynessColor(
   required bool isInUse,
 }) {
   final theme = Theme.of(context);
-  if (utilization != null && utilization >= busyChannelUtilization) {
+  if (isBusyUtilization(utilization)) {
     return channelBusyColor(context);
   }
   if (utilization != null && isInUse) return theme.colorScheme.primary;
