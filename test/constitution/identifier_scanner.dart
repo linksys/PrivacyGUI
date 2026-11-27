@@ -74,8 +74,9 @@ List<Finding> findLiteralSemanticLabels(Map<String, String> sources) =>
 
 /// The public widget classes that [sources] declare (constitution 11.4): each
 /// public class that extends one of [bases], or another widget class of
-/// [sources], in whichever file that one is. The default base is `Widget`,
-/// which finds the widgets of the Flutter SDK itself.
+/// [sources], in whichever file that one is, whether it is declared with
+/// `extends` or as a mixin application, `class X = Y with Z;`. The default
+/// base is `Widget`, which finds the widgets of the Flutter SDK itself.
 Set<String> widgetClassesIn(
   Map<String, String> sources, {
   Set<String> bases = const {'Widget'},
@@ -83,10 +84,8 @@ Set<String> widgetClassesIn(
   final superclassOf = <String, String>{
     for (final source in sources.values)
       for (final declaration in parseDart(source).declarations)
-        if (declaration is ClassDeclaration &&
-            declaration.extendsClause != null)
-          declaration.name.lexeme:
-              declaration.extendsClause!.superclass.name2.lexeme,
+        if (_superclassOf(declaration) case final superclass?)
+          (declaration as NamedCompilationUnitMember).name.lexeme: superclass,
   };
   bool isWidget(String name, Set<String> seen) {
     final superclass = superclassOf[name];
@@ -128,6 +127,16 @@ List<Finding> _scan(
   });
   return findings;
 }
+
+/// The name of the class that [declaration] extends, when it declares a class
+/// with a superclass: `class X extends Y` or `class X = Y with Z`.
+String? _superclassOf(CompilationUnitMember declaration) =>
+    switch (declaration) {
+      ClassDeclaration(:final extendsClause?) =>
+        extendsClause.superclass.name2.lexeme,
+      ClassTypeAlias(:final superclass) => superclass.name2.lexeme,
+      _ => null,
+    };
 
 /// The name of a named argument.
 String _argumentName(NamedExpression argument) => argument.name.label.name;

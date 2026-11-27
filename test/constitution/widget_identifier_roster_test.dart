@@ -758,7 +758,7 @@ const Map<String, Set<String>> _onlyFrom = {
 final Map<String, Future<void> Function(WidgetTester tester)> _reveal = {
   'AppDropdownButton -> {id}-item-a': _tapAndSettle(_dropdownButton),
   'AppDropdownButton -> {id}-item-b': _tapAndSettle(_dropdownButton),
-  'AppPopupButton -> {id}-menu': _tapAndSettle(find.text('Open')),
+  'AppPopupButton -> {id}-menu': _tapAndSettle(find.byType(AppPopupButton)),
   'AppDropdownMenu -> {id}-item-a': _tapAndSettle(_dropdownMenu),
   'AppDropdownMenu -> {id}-item-b': _tapAndSettle(_dropdownMenu),
   'AppSlideActionContainer -> {id}-delete': _slideOpen,
@@ -788,6 +788,16 @@ typedef _Component = ({
   Map<String, Widget Function(String id)> constructors,
   List<String> identifiers,
 });
+
+/// The roster's rows, as the 11.4 roster table keys them:
+/// `<component> -> <pattern>`.
+Set<String> _rows() => {
+      for (final MapEntry(
+            key: component,
+            value: (:identifiers, constructors: _)
+          ) in _roster.entries)
+        for (final pattern in identifiers) '$component -> $pattern',
+    };
 
 void _noop() {}
 
@@ -849,19 +859,32 @@ void main() {
 
   test('every row of the constitution.md 11.4 roster table is in the roster',
       () {
-    final rostered = {
-      for (final MapEntry(
-            key: component,
-            value: (:identifiers, constructors: _)
-          ) in _roster.entries)
-        for (final pattern in identifiers) '$component -> $pattern',
-    };
-    final stale = listed.difference(rostered);
+    final stale = listed.difference(_rows());
 
     expect(stale, isEmpty,
         reason: 'These rows of the constitution.md 11.4 roster table name no '
             'component and identifier in the roster. Delete them:\n'
             '${bulletList(stale)}');
+  });
+
+  test('every step the roster keys by a row is for a row of the roster', () {
+    final rows = _rows();
+    final unknown = {
+      for (final row in {..._reveal.keys, ..._onlyFrom.keys})
+        if (!rows.contains(row)) row,
+      for (final MapEntry(key: row, value: constructors) in _onlyFrom.entries)
+        for (final constructor in constructors)
+          if (_roster[row.split(' -> ').first]
+                  ?.constructors
+                  .containsKey(constructor) !=
+              true)
+            '$row: $constructor',
+    };
+
+    expect(unknown, isEmpty,
+        reason: 'These keys of _reveal or _onlyFrom name no component and '
+            'identifier, or no constructor, in the roster, so the step they '
+            'key never runs. Fix the key:\n${bulletList(unknown)}');
   });
 
   group('the roster covers plugins/widgets', () {

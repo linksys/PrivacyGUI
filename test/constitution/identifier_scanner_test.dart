@@ -371,6 +371,18 @@ void main() {
       expect(classes, {'AppBase', 'AppChild', 'AppGrandchild'});
     });
 
+    test('a mixin application of a widget is a widget', () {
+      final classes = widgetClassesIn({
+        '$widgets/a.dart': 'class AppMixed = StatelessWidget with AppMixin;\n'
+            'class AppMixedChild extends AppMixed {}\n'
+            'class AppPlain = Object with AppMixin;\n',
+      }, bases: {
+        'StatelessWidget'
+      });
+
+      expect(classes, {'AppMixed', 'AppMixedChild'});
+    });
+
     test('without bases, a widget is a class that extends Widget', () {
       final classes = widgetClassesIn({
         'flutter/framework.dart':
@@ -421,7 +433,8 @@ void main() {
             'AppBar',
             'CupertinoButton',
           ]));
-      expect(classes, isNot(contains('State')));
+      // A class that extends another class, but not a widget.
+      expect(classes, isNot(contains('TextEditingController')));
     });
   });
 

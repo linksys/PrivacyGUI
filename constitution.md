@@ -753,7 +753,7 @@ A widget test does not see this by itself: `find.bySemanticsIdentifier` finds an
 
 **The roster.** `test/constitution/widget_identifier_roster_test.dart` pumps every public constructor of each component in its roster with an identifier, and checks each identifier the component exposes: `find.bySemanticsIdentifier` finds one node, and the node the engine receives, which is that node or the parent it merges into, carries the identifier and is not a text field. PrivacyGUI-Widgets has no CI of its own, and 7.1 leaves `plugins/**` out of analysis, so this test in this repository is what holds a component to passthrough.
 
-The roster holds every public widget class in `plugins/widgets/lib/widgets/` except the excluded list below (issue #1936). The test finds those classes itself, as every public class that extends a widget class of the Flutter SDK that runs it, or another of them, so a new component fails it until it is in the roster or on the list.
+The roster holds every public widget class in `plugins/widgets/lib/widgets/` except the excluded list below (issue #1936). The test finds those classes itself, as every public class that extends a widget class of the Flutter SDK that runs it, or another of them, so a new component fails it until it is in the roster or on the list. It does not see a class that extends a widget of another package, such as `gap`'s `Gap`: review checks that one (11.5).
 
 An identifier that a component does not expose yet, from every constructor, is a row of the table: the component, the identifier as a pattern over `{id}`, and why. Deleting a row because the component was fixed is not an amendment (9.1). Adding one is.
 
@@ -791,7 +791,7 @@ An identifier that a component does not expose yet, from every constructor, is a
 | `TextInputField` | `base` | The base of `AppTextField`, which carries the identifier. |
 <!-- identifier-excluded:end -->
 
-*Amended 2026-11-27 (#1936): the roster holds every component of `plugins/widgets` that the excluded list does not name, and fails for one that is in neither, so a new component cannot skip 11.4. The list writes out which components the rule's helpers are, with a reason each, and adds the internal bases, which the rule did not name. A component names only the parts it builds, and takes the key of a repeated part from the caller. `LinksysAppBar`'s fixed identifiers, which issue #1935 put in `plugins/widgets`, are written down as the exception they are, with the two this issue adds. An exception is added and a rule tightened, for which 9.2 asks a major number. The version moves to 1.10 instead, as the amendments since 1.4 kept the major number. The team decides whether that holds (9.3).*
+*Amended 2026-11-27 (#1936): the roster holds every component of `plugins/widgets` that the excluded list does not name, and fails for one that is in neither, so a new component cannot skip 11.4. The list writes out which components the rule's helpers are, with a reason each, and adds the internal bases, which the rule did not name. A component names only the parts it builds, and takes the key of a repeated part from the caller. `LinksysAppBar`'s fixed identifiers, which issue #1935 put in `plugins/widgets`, are written down as the exception they are, with the two this issue adds. An exception is added and a rule tightened, for which 9.2 asks a major number. The version moves to 1.10 instead, as the amendments since 1.4 kept the major number. The team approved it in the review of PR #2004 on 2026-11-27 (9.3).*
 
 ### 11.5 Code review checklist (2.x 16.5)
 
@@ -803,9 +803,9 @@ Review checks that:
 - a change that renames an identifier, or moves a hook from `semanticLabel` to `identifier`, changes the tests that locate it in the same change (11.4);
 - identifiers follow 11.3, and an instance key comes from the item's data through a pure, unit-tested function, never from a row index or translated text;
 - content that no test touches has no identifier (11.2);
-- a new or changed component in `plugins/widgets` is in the roster and passes it, or has its row, or is on the excluded list for a reason that holds (11.4).
+- a new or changed component in `plugins/widgets` is in the roster and passes it, or has its row, or is on the excluded list for a reason that holds, including one that extends another package's widget, which the roster test does not see (11.4).
 
-*Amended 2026-11-27 (#1936): the last item checks the excluded list too, now that 11.4 has one, and **Enforced by** names what the roster test checks now.*
+*Amended 2026-11-27 (#1936): the last item checks the excluded list too, now that 11.4 has one, and a component that extends another package's widget, which the roster test does not see. **Enforced by** names what the roster test checks now.*
 
 **Enforced by**: Test, for the four tables; review for the rest (11.5).
 
