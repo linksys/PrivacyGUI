@@ -29,8 +29,9 @@ class RemoteSseStrategy implements SseOperationStrategy {
 
   /// Whether a reconnect re-registration walk is currently running.
   ///
-  /// Mirrors `SseManager._registrationInProgress`, which guards the sibling
-  /// path — see [onSseStreamOpened] for why the walk needs it.
+  /// The sibling path, the core set's registration, joins one in flight
+  /// through the registry instead (#1887) — see [onSseStreamOpened] for why
+  /// this walk needs its own guard.
   bool _reRegistrationInProgress = false;
 
   RemoteSseStrategy(this._bridge);
@@ -121,14 +122,19 @@ class RemoteSseStrategy implements SseOperationStrategy {
     }
   }
 
-  /// A 401 here is thrown and swallowed below, and ends nothing when it should
-  /// not (#1666): logout reaches this through `unregisterAll()` after
-  /// `session.end()` has spent the credential, in a session `logout()` has
-  /// already ended; a Remote Assistance re-activation's dispose runs it on the
-  /// old bridge, whose ticket the new session has superseded. Both are ignored
-  /// by `SessionAuthGate`, which is what closed the loop the `teardown:` flag
-  /// used to (721939aa8). A single handler's cleanup in a live session reports
-  /// its 401 like any other request.
+  /// A 401 here is thrown and swallowed below. The callers are the last
+  /// holder's release of one id and `SseManager.dispose`'s `unregisterAll()`,
+  /// and both ignore the failure. Logout itself does not reach this: its
+  /// `disconnect()` forgets every subscription, so a release that arrives later
+  /// sends nothing (#1887).
+  ///
+  /// What the 401 means is `SessionAuthGate`'s (#1666), with no opt-out of its
+  /// own. A release that arrives after `session.end()` has spent the credential
+  /// runs in a session `logout()` has already ended. A Remote Assistance
+  /// re-activation's dispose runs on the old bridge, whose ticket the new
+  /// session has superseded. The gate ignores both, which is what the
+  /// `teardown:` flag used to do (721939aa8). A release in a live session
+  /// reports its 401 like any other request.
   @override
   Future<void> unregisterSubscriptions(List<String> subscriptionIds) async {
     for (final id in subscriptionIds) {

@@ -171,7 +171,7 @@ class UspSliverDashboardControllerNotifier
   /// caches the intent maps it derives from this and rebuilds them whenever the
   /// config is not `identical` to the cached one
   /// (`dashboard_item_widget.dart:449`), so a fresh config per controller would
-  /// re-key all 18 caches on every preset and every membership change.
+  /// re-key all 19 caches on every preset and every membership change.
   ///
   /// What is dropped, and why (#1395). None of these existed at 0.9.1, so each
   /// entry keeps today's behaviour rather than taking one away:
@@ -1108,7 +1108,7 @@ class UspSliverDashboardControllerNotifier
     //
     // Only a spec declaring no `DisplayMode.normal` constraints produces an
     // infinite bound — [LayoutItemFactory.fromSpec]'s fallback — which no
-    // registered caller supplies: all eighteen specs declare them, and so does
+    // registered caller supplies: all nineteen specs declare them, and so does
     // `PackageWidgetTemplate.toWidgetSpec`. The `spec:` parameter above is the
     // hole, and it is covered by a test rather than by that coincidence.
     final item = LayoutItemFactory.fromSpec(

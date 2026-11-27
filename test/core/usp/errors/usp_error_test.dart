@@ -142,6 +142,17 @@ void main() {
   });
 
   group('mapUspErrorToServiceError', () {
+    test('an error that is already a ServiceError comes back unchanged', () {
+      // A read the request throttler gave up on is a TimeoutError before any
+      // service sees it, and most read services hand whatever they catch to
+      // this mapper. Re-mapped, it became an UnexpectedError (#1831).
+      const timeout = TimeoutError(detail: 'Throttler: request exceeded 15s');
+      const refusal = InvalidInputError(code: 7012);
+
+      expect(identical(mapUspErrorToServiceError(timeout), timeout), isTrue);
+      expect(identical(mapUspErrorToServiceError(refusal), refusal), isTrue);
+    });
+
     // #1533: a refused synchronous Operate. usp-client 0.13.0 reports it as
     // `success: false` with the agent's code in band, and `UspClient
     // .extractOperateResult` throws it in this shape. Before that it read as a

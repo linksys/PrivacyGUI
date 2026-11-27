@@ -96,8 +96,9 @@ void main() {
     expect(kAutoIPoEPageCase.forbids, contains(AppLoader));
   });
 
-  // "Cases" and not "pages", corrected by #1489: this list is seventy-two cases over
-  // forty-nine pages (recounted at #1511 P0, which deleted one page and its one case),
+  // "Cases" and not "pages", corrected by #1489: this list is seventy-three cases over
+  // fifty pages (recounted at #1511 P0, which deleted one page and its one case, and
+  // at #1778, which added one of each),
   // because several of those pages are swept more than once. The two counts were equal
   // for the whole of #1369 and the group title read "pages"
   // throughout, which is exactly the kind of coincidence a name should not be built on
@@ -142,15 +143,16 @@ void main() {
   // an assertion that does not read it is the failure mode, and copying it to a fifth
   // place is how it becomes hard to notice.
   group(
-      'the gate declares seventy-two cases over forty-nine pages, and which '
-      'seventy-two is a decision', () {
+      'the gate declares seventy-three cases over fifty pages, and which '
+      'seventy-three is a decision', () {
     test(
         'kPageSurfaceCases holds the pilot two, wave 1\'s five, wave 2\'s nine, '
         'wave 3\'s five, wave 4\'s twenty-one, #1489\'s five non-default tabs, '
         '#1549\'s split page, #1554\'s two fixture states, #1602\'s two '
         'completion branches plus eight diagnostics screens, #1580\'s '
         'remote-only page, #1636\'s third Wi-Fi tab, #1611\'s three '
-        'rules-full tabs, #1664\'s Auto-IPoE page and #641\'s DDNS page', () {
+        'rules-full tabs, #1664\'s Auto-IPoE page, #641\'s DDNS page and '
+        '#1778\'s Channel Finder page', () {
       expect(
         kPageSurfaceCases.map((c) => c.id),
         [
@@ -277,6 +279,9 @@ void main() {
           'pnp_wifi_step',
           'pnp_guest_step',
           'pnp_your_network_step',
+          // #1778: the Channel Finder page, arriving with the `lib/` change that
+          // creates it — the 55th.
+          'channel_finder',
         ],
         // Updated by #1377, #1378, #1379 and #1380, and the wording is the point of
         // the test.
@@ -582,6 +587,10 @@ void main() {
         const {
           'pnp_flow_frame_firmware',
           'unified_diagnostics_manual_tools',
+          // #1778: each channel row's busyness bar is a determinate linear
+          // AppLoader whose value is the utilization it reports, the manual
+          // tools' sentence.
+          'channel_finder',
         },
         reason:
             'pnp_flow_frame_firmware exists to say "we are installing firmware, '

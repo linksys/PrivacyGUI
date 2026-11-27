@@ -303,8 +303,8 @@ final offlineExtenderNow =
 ///
 /// So it carries only what that row has: the name (`X_LINKSYS_FriendlyName`)
 /// and when it went offline. No row to rename through either: the builder
-/// leaves it out (#1840). No backhaul, no
-/// address, no firmware or serial, and the model is empty, as the row's
+/// leaves it out, so the page offers no rename. No backhaul, no address, no
+/// firmware or serial, and the model is empty, as the row's
 /// `X_LINKSYS_ModelName` was on the bench. [slaveNodeOffline] keeps its Wi-Fi
 /// backhaul and model because the width sweeps need its wider tiles; this
 /// scene is the shape the page meets on a real mesh.

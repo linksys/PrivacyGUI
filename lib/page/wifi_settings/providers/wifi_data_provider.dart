@@ -220,18 +220,25 @@ class WifiDataNotifier extends AsyncNotifier<WifiData> {
   /// failed read keeps the previous readings, as [_refreshFromPush] keeps the
   /// previous value.
   Future<void> refreshUtilization() async {
-    final current = state.valueOrNull;
-    if (current == null || state.isLoading) return;
-    final Map<String, int> byRadioPath;
     try {
-      byRadioPath = await ref
-          .read(uspWifiDataServiceProvider)
-          .fetchUtilizationByRadioPath(current.codegenContext);
+      await refreshUtilizationOrThrow();
     } on ServiceError catch (e) {
       logger.w('[WiFi] utilization refresh failed, keeping the previous '
           'readings: $e');
-      return;
     }
+  }
+
+  /// [refreshUtilization] for a caller that must not take the previous
+  /// readings for new ones: a failed read throws its [ServiceError], and the
+  /// previous readings stay published. The diagnostics congestion step uses
+  /// it, so it reports a read that failed instead of judging a stale reading
+  /// (#1778).
+  Future<void> refreshUtilizationOrThrow() async {
+    final current = state.valueOrNull;
+    if (current == null || state.isLoading) return;
+    final byRadioPath = await ref
+        .read(uspWifiDataServiceProvider)
+        .fetchUtilizationByRadioPath(current.codegenContext);
     final latest = state.valueOrNull;
     if (latest == null || state.isLoading) return;
     state = AsyncData(WifiData(

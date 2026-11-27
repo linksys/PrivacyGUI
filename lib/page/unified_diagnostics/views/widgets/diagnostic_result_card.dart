@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/util/network_utils.dart';
@@ -8,6 +7,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 import '../../models/diagnostic_result.dart';
 import '../../models/diagnostic_state.dart';
 import '../../models/diagnostic_probe_ui_models.dart';
+import 'signal_level_label.dart';
 
 /// A card displaying a single diagnostic result with metric-focused layout.
 ///
@@ -33,7 +33,7 @@ class DiagnosticResultCard extends StatelessWidget {
 
     final severityColor =
         _getSeverityColor(result.severity, colorScheme, appColors);
-    final (title, metric, unit, subtitle) = _extractMetrics(result);
+    final (title, metric, unit, subtitle) = _extractMetrics(context, result);
 
     return LayoutBlock(
       onTap: _hasDetails ? () => _showDetailsSheet(context, colorScheme) : null,
@@ -86,7 +86,7 @@ class DiagnosticResultCard extends StatelessWidget {
   }
 
   void _showDetailsSheet(BuildContext context, ColorScheme colorScheme) {
-    final (title, _, _, _) = _extractMetrics(result);
+    final (title, _, _, _) = _extractMetrics(context, result);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -123,95 +123,111 @@ class DiagnosticResultCard extends StatelessWidget {
   }
 
   (String title, String metric, String unit, String subtitle) _extractMetrics(
+    BuildContext context,
     DiagnosticStepUIModel result,
   ) {
+    final l = loc(context);
     return switch (result) {
       WanStatusCheckUIModel r => (
-          'WAN Status',
-          r.isUp ? 'Up' : 'Down',
+          l.wanStatus,
+          r.isUp ? l.diagnosticsWanUp : l.diagnosticsWanDown,
           '',
-          r.ipAddress.isNotEmpty ? r.ipAddress : 'No IP assigned',
+          r.ipAddress.isNotEmpty ? r.ipAddress : l.diagnosticsNoIpAssigned,
         ),
       PingCheckUIModel r => (
-          _getPingTitle(r.step),
+          _pingTitle(context, r.step),
           r.allFailed ? '--' : '${r.avgResponseTime}',
           r.allFailed ? '' : 'ms',
           r.allFailed
-              ? 'Connection failed'
-              : '${r.successCount}/${r.totalCount} packets received',
+              ? l.diagnosticsConnectionFailed
+              : l.diagnosticsPacketsReceived(r.successCount, r.totalCount),
         ),
       WifiSignalCheckUIModel r => (
-          'WiFi Signal',
+          l.wifiSignal,
           r.connectedDevices == 0 ? '--' : '${r.rssi}',
           r.connectedDevices == 0 ? '' : 'dBm',
           r.connectedDevices == 0
-              ? 'No wireless clients'
-              : '${r.connectedDevices} clients on ${r.band}',
+              ? l.diagnosticsNoWirelessClients
+              : l.diagnosticsClientsOnBand(r.connectedDevices, r.band),
         ),
       DhcpPoolCheckUIModel r => (
-          'DHCP Pool',
+          l.diagnosticsDhcpPool,
           r.dhcpEnabled ? '${(r.usageRatio * 100).toInt()}' : '--',
           r.dhcpEnabled ? '%' : '',
           r.dhcpEnabled
-              ? '${r.usedLeases} of ${r.capacity} addresses used'
-              : 'DHCP disabled',
+              ? l.diagnosticsAddressesUsed(r.usedLeases, r.capacity)
+              : l.dhcpDisabled,
         ),
       ConnectedDevicesCheckUIModel r => (
-          'Connected Devices',
+          l.connectedDevices,
           '${r.totalDevices}',
           '',
-          '${r.activeDevices} active',
+          l.diagnosticsActiveDevices(r.activeDevices),
         ),
       DeviceIssuesCheckUIModel r => (
-          'Device Issues',
+          l.deviceIssues,
           '${r.devicesWithIssues}',
           '',
           r.devicesWithIssues == 0
-              ? 'All devices healthy'
-              : '${r.totalDevices} total devices',
+              ? l.diagnosticsAllDevicesHealthy
+              : l.diagnosticsTotalDevices(r.totalDevices),
         ),
       WifiCoverageCheckUIModel r => (
-          'WiFi Coverage',
+          l.wifiCoverage,
           '${r.averageSignalStrength}',
           'dBm',
           r.weakSignalDevices.isEmpty
-              ? '${r.totalWirelessDevices} devices with good signal'
-              : '${r.weakSignalDevices.length} devices with weak signal',
+              ? l.diagnosticsDevicesGoodSignal(r.totalWirelessDevices)
+              : l.diagnosticsDevicesWeakSignal(r.weakSignalDevices.length),
         ),
       DnsLookupCheckUIModel r => (
-          'DNS Resolution',
+          l.dnsResolution,
           r.hasResolved ? '${r.responseTimeMs}' : '--',
           r.hasResolved ? 'ms' : '',
-          r.hasResolved ? 'Resolved ${r.hostName}' : 'Failed to resolve',
+          r.hasResolved
+              ? l.diagnosticsResolvedHost(r.hostName)
+              : l.failedToResolve,
         ),
       IntermittentCheckUIModel r => (
-          'Connection Stability',
+          l.diagnosticsConnectionStability,
           '${(r.pingSuccessRate * 100).toInt()}',
           '%',
-          'Jitter: ${r.jitterMs}ms, Latency: ${r.averageLatencyMs}ms',
+          l.diagnosticsJitterAndLatency(r.jitterMs, r.averageLatencyMs),
         ),
       MeshBackhaulCheckUIModel r => (
-          'Mesh Backhaul',
+          l.diagnosticsMeshBackhaul,
           r.nodes.isEmpty ? '--' : '${r.nodes.length}',
-          r.nodes.isEmpty ? '' : 'nodes',
-          r.nodes.isEmpty ? 'Single router setup' : _getMeshSummary(r),
+          r.nodes.isEmpty ? '' : l.diagnosticsNodesUnit(r.nodes.length),
+          r.nodes.isEmpty
+              ? l.diagnosticsSingleRouter
+              : _getMeshSummary(context, r),
         ),
       TracerouteCheckUIModel r => (
-          'Network Path',
+          l.diagnosticsNetworkPath,
           '${r.hops.length}',
-          'hops',
+          l.diagnosticsHopsUnit(r.hops.length),
           r.slowHops.isEmpty
-              ? 'All hops responsive'
-              : '${r.slowHops.length} slow hops detected',
+              ? l.diagnosticsAllHopsResponsive
+              : l.diagnosticsSlowHops(r.slowHops.length),
+        ),
+      ChannelCongestionCheckUIModel r => (
+          l.diagnosticsChannelCongestion,
+          r.busiest?.utilizationPercent?.toString() ?? '--',
+          r.busiest?.utilizationPercent == null ? '' : '%',
+          switch (r.busiest) {
+            ChannelCongestionRadioUIModel(:final band, :final channel?) =>
+              l.diagnosticsBusiestChannel(channel, band),
+            _ => l.diagnosticsNoChannelReading,
+          },
         ),
       _ when result.step == DiagnosticStep.runningSpeedTest => (
-          'Speed Test',
+          l.speedTest,
           _getSpeedMetric(result.rawData),
           'Mbps',
-          _getSpeedSubtitle(result.rawData),
+          _getSpeedSubtitle(context, result.rawData),
         ),
       _ => (
-          _getStepTitle(result.step),
+          _stepTitle(context, result.step),
           '--',
           '',
           '',
@@ -219,20 +235,15 @@ class DiagnosticResultCard extends StatelessWidget {
     };
   }
 
-  String _getPingTitle(DiagnosticStep step) {
-    return switch (step) {
-      DiagnosticStep.pingGateway => 'Gateway',
-      DiagnosticStep.pingDns => 'DNS Server',
-      DiagnosticStep.pingInternet => 'Internet',
-      _ => 'Ping',
-    };
-  }
-
-  String _getMeshSummary(MeshBackhaulCheckUIModel r) {
+  String _getMeshSummary(BuildContext context, MeshBackhaulCheckUIModel r) {
     final issues = <String>[];
-    if (r.poorCount > 0) issues.add('${r.poorCount} poor');
-    if (r.weakCount > 0) issues.add('${r.weakCount} weak');
-    if (issues.isEmpty) return 'All nodes healthy';
+    if (r.poorCount > 0) {
+      issues.add(loc(context).diagnosticsPoorNodes(r.poorCount));
+    }
+    if (r.weakCount > 0) {
+      issues.add(loc(context).diagnosticsWeakNodes(r.weakCount));
+    }
+    if (issues.isEmpty) return loc(context).diagnosticsAllNodesHealthy;
     return issues.join(', ');
   }
 
@@ -241,35 +252,17 @@ class DiagnosticResultCard extends StatelessWidget {
     return download.toStringAsFixed(0);
   }
 
-  String _getSpeedSubtitle(Map<String, dynamic> rawData) {
+  String _getSpeedSubtitle(BuildContext context, Map<String, dynamic> rawData) {
     final upload = (rawData['uploadMbps'] as num?)?.toDouble();
     final latency = rawData['latencyMs'] as int?;
     final parts = <String>[];
     if (upload != null && upload > 0) {
-      parts.add('Upload: ${upload.toStringAsFixed(0)} Mbps');
+      parts.add(loc(context).diagnosticsUploadSpeed(upload.toStringAsFixed(0)));
     }
     if (latency != null) {
-      parts.add('Latency: ${latency}ms');
+      parts.add(loc(context).diagnosticsLatencyMs(latency));
     }
     return parts.join(' | ');
-  }
-
-  String _getStepTitle(DiagnosticStep step) {
-    return switch (step) {
-      DiagnosticStep.checkingWanStatus => 'WAN Status',
-      DiagnosticStep.checkingDhcp => 'DHCP',
-      DiagnosticStep.checkingDhcpPool => 'DHCP Pool',
-      DiagnosticStep.pingGateway => 'Gateway',
-      DiagnosticStep.pingDns => 'DNS Server',
-      DiagnosticStep.pingInternet => 'Internet',
-      DiagnosticStep.dnsLookup => 'DNS Lookup',
-      DiagnosticStep.runningSpeedTest => 'Speed Test',
-      DiagnosticStep.checkingWifiSignal => 'WiFi Signal',
-      DiagnosticStep.checkingConnectedDevices => 'Connected Devices',
-      DiagnosticStep.runningTraceroute => 'Traceroute',
-      DiagnosticStep.checkingMeshBackhaul => 'Mesh Backhaul',
-      _ => step.name,
-    };
   }
 
   List<Widget> _buildAdditionalDetails(
@@ -299,10 +292,19 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (icon, label) = switch (severity) {
-      DiagnosticSeverity.ok => (Icons.check_circle_outline, 'OK'),
-      DiagnosticSeverity.warning => (Icons.warning_amber_outlined, 'Warning'),
-      DiagnosticSeverity.error => (Icons.error_outline, 'Error'),
-      DiagnosticSeverity.skipped => (Icons.remove_circle_outline, 'Skipped'),
+      DiagnosticSeverity.ok => (
+          Icons.check_circle_outline,
+          loc(context).diagnosticsStatusOk
+        ),
+      DiagnosticSeverity.warning => (
+          Icons.warning_amber_outlined,
+          loc(context).warning
+        ),
+      DiagnosticSeverity.error => (Icons.error_outline, loc(context).error),
+      DiagnosticSeverity.skipped => (
+          Icons.remove_circle_outline,
+          loc(context).skipped
+        ),
     };
 
     return Row(
@@ -333,7 +335,9 @@ class _MetricDisplay extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.baseline,
       textBaseline: TextBaseline.alphabetic,
       children: [
-        AppText.displaySmall(metric, color: color),
+        // Flexible, so a word too wide for the card (a translated "Down", say)
+        // goes on to a second line instead of overflowing (#1778).
+        Flexible(child: AppText.displaySmall(metric, color: color)),
         if (unit.isNotEmpty) ...[
           AppGap.xs(),
           AppText.titleMedium(unit, color: color),
@@ -424,7 +428,8 @@ class _MeshNodeRow extends StatelessWidget {
                 children: [
                   if (!node.isWired && node.signalStrengthDbm != 0)
                     _buildChip(
-                      '${node.signalStrengthDbm} dBm (${getWifiSignalLevel(node.signalStrengthDbm).displayTitle})',
+                      '${node.signalStrengthDbm} dBm '
+                      '(${diagnosticsSignalLevelLabel(context, node.signalStrengthDbm)})',
                       colorScheme,
                     ),
                   if (node.lastDownlinkRateKbps > 0)
@@ -508,7 +513,6 @@ class _RadioStatChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final signalLevel = getWifiSignalLevel(radio.averageRssi);
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.sm,
@@ -524,12 +528,13 @@ class _RadioStatChip extends StatelessWidget {
           AppText.labelSmall(radio.band),
           AppGap.xs(),
           AppText.bodySmall(
-            '${radio.averageRssi} dBm (${signalLevel.displayTitle})',
+            '${radio.averageRssi} dBm '
+            '(${diagnosticsSignalLevelLabel(context, radio.averageRssi)})',
             color: colorScheme.onSurfaceVariant,
           ),
           AppGap.sm(),
           AppText.bodySmall(
-            '${radio.clientCount} clients',
+            loc(context).diagnosticsClients(radio.clientCount),
             color: colorScheme.onSurfaceVariant,
           ),
         ],
@@ -551,7 +556,8 @@ class DiagnosticIssueCard extends StatelessWidget {
 
     final isError = result.severity == DiagnosticSeverity.error;
     final severityColor = isError ? colorScheme.error : colorScheme.tertiary;
-    final (title, metric, unit, subtitle) = _extractIssueMetrics(result);
+    final (title, metric, unit, subtitle) =
+        _extractIssueMetrics(context, result);
 
     return LayoutBlock(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -580,7 +586,7 @@ class DiagnosticIssueCard extends StatelessWidget {
               ),
               AppGap.xs(),
               AppText.labelSmall(
-                isError ? 'Error' : 'Warning',
+                isError ? loc(context).error : loc(context).warning,
                 color: severityColor,
               ),
             ],
@@ -618,56 +624,50 @@ class DiagnosticIssueCard extends StatelessWidget {
   }
 
   (String, String, String, String) _extractIssueMetrics(
+    BuildContext context,
     DiagnosticStepUIModel result,
   ) {
+    final l = loc(context);
     return switch (result) {
       MeshBackhaulCheckUIModel r => (
-          'Mesh Backhaul',
+          l.diagnosticsMeshBackhaul,
           '${r.nodes.length}',
-          'nodes',
-          '${r.poorCount + r.weakCount} with issues',
+          l.diagnosticsNodesUnit(r.nodes.length),
+          l.diagnosticsNodesWithIssues(r.poorCount + r.weakCount),
         ),
       WifiSignalCheckUIModel r => (
-          'WiFi Signal',
+          l.wifiSignal,
           '${r.rssi}',
           'dBm',
           r.isWeakSignal
-              ? 'Weak signal detected'
-              : '${r.connectedDevices} clients',
+              ? l.diagnosticsWeakSignalDetected
+              : l.diagnosticsClients(r.connectedDevices),
         ),
       PingCheckUIModel r => (
-          _getPingTitleStatic(r.step),
+          _pingTitle(context, r.step),
           r.allFailed ? '--' : '${r.avgResponseTime}',
           r.allFailed ? '' : 'ms',
-          r.allFailed ? 'Connection failed' : '${r.failureCount} packets lost',
+          r.allFailed
+              ? l.diagnosticsConnectionFailed
+              : l.diagnosticsPacketsLost(r.failureCount),
         ),
       WanStatusCheckUIModel r => (
-          'WAN Status',
-          r.isUp ? 'Up' : 'Down',
+          l.wanStatus,
+          r.isUp ? l.diagnosticsWanUp : l.diagnosticsWanDown,
           '',
-          r.ipAddress.isEmpty ? 'No IP assigned' : r.ipAddress,
+          r.ipAddress.isEmpty ? l.diagnosticsNoIpAssigned : r.ipAddress,
         ),
       DhcpPoolCheckUIModel r => (
-          'DHCP Pool',
+          l.diagnosticsDhcpPool,
           '${(r.usageRatio * 100).toInt()}',
           '%',
-          r.isExhausted ? 'Pool exhausted' : 'Near capacity',
+          r.isExhausted
+              ? l.diagnosticsPoolExhausted
+              : l.diagnosticsNearCapacity,
         ),
-      _ => (
-          result.step.name,
-          '--',
-          '',
-          result.descriptionKey,
-        ),
-    };
-  }
-
-  static String _getPingTitleStatic(DiagnosticStep step) {
-    return switch (step) {
-      DiagnosticStep.pingGateway => 'Gateway',
-      DiagnosticStep.pingDns => 'DNS Server',
-      DiagnosticStep.pingInternet => 'Internet',
-      _ => 'Ping',
+      // Any other step: its name and no metric. Before #1778 this showed the
+      // step's enum name and its description key, untranslated.
+      _ => (_stepTitle(context, result.step), '--', '', ''),
     };
   }
 
@@ -689,4 +689,33 @@ class DiagnosticIssueCard extends StatelessWidget {
       _ => const [],
     };
   }
+}
+
+/// A ping step's name on a result card.
+String _pingTitle(BuildContext context, DiagnosticStep step) => switch (step) {
+      DiagnosticStep.pingGateway => loc(context).gateway,
+      DiagnosticStep.pingDns => loc(context).dnsServer,
+      DiagnosticStep.pingInternet => loc(context).internet,
+      _ => loc(context).ping,
+    };
+
+/// A step's name on a result card, for a result with no card of its own.
+String _stepTitle(BuildContext context, DiagnosticStep step) {
+  final l = loc(context);
+  return switch (step) {
+    DiagnosticStep.checkingWanStatus => l.wanStatus,
+    DiagnosticStep.checkingDhcp => l.dhcp,
+    DiagnosticStep.checkingDhcpPool => l.diagnosticsDhcpPool,
+    DiagnosticStep.pingGateway => l.gateway,
+    DiagnosticStep.pingDns => l.dnsServer,
+    DiagnosticStep.pingInternet => l.internet,
+    DiagnosticStep.dnsLookup => l.dnsLookupStep,
+    DiagnosticStep.runningSpeedTest => l.speedTest,
+    DiagnosticStep.checkingWifiSignal => l.wifiSignal,
+    DiagnosticStep.checkingChannelCongestion => l.diagnosticsChannelCongestion,
+    DiagnosticStep.checkingConnectedDevices => l.connectedDevices,
+    DiagnosticStep.runningTraceroute => l.traceroute,
+    DiagnosticStep.checkingMeshBackhaul => l.diagnosticsMeshBackhaul,
+    _ => l.unknown,
+  };
 }

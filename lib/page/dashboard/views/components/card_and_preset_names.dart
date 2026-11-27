@@ -37,6 +37,7 @@ extension WidgetSpecName on WidgetSpec {
         'firewall_overview' => l10n.firewallOverview,
         'wifi_performance' => l10n.wifiPerformance,
         'traffic_analysis' => l10n.dashboardCardTrafficAnalysis,
+        'channel_finder' => l10n.channelFinder,
         _ => displayName,
       };
 }

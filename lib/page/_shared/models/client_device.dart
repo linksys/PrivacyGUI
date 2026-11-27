@@ -42,9 +42,10 @@ class ClientInterfaceInfo with EquatableMixin, DiagnosticNamed {
   /// WiFi connection details (null if wired).
   final WifiConnectionInfo? wifi;
 
-  /// This interface's `Device.Hosts.Host.{i}.` row, which a rename of the
-  /// device writes too (#1719). Null for an interface not built from a Hosts
-  /// row.
+  /// This interface's `Device.Hosts.Host.{i}.` row as last read (#1719). Null
+  /// for an interface not built from a Hosts row. A rename of the device
+  /// writes the row that carries [mac] when it saves (#1840), which this need
+  /// not be any more.
   final String? hostInstancePath;
 
   /// Bytes this interface's Hosts row received through the router, from the
@@ -226,13 +227,29 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
   /// Every `Device.Hosts.Host.{i}.` row of this client (#1719): the primary
   /// interface's, then each of [additionalInterfaces]'.
   ///
-  /// A rename writes all of them. devidentd keeps the user's name per MAC and
-  /// rows merge by the FriendlyName it reads back, so naming one row only
-  /// would split the device again.
+  /// These are the rows as last read. A rename does not write to them: rows
+  /// renumber, so it writes the rows that carry [hostRowMacs] when it saves
+  /// (#1840).
   List<String> get hostInstancePaths => [
         if (hostInstancePath != null) hostInstancePath!,
         for (final interface in additionalInterfaces)
           if (interface.hostInstancePath != null) interface.hostInstancePath!,
+      ];
+
+  /// The MAC of each of [hostInstancePaths]' rows, in the same order: the MACs
+  /// a rename writes the name to (#1719, #1840).
+  ///
+  /// All of them, not only the primary. devidentd keeps the user's name per
+  /// MAC, so a row left out keeps its old name, and the device shows it
+  /// whenever that row is the only one present.
+  ///
+  /// A row with no MAC is left out: the rename finds rows by MAC, so it has
+  /// no way to find that one.
+  List<String> get hostRowMacs => [
+        if (hostInstancePath != null && mac.isNotEmpty) mac,
+        for (final interface in additionalInterfaces)
+          if (interface.hostInstancePath != null && interface.mac.isNotEmpty)
+            interface.mac,
       ];
 
   // ─── Data used (#1927) ───

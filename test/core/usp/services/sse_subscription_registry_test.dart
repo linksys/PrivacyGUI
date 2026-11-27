@@ -1,9 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/usp/services/sse_operation_strategy.dart';
 import 'package:privacy_gui/core/usp/services/sse_subscription_registry.dart';
 
 import '../mocks.dart';
+
+const _sub = SubscriptionDef(
+  subscriptionId: 'pkg-w1-valuechange',
+  notifType: 'ValueChange',
+  referenceList: 'Device.Test.',
+);
 
 void main() {
   late MockUspBridgeClient mockBridge;
@@ -26,119 +34,299 @@ void main() {
         )).thenAnswer((_) async => {});
   });
 
+  void verifyRegistered(int times) => verify(() => mockBridge.subscribe(
+        subscriptionId: _sub.subscriptionId,
+        path: any(named: 'path'),
+        notifType: any(named: 'notifType'),
+      )).called(times);
+
+  void verifyNotRegistered() => verifyNever(() => mockBridge.subscribe(
+        subscriptionId: any(named: 'subscriptionId'),
+        path: any(named: 'path'),
+        notifType: any(named: 'notifType'),
+      ));
+
+  void verifyUnregistered(int times) => verify(() => mockBridge.unsubscribe(
+        subscriptionId: _sub.subscriptionId,
+      )).called(times);
+
+  void verifyNotUnregistered() => verifyNever(() => mockBridge.unsubscribe(
+        subscriptionId: any(named: 'subscriptionId'),
+      ));
+
   // ---------------------------------------------------------------------------
-  // registerAll
+  // hold
   // ---------------------------------------------------------------------------
-  group('registerAll', () {
-    test('calls strategy.registerSubscriptions with correct params', () async {
-      await registry.registerAll([
-        SubscriptionDef(
+  group('hold', () {
+    test('registers through the strategy with the subscription\'s params',
+        () async {
+      await registry.hold([
+        const SubscriptionDef(
           subscriptionId: 'wifi-vc',
           notifType: 'ValueChange',
           referenceList: 'Device.WiFi.SSID.',
         ),
-      ]);
+      ], holder: Object());
 
       verify(() => mockBridge.subscribe(
             subscriptionId: 'wifi-vc',
             path: 'Device.WiFi.SSID.',
             notifType: 1, // ValueChange → 1
           )).called(1);
+      expect(registry.activeIds, {'wifi-vc'});
     });
 
-    test('adds to activeIds', () async {
-      await registry.registerAll([
-        SubscriptionDef(
-          subscriptionId: 'test-sub',
-          notifType: 'ValueChange',
-          referenceList: 'Device.Test.',
-        ),
-      ]);
-
-      expect(registry.activeIds, contains('test-sub'));
-    });
-
-    test('duplicate subscriptionId skips strategy call', () async {
-      await registry.registerAll([
-        SubscriptionDef(
-          subscriptionId: 'dup-sub',
-          notifType: 'ValueChange',
-          referenceList: 'Device.Test.',
-        ),
-      ]);
-      await registry.registerAll([
-        SubscriptionDef(
-          subscriptionId: 'dup-sub',
-          notifType: 'ValueChange',
-          referenceList: 'Device.Test.',
-        ),
-      ]);
-
-      verify(() => mockBridge.subscribe(
-            subscriptionId: 'dup-sub',
-            path: any(named: 'path'),
-            notifType: any(named: 'notifType'),
-          )).called(1); // Only 1 call, not 2
-    });
-
-    test('registers multiple subscriptions', () async {
-      await registry.registerAll([
-        SubscriptionDef(
+    test('registers several subscriptions in one call', () async {
+      await registry.hold([
+        const SubscriptionDef(
           subscriptionId: 'sub-1',
           notifType: 'ValueChange',
           referenceList: 'Device.Test.1.',
         ),
-        SubscriptionDef(
+        const SubscriptionDef(
           subscriptionId: 'sub-2',
           notifType: 'ObjectCreation',
           referenceList: 'Device.Test.2.',
         ),
-      ]);
+      ], holder: Object());
 
-      expect(registry.activeIds, containsAll(['sub-1', 'sub-2']));
+      expect(registry.activeIds, {'sub-1', 'sub-2'});
+    });
+
+    test('a second holder of a registered id sends no registration', () async {
+      await registry.hold([_sub], holder: Object());
+      await registry.hold([_sub], holder: Object());
+
+      verifyRegistered(1);
+    });
+
+    test('a second hold of an id in flight joins it, and completes with it',
+        () async {
+      final gate = Completer<Map<String, dynamic>>();
+      when(() => mockBridge.subscribe(
+            subscriptionId: any(named: 'subscriptionId'),
+            path: any(named: 'path'),
+            notifType: any(named: 'notifType'),
+          )).thenAnswer((_) => gate.future);
+
+      var joinedDone = false;
+      final first = registry.hold([_sub], holder: Object());
+      final joined = registry
+          .hold([_sub], holder: Object()).then((_) => joinedDone = true);
+      await Future.delayed(Duration.zero);
+      expect(joinedDone, isFalse, reason: 'the registration is in flight');
+
+      gate.complete({});
+      await Future.wait([first, joined]);
+
+      verifyRegistered(1);
+      expect(registry.activeIds, {_sub.subscriptionId});
+    });
+
+    test('a hold of an id whose unregister is in flight registers after it',
+        () async {
+      final unregistered = Completer<Map<String, dynamic>>();
+      final order = <String>[];
+      when(() => mockBridge.unsubscribe(
+            subscriptionId: any(named: 'subscriptionId'),
+          )).thenAnswer((_) async {
+        final answer = await unregistered.future;
+        order.add('unregister');
+        return answer;
+      });
+      final holder = Object();
+      await registry.hold([_sub], holder: holder);
+      when(() => mockBridge.subscribe(
+            subscriptionId: any(named: 'subscriptionId'),
+            path: any(named: 'path'),
+            notifType: any(named: 'notifType'),
+          )).thenAnswer((_) async {
+        order.add('register');
+        return {};
+      });
+
+      final release = registry.release(_sub.subscriptionId, holder: holder);
+      final again = registry.hold([_sub], holder: Object());
+      await Future.delayed(Duration.zero);
+      expect(order, isEmpty, reason: 'the unregister is still in flight');
+
+      unregistered.complete({});
+      await Future.wait([release, again]);
+
+      expect(order, ['unregister', 'register']);
+      expect(registry.activeIds, {_sub.subscriptionId});
+    });
+
+    test(
+        'an id the router refused is not active, and the next hold tries again',
+        () async {
+      when(() => mockBridge.subscribe(
+            subscriptionId: any(named: 'subscriptionId'),
+            path: any(named: 'path'),
+            notifType: any(named: 'notifType'),
+          )).thenThrow(Exception('refused'));
+      final holder = Object();
+      await registry.hold([_sub], holder: holder);
+      expect(registry.activeIds, isEmpty);
+
+      await registry.release(_sub.subscriptionId, holder: holder);
+      verifyNotUnregistered();
+
+      when(() => mockBridge.subscribe(
+            subscriptionId: any(named: 'subscriptionId'),
+            path: any(named: 'path'),
+            notifType: any(named: 'notifType'),
+          )).thenAnswer((_) async => {});
+      await registry.hold([_sub], holder: Object());
+      expect(registry.activeIds, {_sub.subscriptionId});
+    });
+
+    test(
+        'a registration that completes after the session ended leaves nothing '
+        'active', () async {
+      final gate = Completer<Map<String, dynamic>>();
+      when(() => mockBridge.subscribe(
+            subscriptionId: any(named: 'subscriptionId'),
+            path: any(named: 'path'),
+            notifType: any(named: 'notifType'),
+          )).thenAnswer((_) => gate.future);
+
+      final held = registry.hold([_sub], holder: Object());
+      await Future.delayed(Duration.zero);
+      await registry.onSseDisconnected(intentional: true);
+      gate.complete({});
+      await held;
+
+      expect(registry.activeIds, isEmpty);
+      expect(registry.records, isEmpty);
+    });
+
+    test(
+        'a holder with another definition of a held id joins the first '
+        'registration, which the router keeps', () async {
+      // One id is one subscription on the router. The registry logs the
+      // mismatch; what it does is join (#1981 review).
+      const other = SubscriptionDef(
+        subscriptionId: 'pkg-w1-valuechange',
+        notifType: 'ValueChange',
+        referenceList: 'Device.Other.',
+      );
+      final first = Object();
+      final second = Object();
+      await registry.hold([_sub], holder: first);
+      await registry.hold([other], holder: second);
+
+      verify(() => mockBridge.subscribe(
+            subscriptionId: _sub.subscriptionId,
+            path: 'Device.Test.',
+            notifType: any(named: 'notifType'),
+          )).called(1);
+      verifyNever(() => mockBridge.subscribe(
+            subscriptionId: any(named: 'subscriptionId'),
+            path: 'Device.Other.',
+            notifType: any(named: 'notifType'),
+          ));
+      expect(registry.records.single.referenceList, 'Device.Test.');
+
+      await registry.release(_sub.subscriptionId, holder: first);
+      verifyNotUnregistered();
+      await registry.release(_sub.subscriptionId, holder: second);
+      verifyUnregistered(1);
+    });
+
+    test(
+        'a registration that throws fails every holder that joined it, and '
+        'the next hold tries again', () async {
+      final gate = Completer<void>();
+      final throwing = _ThrowingOnceStrategy(mockBridge, gate.future);
+      final registry = SseSubscriptionRegistry(throwing);
+
+      final first = registry.hold([_sub], holder: Object());
+      final joined = registry.hold([_sub], holder: Object());
+      await Future.delayed(Duration.zero);
+      gate.complete();
+
+      await expectLater(first, throwsA(isA<StateError>()));
+      await expectLater(joined, throwsA(isA<StateError>()));
+      expect(registry.activeIds, isEmpty);
+
+      await registry.hold([_sub], holder: Object());
+      expect(registry.activeIds, {_sub.subscriptionId});
+      expect(throwing.calls, 2);
     });
   });
 
   // ---------------------------------------------------------------------------
-  // unregister
+  // release
   // ---------------------------------------------------------------------------
-  group('unregister', () {
-    test('calls strategy.unregisterSubscriptions', () async {
-      await registry.registerAll([
-        SubscriptionDef(
-          subscriptionId: 'to-remove',
-          notifType: 'ValueChange',
-          referenceList: 'Device.Test.',
-        ),
-      ]);
+  group('release', () {
+    test('the only holder releasing unregisters the id', () async {
+      final holder = Object();
+      await registry.hold([_sub], holder: holder);
 
-      await registry.unregister('to-remove');
+      await registry.release(_sub.subscriptionId, holder: holder);
 
-      verify(() => mockBridge.unsubscribe(
-            subscriptionId: 'to-remove',
-          )).called(1);
+      verifyUnregistered(1);
+      expect(registry.activeIds, isEmpty);
     });
 
-    test('removes from activeIds', () async {
-      await registry.registerAll([
-        SubscriptionDef(
-          subscriptionId: 'to-remove',
-          notifType: 'ValueChange',
-          referenceList: 'Device.Test.',
-        ),
-      ]);
+    test('one of two holders releasing keeps the id registered', () async {
+      final first = Object();
+      final second = Object();
+      await registry.hold([_sub], holder: first);
+      await registry.hold([_sub], holder: second);
 
-      await registry.unregister('to-remove');
+      await registry.release(_sub.subscriptionId, holder: first);
+      verifyNotUnregistered();
+      expect(registry.activeIds, {_sub.subscriptionId});
 
-      expect(registry.activeIds, isNot(contains('to-remove')));
+      await registry.release(_sub.subscriptionId, holder: second);
+      verifyUnregistered(1);
     });
 
-    test('unknown subscriptionId has no strategy call', () async {
-      await registry.unregister('nonexistent');
+    test('a holder that held an id twice holds it once', () async {
+      // The core set's holder: the orchestrator registers it again on every
+      // rebuild.
+      final core = Object();
+      await registry.hold([_sub], holder: core);
+      await registry.hold([_sub], holder: core);
 
-      verifyNever(() => mockBridge.unsubscribe(
-            subscriptionId: any(named: 'subscriptionId'),
-          ));
+      await registry.release(_sub.subscriptionId, holder: core);
+
+      verifyRegistered(1);
+      verifyUnregistered(1);
+    });
+
+    test('a second release by one holder changes nothing', () async {
+      final first = Object();
+      await registry.hold([_sub], holder: first);
+      await registry.hold([_sub], holder: Object());
+
+      await registry.release(_sub.subscriptionId, holder: first);
+      await registry.release(_sub.subscriptionId, holder: first);
+
+      verifyNotUnregistered();
+      expect(registry.activeIds, {_sub.subscriptionId});
+    });
+
+    test('an id nobody holds sends nothing', () async {
+      await registry.release('nonexistent', holder: Object());
+
+      verifyNotUnregistered();
+    });
+
+    test(
+        'a release from before an intentional disconnect does not touch the '
+        'next session\'s holder', () async {
+      final stale = Object();
+      await registry.hold([_sub], holder: stale);
+      await registry.onSseDisconnected(intentional: true);
+      await registry.hold([_sub], holder: Object());
+
+      await registry.release(_sub.subscriptionId, holder: stale);
+
+      verifyNotUnregistered();
+      expect(registry.activeIds, {_sub.subscriptionId});
     });
   });
 
@@ -147,18 +335,18 @@ void main() {
   // ---------------------------------------------------------------------------
   group('unregisterAll', () {
     test('unregisters each subscription', () async {
-      await registry.registerAll([
-        SubscriptionDef(
+      await registry.hold([
+        const SubscriptionDef(
           subscriptionId: 'sub-1',
           notifType: 'ValueChange',
           referenceList: 'Device.Test.',
         ),
-        SubscriptionDef(
+        const SubscriptionDef(
           subscriptionId: 'sub-2',
           notifType: 'ObjectCreation',
           referenceList: 'Device.Test.',
         ),
-      ]);
+      ], holder: Object());
 
       await registry.unregisterAll();
 
@@ -168,20 +356,26 @@ void main() {
       verify(() => mockBridge.unsubscribe(
             subscriptionId: 'sub-2',
           )).called(1);
+      expect(registry.activeIds, isEmpty);
     });
 
-    test('activeIds empty after', () async {
-      await registry.registerAll([
-        SubscriptionDef(
-          subscriptionId: 'sub-1',
-          notifType: 'ValueChange',
-          referenceList: 'Device.Test.',
-        ),
-      ]);
+    test('forgets every holder, so a later release sends nothing', () async {
+      final first = Object();
+      await registry.hold([_sub], holder: first);
+      await registry.hold([_sub], holder: Object());
 
       await registry.unregisterAll();
+      clearInteractions(mockBridge);
+      await registry.release(_sub.subscriptionId, holder: first);
 
-      expect(registry.activeIds, isEmpty);
+      verifyNotUnregistered();
+    });
+
+    test('with nothing registered sends nothing', () async {
+      await registry.unregisterAll();
+
+      verifyNotUnregistered();
+      verifyNotRegistered();
     });
   });
 
@@ -190,13 +384,13 @@ void main() {
   // ---------------------------------------------------------------------------
   group('onSseConnected', () {
     test('delegates to strategy.onSseConnected', () async {
-      await registry.registerAll([
-        SubscriptionDef(
+      await registry.hold([
+        const SubscriptionDef(
           subscriptionId: 'sub-1',
           notifType: 'ValueChange',
           referenceList: 'Device.WiFi.SSID.',
         ),
-      ]);
+      ], holder: Object());
 
       reset(mockBridge);
       when(() => mockBridge.subscribe(
@@ -214,6 +408,24 @@ void main() {
             notifType: 1,
           )).called(1);
     });
+
+    test('hands the strategy only what the router accepted', () async {
+      final gate = Completer<Map<String, dynamic>>();
+      when(() => mockBridge.subscribe(
+            subscriptionId: any(named: 'subscriptionId'),
+            path: any(named: 'path'),
+            notifType: any(named: 'notifType'),
+          )).thenAnswer((_) => gate.future);
+      final held = registry.hold([_sub], holder: Object());
+      await Future.delayed(Duration.zero);
+
+      expect(registry.records, isEmpty, reason: 'still in flight');
+
+      gate.complete({});
+      await held;
+      expect(
+          registry.records.map((r) => r.subscriptionId), [_sub.subscriptionId]);
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -221,13 +433,7 @@ void main() {
   // ---------------------------------------------------------------------------
   group('onSseDisconnected', () {
     test('intentional disconnect clears local state', () async {
-      await registry.registerAll([
-        SubscriptionDef(
-          subscriptionId: 'sub-1',
-          notifType: 'ValueChange',
-          referenceList: 'Device.Test.',
-        ),
-      ]);
+      await registry.hold([_sub], holder: Object());
 
       await registry.onSseDisconnected(intentional: true);
 
@@ -235,39 +441,33 @@ void main() {
     });
 
     test('unintentional disconnect preserves local state', () async {
-      await registry.registerAll([
-        SubscriptionDef(
-          subscriptionId: 'sub-1',
-          notifType: 'ValueChange',
-          referenceList: 'Device.Test.',
-        ),
-      ]);
+      await registry.hold([_sub], holder: Object());
 
       await registry.onSseDisconnected(intentional: false);
 
-      expect(registry.activeIds, contains('sub-1'));
+      expect(registry.activeIds, {_sub.subscriptionId});
     });
   });
+}
 
-  // ---------------------------------------------------------------------------
-  // clearLocal
-  // ---------------------------------------------------------------------------
-  group('clearLocal', () {
-    test('clears in-memory state without backend call', () async {
-      await registry.registerAll([
-        SubscriptionDef(
-          subscriptionId: 'sub-1',
-          notifType: 'ValueChange',
-          referenceList: 'Device.Test.',
-        ),
-      ]);
+/// Throws from its first `registerSubscriptions`, once [gate] completes; then
+/// behaves as [FakeSseOperationStrategy]. The real strategies swallow a failed
+/// subscription; this stands in for a throw they do not catch.
+class _ThrowingOnceStrategy extends FakeSseOperationStrategy {
+  _ThrowingOnceStrategy(super.bridge, this.gate);
 
-      registry.clearLocal();
+  final Future<void> gate;
+  int calls = 0;
 
-      expect(registry.activeIds, isEmpty);
-      verifyNever(() => mockBridge.unsubscribe(
-            subscriptionId: any(named: 'subscriptionId'),
-          ));
-    });
-  });
+  @override
+  Future<List<SseSubscriptionRecord>> registerSubscriptions(
+    List<SubscriptionDef> subscriptions,
+  ) async {
+    calls++;
+    if (calls == 1) {
+      await gate;
+      throw StateError('registration threw');
+    }
+    return super.registerSubscriptions(subscriptions);
+  }
 }

@@ -179,12 +179,12 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
   /// stays `false` because the page-open call wants the cache when there is one.
   ///
   /// **`catch`, not `on ServiceError`.** The bridge does not only fail with one:
-  /// a codegen parse of an unexpected payload throws a `TypeError`, and a
-  /// `TimeoutException` raised outside the mutation lock still arrives bare until
-  /// #1831 converts the rest of its sources (the lock's own is a `TimeoutError`
-  /// now). Neither reached the old arm, so neither set `stateReadError` — and the
-  /// page's card needs both that field and an unreadable banks provider, so the
-  /// result was a firmware page with no card, no error and nothing to retry.
+  /// a codegen parse of an unexpected payload throws a `TypeError`. A timeout
+  /// used to arrive bare too, until #1831 made the lock, the awaiter and the
+  /// throttler raise `TimeoutError`. Neither reached the old arm, so neither set
+  /// `stateReadError` — and the page's card needs both that field and an
+  /// unreadable banks provider, so the result was a firmware page with no card,
+  /// no error and nothing to retry.
   Future<void> loadBanks({bool refresh = false}) async {
     try {
       // Read from L1 provider (Single Source of Truth)

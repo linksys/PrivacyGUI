@@ -241,12 +241,15 @@ void main() {
           .called(1);
     });
 
-    // The `teardown: true` flag this used to pass is gone (#1666): logout
-    // reaches here after `session.end()` has spent the credential, in a session
-    // `logout()` has already ended, and a re-activation's dispose runs it on the
-    // old bridge, whose ticket the new session has superseded.
-    // `SessionAuthGate` ignores the 401 in both — `bridge_auth_test.dart` and
-    // the gate's own table pin that (721939aa8).
+    // The `teardown: true` flag this used to pass is gone (#1666). A release
+    // can arrive after `session.end()` has spent the credential, so a 401 is the
+    // expected answer — the one that looped 770 times on QA when the disconnect
+    // cleanup reported it. It runs in a session `logout()` has already ended,
+    // and a re-activation's dispose runs it on the old bridge, whose ticket the
+    // new session has superseded. `SessionAuthGate` ignores the 401 in both —
+    // `bridge_auth_test.dart` and the gate's own table pin that (721939aa8).
+    // Logout itself sends nothing here: its `disconnect()` forgets every
+    // subscription first (#1887).
     test('a plain unsubscribe: what a 401 means is the gate\'s', () async {
       await strategy.unregisterSubscriptions(['sub-1']);
 

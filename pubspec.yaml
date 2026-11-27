@@ -135,6 +135,8 @@ dev_dependencies:
   flutter_svg_test: ^1.0.1
   fake_async: any
   xml: ^7.0.1
+  # Parses lib/ for test/architecture/hardcoded_ui_strings_test.dart (#1778).
+  analyzer: ^13.3.0
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

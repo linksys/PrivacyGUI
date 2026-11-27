@@ -14,6 +14,7 @@ import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/client_connection_detail.dart';
 import 'package:privacy_gui/page/_shared/services/mesh_topology_builder.dart';
 import 'package:privacy_gui/page/_shared/services/mesh_network_builder.dart';
+import 'package:privacy_gui/page/_shared/utils/mesh_node_identity.dart';
 import 'package:privacy_gui/generated/data_elements_interfaces.g.dart';
 import 'package:privacy_gui/generated/data_elements_mlo_clients.g.dart';
 import 'package:privacy_gui/generated/data_elements_network.g.dart';
@@ -191,24 +192,51 @@ class UspDevicesDataService {
   /// A null [userTypeCode] leaves the stored type alone: a name-only edit must
   /// not erase a type another client wrote.
   ///
-  /// [hostInstancePaths] is every row of the device, all written in the one
-  /// Set: devidentd keeps the name per MAC, so a row left out keeps its old
-  /// name, and the device shows it whenever that row is the only one present.
-  /// The rows merge by `X_LINKSYS_DetectedName` (#1719), which the user's name
-  /// does not change, so naming them does not regroup them.
+  /// [macs] are the `PhysAddress` of every row of the device, all written in
+  /// the one Set: devidentd keeps the name per MAC, so a row left out keeps
+  /// its old name, and the device shows it whenever that row is the only one
+  /// present. The rows merge by `X_LINKSYS_DetectedName` (#1719), which the
+  /// user's name does not change, so naming them does not regroup them.
+  ///
+  /// **The rows are found by MAC at the moment of the write, not by a row
+  /// number read earlier (#1840).** On FL-WRT 2.0, `Hosts.Host` rows renumber
+  /// when a row ahead of them is added or removed. While an agent rejoins, its
+  /// backhaul station takes the agent's index for about 50 s and every later
+  /// row moves up one. So a row number from the last read can name another
+  /// device by the time the user saves, and the Set would succeed on it. This
+  /// reads every row's `PhysAddress` in one GET, past the shared-read cache,
+  /// and writes the rows that carry one of [macs] now. What is left is the
+  /// round trip between that read and the Set.
+  ///
+  /// The router could find the rows itself from a search path
+  /// (`Host.[PhysAddress=="…"].`), which obuspa accepts, but the USP client
+  /// refuses such a path before sending it (`validate_path`, 9997).
+  ///
+  /// A MAC with no row now has nothing to write to and is left out. When none
+  /// of [macs] has one, the device has left the network: nothing is written,
+  /// and [DeviceNotOnNetworkError] is thrown. No MAC at all, or only blank
+  /// ones, is a [ResourceNotFoundError], before anything is read.
   Future<void> updateIdentity({
-    required List<String> hostInstancePaths,
+    required List<String> macs,
     required String name,
     String? userTypeCode,
   }) async {
     // The generated update answers success without a Set when it has no
-    // params, which would report a name that was never written.
-    if (hostInstancePaths.isEmpty) {
+    // params, which would report a name that was never written. A blank MAC
+    // names no row, so a list of only blank MACs is no row either.
+    final wanted = {for (final mac in macs) meshNodeMacKey(mac)}..remove('');
+    if (wanted.isEmpty) {
       throw const ResourceNotFoundError(
-        detail: 'No Hosts row to write the device identity to',
+        detail: 'No MAC to find the device identity rows by',
       );
     }
     try {
+      final hostInstancePaths = await _currentHostRows(wanted);
+      if (hostInstancePaths.isEmpty) {
+        throw const DeviceNotOnNetworkError(
+          detail: 'No Hosts row carries any of the device MACs now',
+        );
+      }
       final result = await ConnectedDevices.update(_usp, [
         for (final path in hostInstancePaths)
           ConnectedDeviceUpdate(
@@ -242,6 +270,28 @@ class UspDevicesDataService {
       throw mapUspErrorToServiceError(e);
     }
   }
+
+  /// The `Device.Hosts.Host.{i}.` rows whose `PhysAddress` is one of
+  /// [wanted] now, from one fresh GET of every row's `PhysAddress`.
+  ///
+  /// One GET, so every row number and MAC comes from the same moment: a read
+  /// per row could straddle a renumbering. [wanted] is in [meshNodeMacKey]
+  /// form and each row's MAC is compared in it, because Hosts reports MACs in
+  /// lower case and the app holds them in upper case. Every row carrying a MAC
+  /// is returned, so a MAC that has two rows is named on both.
+  Future<List<String>> _currentHostRows(Set<String> wanted) async {
+    final rows = await _usp.get(const [_hostPhysAddresses], fresh: true);
+    return [
+      for (final MapEntry(:key, :value) in rows.entries)
+        if (_hostPhysAddressPath.firstMatch(key) case final match?
+            when value is String && wanted.contains(meshNodeMacKey(value)))
+          match.group(1)!,
+    ];
+  }
+
+  static const _hostPhysAddresses = 'Device.Hosts.Host.*.PhysAddress';
+  static final _hostPhysAddressPath =
+      RegExp(r'^(Device\.Hosts\.Host\.\d+\.)PhysAddress$');
 
   /// Reads `Interface.{j}.Neighbor.{k}`, the source of wired-client
   /// attribution (#1688 item 2).
