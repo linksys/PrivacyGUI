@@ -148,6 +148,25 @@ void main() {
       verifyNever(() => mloData.fetchStatus());
     });
 
+    // LinksysWRT#578: DFS is the 5 GHz radio's 802.11h (#1973).
+    testWidgets(
+        'a router with no 5 GHz radio has no DFS card, and the rest '
+        'stays', (tester) async {
+      when(() => svc.fetchIeee80211h())
+          .thenAnswer((_) => realIeee80211hRead(const {
+                'Device.WiFi.Radio.1.IEEE80211hEnabled': true,
+                'Device.WiFi.Radio.1.OperatingFrequencyBand': '2.4GHz',
+                'Device.WiFi.Radio.3.IEEE80211hEnabled': true,
+                'Device.WiFi.Radio.3.OperatingFrequencyBand': '6GHz',
+              }));
+      await pumpPage(tester);
+
+      expect(switchWith('wifi-advanced-dfs'), findsNothing);
+      expect(find.text('Dynamic Frequency Selection (DFS)'), findsNothing);
+      expect(switchWith('wifi-advanced-client-steering'), findsOneWidget);
+      expect(switchWith('wifi-advanced-mlo'), findsOneWidget);
+    });
+
     testWidgets('the status the router reports is shown on the card',
         (tester) async {
       mloStatus = MloStatus.active;

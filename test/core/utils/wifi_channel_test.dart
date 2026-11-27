@@ -75,6 +75,31 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
+  // normalizeWifiBand — TR-181 OperatingFrequencyBand to "2.4GHz"/"5GHz"/"6GHz"
+  // ---------------------------------------------------------------------------
+
+  group('normalizeWifiBand', () {
+    test('the TR-181 values come back as they are', () {
+      expect(normalizeWifiBand('2.4GHz'), '2.4GHz');
+      expect(normalizeWifiBand('5GHz'), '5GHz');
+      expect(normalizeWifiBand('6GHz'), '6GHz');
+    });
+
+    test('case, spaces and underscores are normalized', () {
+      expect(normalizeWifiBand('5 GHz'), '5GHz');
+      expect(normalizeWifiBand('5ghz'), '5GHz');
+      expect(normalizeWifiBand('6 G'), '6GHz');
+      expect(normalizeWifiBand('2_4GHz'), '2.4GHz');
+      expect(normalizeWifiBand('2.4 GHz'), '2.4GHz');
+    });
+
+    test('a value it does not recognise comes back unchanged', () {
+      expect(normalizeWifiBand(''), '');
+      expect(normalizeWifiBand('Unknown'), 'Unknown');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // isDfsChannel — 5 GHz DFS classification
   // ---------------------------------------------------------------------------
 

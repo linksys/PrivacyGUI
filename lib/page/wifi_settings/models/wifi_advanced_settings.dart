@@ -2,10 +2,13 @@ import 'package:equatable/equatable.dart';
 
 /// User-editable WiFi Advanced settings.
 ///
-/// Contains per-radio IEEE 802.11h (DFS + TPC) enabled state, the two
+/// Contains the 5 GHz radios' IEEE 802.11h (DFS + TPC) enabled state, the two
 /// network-wide mesh steering switches and the network-wide MLO switch.
 class WifiAdvancedSettings extends Equatable {
-  /// Map of radio instance path → desired IEEE80211h enabled state.
+  /// Map of **5 GHz** radio instance path → desired IEEE80211h enabled state:
+  /// the DFS switch's radios (LinksysWRT#578, #1973). The 2.4 GHz and 6 GHz
+  /// radios are never in it, so the switch neither reflects nor writes them;
+  /// empty when the router has no 5 GHz radio, and then there is no DFS card.
   /// Keyed by "Device.WiFi.Radio.{i}." (with trailing dot).
   final Map<String, bool> ieee80211hByRadio;
 
@@ -33,7 +36,7 @@ class WifiAdvancedSettings extends Equatable {
         nodeSteering = false,
         mloEnabled = null;
 
-  /// True when ALL reporting radios have DFS enabled.
+  /// True when ALL 5 GHz radios have DFS enabled.
   bool get isDfsEnabled =>
       ieee80211hByRadio.isNotEmpty && ieee80211hByRadio.values.every((v) => v);
 

@@ -25,19 +25,28 @@ const _node = 'Device.X_LINKSYS_Mesh.NodeSteeringEnabled';
 const _r1 = 'Device.WiFi.Radio.1.';
 const _r2 = 'Device.WiFi.Radio.2.';
 
+/// A second 5 GHz radio, as on a tri-band router with two 5 GHz radios.
+const _r3 = 'Device.WiFi.Radio.3.';
+const _twoFiveGHzRadioBands = {_r1: '2.4GHz', _r2: '5GHz', _r3: '5GHz'};
+
 /// What the device holds, for the mocked service to read and write.
 ///
 /// The notifier runs over a Mocktail service (constitution Article VIII §8.2).
 /// Its plan is the real [UspWifiAdvancedService.planSave], so the params and
 /// proof under test are production's; sending the plan writes [values] here
 /// and records the Set in [sets], and the fetches and the read-back read
-/// [values]. A leaf in [refuse] is refused and keeps its old value, which is
-/// what `allowPartial: true` does on FLWRT 2.0; a leaf in [sticky] is reported
+/// [values]. The 802.11h read is the real one too, over [values] and
+/// [bands], so only the 5 GHz radios reach the tab (#1973). A leaf in
+/// [refuse] is refused and keeps its old value, which is what
+/// `allowPartial: true` does on FLWRT 2.0; a leaf in [sticky] is reported
 /// applied but keeps its old value.
 class _Device {
-  _Device(this.values);
+  _Device(this.values, {this.bands = _benchBands});
 
   final Map<String, bool> values;
+
+  /// Radio instance path → `OperatingFrequencyBand`.
+  final Map<String, String> bands;
   final sets = <Map<String, dynamic>>[];
   Set<String> refuse = {};
   Set<String> sticky = {};
@@ -63,14 +72,14 @@ class _Device {
       _read();
       if (emptyRadioReads > 0) {
         emptyRadioReads--;
-        return {};
+        return realIeee80211hRead({});
       }
-      return {
+      return realIeee80211hRead({
         for (final e in values.entries)
-          if (e.key.endsWith('IEEE80211hEnabled'))
-            e.key.substring(0, e.key.length - 'IEEE80211hEnabled'.length):
-                e.value,
-      };
+          if (e.key.endsWith('IEEE80211hEnabled')) e.key: e.value,
+        for (final e in bands.entries)
+          '${e.key}OperatingFrequencyBand': e.value,
+      });
     });
     when(() => svc.fetchSteering()).thenAnswer((_) async {
       _read();
@@ -108,6 +117,10 @@ class _Device {
     return WifiWriteOutcome.confirmed;
   }
 }
+
+/// The bench M60's two main radios: 2.4 GHz and 5 GHz (FW 2.0.4.26112201,
+/// 2026-11-26).
+const _benchBands = {_r1: '2.4GHz', _r2: '5GHz'};
 
 /// What FW 2.0.3.26101472 read on the bench on 2026-10-15, both main radios.
 Map<String, bool> _bench({
@@ -215,7 +228,8 @@ void main() {
       final state = c.read(uspWifiAdvancedProvider);
       expect(state.status.isLoading, isFalse);
       expect(state.status.error, isNull);
-      expect(state.settings.current.ieee80211hByRadio, {_r1: false, _r2: true});
+      expect(state.settings.current.ieee80211hByRadio, {_r2: true},
+          reason: 'the 2.4 GHz radio is not the DFS switch\'s (#1973)');
       expect(state.settings.current.clientSteering, isTrue);
       expect(state.settings.current.nodeSteering, isFalse);
       expect(state.settings.current.mloEnabled, isTrue);
@@ -270,7 +284,8 @@ void main() {
 
     test('DFS toggled on then off clears dirty with a mixed original',
         () async {
-      final device = _Device({..._bench(), '${_r1}IEEE80211hEnabled': true});
+      final device = _Device({..._bench(), '${_r3}IEEE80211hEnabled': true},
+          bands: _twoFiveGHzRadioBands);
       final c = createContainer(device);
       final notifier = await loaded(c);
 
@@ -310,6 +325,67 @@ void main() {
     });
   });
 
+  // LinksysWRT#578: the switch is `Device.WiFi.Radio.{5 GHz}.IEEE80211hEnabled`.
+  // On the bench it wrote the 2.4 GHz radio too (M60, FW 2.0.4.26112201).
+  group('UspWifiAdvancedNotifier - the DFS switch is the 5 GHz radios (#1973)',
+      () {
+    test('5 GHz on and 2.4 GHz off shows the switch on', () async {
+      final device = _Device({
+        ..._mesh(),
+        '${_r1}IEEE80211hEnabled': false,
+        '${_r2}IEEE80211hEnabled': true,
+      });
+      final c = createContainer(device);
+      await loaded(c);
+
+      expect(c.read(uspWifiAdvancedProvider).settings.current.isDfsEnabled,
+          isTrue);
+    });
+
+    for (final on in [true, false]) {
+      test(
+          'turning it ${on ? 'on' : 'off'} sends one Set naming only the '
+          '5 GHz radio', () async {
+        final device = _Device({
+          ..._mesh(),
+          // The two radios differ, the state LinksysWRT#578 describes. With
+          // the 2.4 GHz radio in the map the switch read this as off, so
+          // turning it on wrote both radios and turning it off sent nothing.
+          '${_r1}IEEE80211hEnabled': on,
+          '${_r2}IEEE80211hEnabled': !on,
+        });
+        final c = createContainer(device);
+        final notifier = await loaded(c);
+
+        notifier.setDfsEnabled(on);
+        await notifier.save();
+
+        expect(device.sets, [
+          {'${_r2}IEEE80211hEnabled': on}
+        ]);
+      });
+    }
+
+    test('a router with no 5 GHz radio is read back after an MLO save',
+        () async {
+      // The table has a radio, just none the switch is for: that is a read
+      // that settled, not the empty table of a reload (#1212).
+      final device = _Device(_bench(), bands: const {_r1: '2.4GHz'});
+      final c = createContainer(device);
+      final notifier = await loaded(c);
+      expect(c.read(uspWifiAdvancedProvider).settings.current.ieee80211hByRadio,
+          isEmpty);
+
+      notifier.setMloEnabled(true);
+      await notifier.save();
+      await notifier.readBackAfterRecovery();
+
+      final state = c.read(uspWifiAdvancedProvider);
+      expect(state.settings.current.mloEnabled, isTrue);
+      expect(state.isDirty, isFalse);
+    });
+  });
+
   group('UspWifiAdvancedNotifier - restartsWifi', () {
     test('true for an MLO or DFS change, false for steering alone', () async {
       final c = createContainer(_Device(_bench()));
@@ -342,7 +418,6 @@ void main() {
         {
           _client: true,
           _mlo: true,
-          '${_r1}IEEE80211hEnabled': true,
           '${_r2}IEEE80211hEnabled': true,
         }
       ]);
@@ -372,7 +447,7 @@ void main() {
       await notifier.save();
 
       expect(device.sets.single.keys, isNot(contains(_mlo)));
-      expect(device.sets.single.keys, hasLength(3));
+      expect(device.sets.single.keys, hasLength(2));
     });
 
     test('a part refused inside the Set is a failed save, not "saved"',
@@ -574,7 +649,6 @@ void main() {
       final saving = notifier.save();
       // The values land while the reply never comes, as in #1460.
       await Future<void>.delayed(const Duration(milliseconds: 20));
-      device.values['${_r1}IEEE80211hEnabled'] = true;
       device.values['${_r2}IEEE80211hEnabled'] = true;
 
       await expectLater(saving, completes);
@@ -686,7 +760,6 @@ void main() {
       await notifier.save();
 
       expect(device.sets.single, {
-        '${_r1}IEEE80211hEnabled': false,
         '${_r2}IEEE80211hEnabled': false,
         '${_r2}AutoChannelEnable': true,
       });
@@ -715,10 +788,12 @@ void main() {
 
     test('a 5 GHz radio on a non-DFS channel or on auto is not forced',
         () async {
-      final device = _Device(_bench(dfs: true));
+      final device = _Device(
+          {..._bench(dfs: true), '${_r3}IEEE80211hEnabled': true},
+          bands: _twoFiveGHzRadioBands);
       final c = createContainer(device, radios: [
         _radioModel(
-            instancePath: _r1,
+            instancePath: _r3,
             band: '5GHz',
             channel: 36,
             autoChannelEnable: false),
@@ -767,7 +842,7 @@ void main() {
   group('UspWifiAdvancedNotifier - #1587 Phase 1 contracts', () {
     final parked = [
       _radioModel(
-          instancePath: _r1,
+          instancePath: _r2,
           band: '5GHz',
           channel: 52,
           autoChannelEnable: false),
@@ -777,20 +852,20 @@ void main() {
         () async {
       // The container subscribes to L2 but NEVER to `wifiDataProvider`, so L1
       // is cold when the save reaches it — the production shape.
-      final device = _Device({'${_r1}IEEE80211hEnabled': true, ..._mesh()});
+      final device = _Device({'${_r2}IEEE80211hEnabled': true, ..._mesh()});
       final c = createContainer(device, radios: parked);
       final notifier = await loaded(c);
 
       notifier.setDfsEnabled(false);
       await notifier.save();
 
-      expect(device.sets.single['${_r1}AutoChannelEnable'], isTrue,
+      expect(device.sets.single['${_r2}AutoChannelEnable'], isTrue,
           reason: 'the radio on DFS channel 52 must be forced to auto-channel');
     });
 
     test('the retry catches an error L1 is not documented to throw', () async {
       // Not a ServiceError, so `on ServiceError` would let it through.
-      final device = _Device({'${_r1}IEEE80211hEnabled': true, ..._mesh()});
+      final device = _Device({'${_r2}IEEE80211hEnabled': true, ..._mesh()});
       final c = createContainer(device,
           wifiNotifier: () => _FlakyWifiDataNotifier(
                 onBuild: () {},
@@ -802,13 +877,13 @@ void main() {
       notifier.setDfsEnabled(false);
       await notifier.save();
 
-      expect(device.sets.single['${_r1}AutoChannelEnable'], isTrue);
+      expect(device.sets.single['${_r2}AutoChannelEnable'], isTrue);
     });
 
     test('L1 failing twice fails the save before anything is sent', () async {
       // The remediation cannot be skipped silently; and a save that sent
       // nothing has nothing to re-read, so the edit stays pending.
-      final device = _Device({'${_r1}IEEE80211hEnabled': true, ..._mesh()});
+      final device = _Device({'${_r2}IEEE80211hEnabled': true, ..._mesh()});
       final c = createContainer(device, wifiNotifier: _AlwaysFailingL1.new);
       final notifier = await loaded(c);
 
@@ -824,7 +899,7 @@ void main() {
     test('a cached L1 failure is retried once rather than failing the save',
         () async {
       var builds = 0;
-      final device = _Device({'${_r1}IEEE80211hEnabled': true, ..._mesh()});
+      final device = _Device({'${_r2}IEEE80211hEnabled': true, ..._mesh()});
       final c = createContainer(device,
           wifiNotifier: () => _FlakyWifiDataNotifier(
                 onBuild: () => builds++,
@@ -837,7 +912,7 @@ void main() {
 
       expect(builds, greaterThanOrEqualTo(2),
           reason: 'the failed L1 read must be retried, not replayed');
-      expect(device.sets.single['${_r1}AutoChannelEnable'], isTrue);
+      expect(device.sets.single['${_r2}AutoChannelEnable'], isTrue);
     });
   });
 }

@@ -76,6 +76,28 @@ class MockUspWifiAdvancedService extends Mock
 /// The plan builder never touches the client; this only satisfies its type.
 class _NoUsp extends Mock implements UspClient {}
 
+/// What the real [UspWifiAdvancedService.fetchIeee80211h] makes of a router
+/// whose Get answers [answer] — its radios' `IEEE80211hEnabled` and
+/// `OperatingFrequencyBand` — for a mocked service to return, so the radios
+/// under test are the ones production keeps: the 5 GHz radios (#1973).
+Future<Map<String, bool>> realIeee80211hRead(Map<String, dynamic> answer) =>
+    UspWifiAdvancedService(_AnsweringUsp(answer)).fetchIeee80211h();
+
+/// A client whose every Get answers [_answer].
+class _AnsweringUsp extends Mock implements UspClient {
+  _AnsweringUsp(this._answer);
+
+  final Map<String, dynamic> _answer;
+
+  @override
+  Future<Map<String, dynamic>> get(
+    List<String> paths, {
+    RequestPriority? priority,
+    bool fresh = false,
+  }) async =>
+      _answer;
+}
+
 /// Stubs [svc]'s `planSave` with the real [UspWifiAdvancedService.planSave],
 /// so the Set's params and proof under test are production's, and sends the
 /// plan through [send] instead of a router.
