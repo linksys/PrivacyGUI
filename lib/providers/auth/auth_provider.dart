@@ -276,9 +276,11 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
       // Disconnect SSE BEFORE USP logout: the disconnect ends the session's
       // subscriptions, and the remote strategy's cleanup of them on Guardian
-      // uses authenticated requests. There is no separate unregister step: the
-      // disconnect has already forgotten every subscription, so an
-      // `unregisterAll()` after it had nothing left to send.
+      // is sent with this session's token. It is fire-and-forget, so this
+      // only starts it while the token is still good; it may finish after the
+      // logout. There is no separate unregister step: the disconnect has
+      // already forgotten every subscription, so an `unregisterAll()` after it
+      // had nothing left to send.
       final sseManager = ref.read(sseManagerProvider);
       if (sseManager != null) {
         logger.d('[Auth]: logout: disconnecting SSE');

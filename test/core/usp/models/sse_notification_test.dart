@@ -155,6 +155,19 @@ void main() {
           reason: 'the segments before the expression still have to match');
     });
 
+    test('a path that stops before the search expression is not under it', () {
+      // `Device.WiFi.` is above the reference list, not under it: it has no
+      // segment where the expression stands.
+      expect(
+          covers('Device.WiFi.SSID.[Enable==true].SSID', 'Device.WiFi.Radio'),
+          isFalse);
+      expect(covers('Device.WiFi.SSID.[Enable==true].SSID', 'Device.WiFi.SSID'),
+          isFalse);
+      expect(covers('Device.WiFi.SSID.[Enable==true].', 'Device.WiFi.SSID.3.'),
+          isTrue,
+          reason: 'a row where the expression stands is still under it');
+    });
+
     test('another type is not for it', () {
       expect(
           _valueChange('Device.X.Value')

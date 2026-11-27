@@ -29,8 +29,9 @@ class RemoteSseStrategy implements SseOperationStrategy {
 
   /// Whether a reconnect re-registration walk is currently running.
   ///
-  /// Mirrors `SseManager._registrationInProgress`, which guards the sibling
-  /// path — see [onSseStreamOpened] for why the walk needs it.
+  /// The sibling path, the core set's registration, joins one in flight
+  /// through the registry instead (#1887) — see [onSseStreamOpened] for why
+  /// this walk needs its own guard.
   bool _reRegistrationInProgress = false;
 
   RemoteSseStrategy(this._bridge);

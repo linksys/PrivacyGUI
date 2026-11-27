@@ -59,8 +59,9 @@ class SseNotification {
   /// - a `*` segment matches any one instance, as in `Device.WiFi.SSID.*.SSID`
   ///   (the form the package widget authoring guide shows);
   /// - from a segment holding a search expression (`[...]`) on, it covers
-  ///   everything, because the expression is the router's to evaluate. Too
-  ///   much rather than nothing: the readers filter what they get.
+  ///   everything the path has there, because the expression is the router's
+  ///   to evaluate. Too much rather than nothing: the readers filter what they
+  ///   get. A path that stops before that segment is not under it.
   bool isFor({required String notifType, required String referenceList}) {
     if (type != notifType) return false;
     final path = this.path;
@@ -79,8 +80,8 @@ bool _covers(String referenceList, String path) {
   final segments = _segments(path);
   for (var i = 0; i < pattern.length; i++) {
     final want = pattern[i];
-    if (want.contains('[')) return true;
     if (i >= segments.length) return false;
+    if (want.contains('[')) return true;
     if (want != '*' && want != segments[i]) return false;
   }
   return isObject || segments.length == pattern.length;

@@ -68,6 +68,19 @@ class SseSubscriptionRegistry {
     for (final s in subscriptions) {
       final entry = _entries[s.subscriptionId];
       if (entry != null) {
+        // One id is one subscription on the router: the first definition
+        // stays, and a holder whose own handler filters by another path or
+        // type will not hear what it asked for. Logged, because it is silent
+        // otherwise (#1981 review). The package widget id names the widget,
+        // not its path, so two live templates of one widget with different
+        // first paths reach here.
+        final held = entry.subscription;
+        if (held.notifType != s.notifType ||
+            held.referenceList != s.referenceList) {
+          logger.w('[SSE]: Hold ${s.subscriptionId}: already registered as '
+              '${held.notifType} on ${held.referenceList}; this holder asked '
+              'for ${s.notifType} on ${s.referenceList} and joins that one');
+        }
         entry.holders.add(holder);
         if (entry.registering case final registering?) {
           inFlight.add(registering);
@@ -160,6 +173,10 @@ class SseSubscriptionRegistry {
   }
 
   /// Unregisters every registered subscription and forgets every holder.
+  ///
+  /// For [SseManager.dispose] (its only caller). It does not wait for a
+  /// registration or an unregister in flight: a registration that completes
+  /// afterwards finds its entry gone and records nothing (see [_register]).
   Future<void> unregisterAll() async {
     final ids = activeIds.toList();
     _entries.clear();

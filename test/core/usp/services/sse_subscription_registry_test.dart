@@ -200,6 +200,60 @@ void main() {
       expect(registry.activeIds, isEmpty);
       expect(registry.records, isEmpty);
     });
+
+    test(
+        'a holder with another definition of a held id joins the first '
+        'registration, which the router keeps', () async {
+      // One id is one subscription on the router. The registry logs the
+      // mismatch; what it does is join (#1981 review).
+      const other = SubscriptionDef(
+        subscriptionId: 'pkg-w1-valuechange',
+        notifType: 'ValueChange',
+        referenceList: 'Device.Other.',
+      );
+      final first = Object();
+      final second = Object();
+      await registry.hold([_sub], holder: first);
+      await registry.hold([other], holder: second);
+
+      verify(() => mockBridge.subscribe(
+            subscriptionId: _sub.subscriptionId,
+            path: 'Device.Test.',
+            notifType: any(named: 'notifType'),
+          )).called(1);
+      verifyNever(() => mockBridge.subscribe(
+            subscriptionId: any(named: 'subscriptionId'),
+            path: 'Device.Other.',
+            notifType: any(named: 'notifType'),
+          ));
+      expect(registry.records.single.referenceList, 'Device.Test.');
+
+      await registry.release(_sub.subscriptionId, holder: first);
+      verifyNotUnregistered();
+      await registry.release(_sub.subscriptionId, holder: second);
+      verifyUnregistered(1);
+    });
+
+    test(
+        'a registration that throws fails every holder that joined it, and '
+        'the next hold tries again', () async {
+      final gate = Completer<void>();
+      final throwing = _ThrowingOnceStrategy(mockBridge, gate.future);
+      final registry = SseSubscriptionRegistry(throwing);
+
+      final first = registry.hold([_sub], holder: Object());
+      final joined = registry.hold([_sub], holder: Object());
+      await Future.delayed(Duration.zero);
+      gate.complete();
+
+      await expectLater(first, throwsA(isA<StateError>()));
+      await expectLater(joined, throwsA(isA<StateError>()));
+      expect(registry.activeIds, isEmpty);
+
+      await registry.hold([_sub], holder: Object());
+      expect(registry.activeIds, {_sub.subscriptionId});
+      expect(throwing.calls, 2);
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -394,4 +448,26 @@ void main() {
       expect(registry.activeIds, {_sub.subscriptionId});
     });
   });
+}
+
+/// Throws from its first `registerSubscriptions`, once [gate] completes; then
+/// behaves as [FakeSseOperationStrategy]. The real strategies swallow a failed
+/// subscription; this stands in for a throw they do not catch.
+class _ThrowingOnceStrategy extends FakeSseOperationStrategy {
+  _ThrowingOnceStrategy(super.bridge, this.gate);
+
+  final Future<void> gate;
+  int calls = 0;
+
+  @override
+  Future<List<SseSubscriptionRecord>> registerSubscriptions(
+    List<SubscriptionDef> subscriptions,
+  ) async {
+    calls++;
+    if (calls == 1) {
+      await gate;
+      throw StateError('registration threw');
+    }
+    return super.registerSubscriptions(subscriptions);
+  }
 }

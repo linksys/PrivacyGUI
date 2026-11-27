@@ -178,7 +178,10 @@ class SseManager {
   /// ([SseNotification.isFor]).
   ///
   /// Heard by type and path, not by [subscriptionId], which is not a key to
-  /// hear by (see [SseNotification.subscriptionId]).
+  /// hear by (see [SseNotification.subscriptionId]). So an `OperationComplete`
+  /// subscription hears nothing here: that notification carries no path
+  /// ([SseNotification.path]). Use [hold] and match it yourself, as
+  /// `SseOperationAwaiter` does by `command_key`.
   ///
   /// Returns the cleanup: it removes the handler and releases the hold
   /// ([hold]).
