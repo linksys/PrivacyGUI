@@ -134,7 +134,7 @@ class ChannelFinderService {
     final neighbors = await _runNeighborScan(awaiter);
 
     onStage?.call(ChannelFinderScanStage.channels);
-    final busyness = <String, Map<int, int?>>{};
+    final scans = <String, _ChannelScanOutcome>{};
     DataElementsScanResults? earlier;
     try {
       earlier = await _readScanResults();
@@ -142,29 +142,32 @@ class ChannelFinderService {
       logger.w('[ChannelFinder] Reading earlier channel scans failed, so no '
           'channel is measured: $e');
     }
-    if (earlier != null) {
-      for (final radio in radios) {
-        final dataElementsPath = radio.dataElementsPath;
-        if (dataElementsPath == null) continue;
-        busyness[radio.path] = await _runChannelScan(
-          dataElementsPath,
-          radio.channels,
-          previous: _newestScan(earlier, dataElementsPath)?.timeStamp,
-        );
-      }
+    for (final radio in radios) {
+      final dataElementsPath = radio.dataElementsPath;
+      scans[radio.path] = earlier == null
+          ? _ChannelScanOutcome.unanswered
+          : dataElementsPath == null
+              ? _ChannelScanOutcome.refused
+              : await _runChannelScan(
+                  dataElementsPath,
+                  radio.channels,
+                  previous: _instanceNumber(
+                      _newestScan(earlier, dataElementsPath)?.instancePath),
+                );
     }
 
     final bands = radios.map((radio) {
       final heard = neighbors[radio.path] ?? const {};
-      final measured = busyness[radio.path] ?? const {};
+      final scan = scans[radio.path]!;
       return ChannelBandScanUIModel(
         band: radio.band,
         channelInUse: radio.channelInUse,
+        measurement: scan.measurement,
         channels: [
           for (final channel in radio.channels)
             ChannelScanUIModel(
               channel: channel,
-              utilization: measured[channel],
+              utilization: scan.busyness[channel],
               isInUse: channel == radio.channelInUse,
               neighbors: heard[channel] ?? const [],
             ),
@@ -319,15 +322,16 @@ class ChannelFinderService {
   // ─── Channel scan ───────────────────────────────────────────────────
 
   /// Runs `ChannelScanRequest()` on one DataElements radio and waits for a
-  /// result newer than [previous]. Returns each scanned channel's utilization,
-  /// or an empty map when the call fails or no new result arrives in time.
-  Future<Map<int, int?>> _runChannelScan(
+  /// result whose instance number is higher than [previous], the highest
+  /// before the call. Returns each scanned channel's utilization, or why
+  /// there is none.
+  Future<_ChannelScanOutcome> _runChannelScan(
     String dataElementsPath,
     List<int> channels, {
-    required DateTime? previous,
+    required int? previous,
   }) async {
     final indices = _dataElementsIndices(dataElementsPath);
-    if (indices == null || channels.isEmpty) return const {};
+    if (indices == null || channels.isEmpty) return _ChannelScanOutcome.refused;
     try {
       await DataElementsNetworkOperations.channelScanRequest(
         _usp,
@@ -339,7 +343,7 @@ class ChannelFinderService {
     } catch (e) {
       logger.w('[ChannelFinder] Channel scan on $dataElementsPath was not '
           'accepted: $e');
-      return const {};
+      return _ChannelScanOutcome.refused;
     }
 
     final giveUpAt = DateTime.now().add(_timings.channelScanTimeout);
@@ -349,15 +353,15 @@ class ChannelFinderService {
       wait = _timings.channelScanReadInterval;
       try {
         final scan = _newestScan(await _readScanResults(), dataElementsPath);
-        final at = scan?.timeStamp;
+        final number = _instanceNumber(scan?.instancePath);
         if (scan != null &&
-            at != null &&
-            (previous == null || at.isAfter(previous))) {
-          return {
+            number != null &&
+            (previous == null || number > previous)) {
+          return _ChannelScanOutcome({
             for (final opClass in scan.opClassScans)
               for (final row in opClass.channelScans)
                 if (row.channel != null) row.channel!: row.utilization,
-          };
+          });
         }
       } on ServiceError catch (e) {
         logger.w('[ChannelFinder] Reading the channel scan of '
@@ -366,7 +370,7 @@ class ChannelFinderService {
       if (!DateTime.now().isBefore(giveUpAt)) {
         logger.w('[ChannelFinder] No channel scan result for $dataElementsPath '
             'within ${_timings.channelScanTimeout.inSeconds} s');
-        return const {};
+        return _ChannelScanOutcome.unanswered;
       }
     }
   }
@@ -379,21 +383,35 @@ class ChannelFinderService {
     }
   }
 
-  /// The newest `ScanResult` under [dataElementsPath], by its `TimeStamp`.
+  /// The newest `ScanResult` under [dataElementsPath]: the highest instance
+  /// number. The controller numbers them in order and never reuses a number
+  /// (FW on #1778), so this needs no `TimeStamp`, which is optional in the
+  /// definition and only second-precise in some readers.
   static RadioScanResult? _newestScan(
       DataElementsScanResults results, String dataElementsPath) {
     RadioScanResult? newest;
+    int? newestNumber;
     for (final node in results.items) {
       for (final radio in node.radios) {
         if (ensureTrailingDot(radio.instancePath) != dataElementsPath) continue;
         for (final scan in radio.scanResults) {
-          final at = scan.timeStamp;
-          if (at == null) continue;
-          if (newest == null || at.isAfter(newest.timeStamp!)) newest = scan;
+          final number = _instanceNumber(scan.instancePath);
+          if (number == null) continue;
+          if (newestNumber == null || number > newestNumber) {
+            newest = scan;
+            newestNumber = number;
+          }
         }
       }
     }
     return newest;
+  }
+
+  /// `…ScanResult.{n}.` → n.
+  static int? _instanceNumber(String? instancePath) {
+    if (instancePath == null) return null;
+    final match = RegExp(r'\.ScanResult\.(\d+)\.?$').firstMatch(instancePath);
+    return match == null ? null : int.parse(match.group(1)!);
   }
 
   static ({int device, int radio})? _dataElementsIndices(String path) {
@@ -409,6 +427,23 @@ class ChannelFinderService {
     final rank = _bandOrder.indexOf(band);
     return rank < 0 ? _bandOrder.length : rank;
   }
+}
+
+/// What one radio's channel scan gave: each channel's utilization, or why
+/// there is none.
+class _ChannelScanOutcome {
+  final ChannelBandMeasurement measurement;
+  final Map<int, int?> busyness;
+
+  const _ChannelScanOutcome(this.busyness)
+      : measurement = ChannelBandMeasurement.measured;
+
+  const _ChannelScanOutcome._unmeasured(this.measurement) : busyness = const {};
+
+  static const refused =
+      _ChannelScanOutcome._unmeasured(ChannelBandMeasurement.refused);
+  static const unanswered =
+      _ChannelScanOutcome._unmeasured(ChannelBandMeasurement.unanswered);
 }
 
 /// A Wi-Fi radio to scan, with what the scan needs to know about it.

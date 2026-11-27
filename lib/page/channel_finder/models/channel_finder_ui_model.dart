@@ -81,10 +81,15 @@ class ChannelBandScanUIModel extends Equatable {
   /// The channels the radio may use, in channel order.
   final List<ChannelScanUIModel> channels;
 
+  /// Whether the band's busyness was measured, and if not, why. The
+  /// neighbours are there either way.
+  final ChannelBandMeasurement measurement;
+
   const ChannelBandScanUIModel({
     required this.band,
     required this.channelInUse,
     required this.channels,
+    this.measurement = ChannelBandMeasurement.measured,
   });
 
   /// [band] as an identifier slug: "2.4GHz" → "2-4ghz" (constitution
@@ -105,7 +110,23 @@ class ChannelBandScanUIModel extends Equatable {
   }
 
   @override
-  List<Object?> get props => [band, channelInUse, channels];
+  List<Object?> get props => [band, channelInUse, channels, measurement];
+}
+
+/// Whether one band's channel scan measured its channels (#1778).
+enum ChannelBandMeasurement {
+  /// The channel scan left a new result, and the busyness is from it.
+  measured,
+
+  /// The router did not measure the band: it refused the channel scan, or
+  /// the radio is not one of the controller's DataElements radios. Scanning
+  /// again is unlikely to help.
+  refused,
+
+  /// No result could be read: the stored results could not be read before
+  /// the scan, or no new result arrived in time after it. Scanning again may
+  /// help.
+  unanswered,
 }
 
 /// The result of one Channel Finder scan.

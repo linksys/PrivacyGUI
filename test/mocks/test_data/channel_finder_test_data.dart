@@ -112,11 +112,12 @@ class ChannelFinderTestData {
       {'Device.WiFi.DataElements.Network.ControllerID': id};
 
   /// One `ScanResult.{instance}` under [radioPath], with one `ChannelScan` row
-  /// per entry of [utilization] (channel → value).
+  /// per entry of [utilization] (channel → value). No `TimeStamp` row when
+  /// [timeStamp] is null.
   static Map<String, dynamic> scanResultRows({
     required String radioPath,
     required int instance,
-    required String timeStamp,
+    required String? timeStamp,
     required Map<int, int> utilization,
   }) {
     final scan = '${radioPath}ScanResult.$instance.';
@@ -125,7 +126,7 @@ class ChannelFinderTestData {
       'Device.WiFi.DataElements.Network.Device.1.ID': controllerId,
       '${radioPath}ID':
           radioPath == dataElements5 ? bssid5 : '72:12:13:21:55:03',
-      '${scan}TimeStamp': timeStamp,
+      if (timeStamp != null) '${scan}TimeStamp': timeStamp,
       '${scan}OpClassScan.1.OperatingClass': '115',
       for (final entry in utilization.entries) ...{
         '${scan}OpClassScan.1.ChannelScan.${++row}.Channel': '${entry.key}',

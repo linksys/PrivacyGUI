@@ -136,6 +136,8 @@ void main() {
       expect(band24.channels.first.utilization, 60);
       expect(band24.channels[1].utilization, isNull,
           reason: 'channel 2 was scanned but the result has no row for it');
+      expect(result.bands.map((b) => b.measurement),
+          everyElement(ChannelBandMeasurement.measured));
     });
 
     test('puts each network on its radio and channel, strongest first',
@@ -207,6 +209,30 @@ void main() {
           reason: 'not 200 from the earlier scan');
     });
 
+    test(
+        'takes a new result by its instance number, so one without a '
+        'TimeStamp still counts', () async {
+      // Instance numbers only go up and are never reused (FW on #1778), so
+      // the highest is the newest whatever its TimeStamp says.
+      dataElements =
+          _Data.dataElementsRows(bssid24OnDataElements: '72:12:13:21:55:03');
+      scanReads = [
+        _earlier,
+        {
+          ..._earlier,
+          ..._Data.scanResultRows(
+              radioPath: _Data.dataElements5,
+              instance: 2,
+              timeStamp: null,
+              utilization: {36: 10, 40: 2, 44: 10, 48: 11, 149: 10}),
+        },
+      ];
+      final result = await service().scan();
+
+      expect(result.bands.last.channels.first.utilization, 10);
+      expect(result.bands.last.measurement, ChannelBandMeasurement.measured);
+    });
+
     test('leaves a band unmeasured when no new result arrives in time',
         () async {
       scanReads = [_earlier];
@@ -214,6 +240,8 @@ void main() {
 
       expect(result.bands.last.channels.map((c) => c.utilization),
           everyElement(isNull));
+      expect(result.bands.map((b) => b.measurement),
+          everyElement(ChannelBandMeasurement.unanswered));
       expect(
           result.bands.last.channels
               .firstWhere((c) => c.channel == 36)
@@ -228,6 +256,8 @@ void main() {
 
       expect(result.bands.expand((b) => b.channels).map((c) => c.utilization),
           everyElement(isNull));
+      expect(result.bands.map((b) => b.measurement),
+          everyElement(ChannelBandMeasurement.refused));
       expect(result.bands.first.channels.first.neighbors, isNotEmpty);
     });
 
@@ -256,6 +286,8 @@ void main() {
       expect(operates, isEmpty);
       expect(result.bands.expand((b) => b.channels).map((c) => c.utilization),
           everyElement(isNull));
+      expect(result.bands.map((b) => b.measurement),
+          everyElement(ChannelBandMeasurement.unanswered));
     });
 
     test(
@@ -269,6 +301,10 @@ void main() {
       expect(result.bands.first.channels.map((c) => c.utilization),
           everyElement(isNull));
       expect(result.bands.first.channels.first.neighbors, isNotEmpty);
+      expect(result.bands.map((b) => b.measurement), [
+        ChannelBandMeasurement.refused,
+        ChannelBandMeasurement.measured,
+      ]);
     });
 
     test('channel-scans nothing when the controller is not in DataElements',
@@ -290,6 +326,8 @@ void main() {
 
       expect(operates, isEmpty);
       expect(result.bands, hasLength(2));
+      expect(result.bands.map((b) => b.measurement),
+          everyElement(ChannelBandMeasurement.refused));
     });
 
     test('leaves out a radio that is off', () async {
