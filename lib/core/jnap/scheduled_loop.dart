@@ -14,7 +14,8 @@ import 'package:privacy_gui/core/utils/logger.dart';
 /// Each turn:
 /// 1. waits: [firstDelayInMilliSec] before the first request, and
 ///    [retryDelayInMilliSec] after each answer that does not meet [condition];
-/// 2. runs [guard], then [request], then [guard] again;
+/// 2. runs [guard], then [request], then [guard] again, and once the turns
+///    are over, [guard] once more, before [onCompleted];
 /// 3. yields the answer, with a failed request turned into a [JNAPError];
 /// 4. stops when [condition] holds.
 ///
@@ -77,6 +78,11 @@ Stream<JNAPResult> scheduledLoop({
     }
     await wait(Duration(milliseconds: retryDelayInMilliSec));
   }
+  // The last retry delay ends the loop with no request after it, so a cancel
+  // or a logout during that delay is noticed here, before the caller is told
+  // that the retries ran out (#1904).
+  yield* const Stream<JNAPResult>.empty();
+  guard();
   onCompleted?.call(exceedMaxRetry);
 }
 

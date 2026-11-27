@@ -258,6 +258,12 @@ class RouterRepository {
   /// [LoggedOutException]. [onCompleted] is not called: the condition did not
   /// hold, and the retries did not run out. Left null, the loop goes on across
   /// a logout (#1904).
+  ///
+  /// A cancel ends the loop at its next yield: after a delay, before the next
+  /// request or before [onCompleted], which is not called either. A request
+  /// already out is let finish. A cancel and a logout end the loop each on its
+  /// own; when both fall in one delay, the cancel ends it, with no error. A
+  /// paused listener holds the loop before its next request.
   Stream<JNAPResult> scheduledCommand({
     required JNAPAction action,
     int retryDelayInMilliSec = 5000,

@@ -147,10 +147,9 @@ void main() {
   /// after the failing one would fail too.
   void queueTest(
     String description,
-    Future<void> Function(WidgetTester tester) body, {
-    bool skip = false,
-  }) {
-    testWidgets(description, skip: skip, (tester) async {
+    Future<void> Function(WidgetTester tester) body,
+  ) {
+    testWidgets(description, (tester) async {
       try {
         await body(tester);
       } finally {
@@ -447,6 +446,30 @@ void main() {
       expect(loop.errors, isEmpty);
       expect(loop.completed, [true]);
     });
+
+    queueTest(
+        'ends at a logout during its last retry delay, without onCompleted',
+        (tester) async {
+      // The retries run out at the end of the last delay, with no request
+      // after it. A logout in that delay still ends the loop, as one in any
+      // other delay does (#1904).
+      final loop = run(
+        firstDelay: 0,
+        retryDelay: 2000,
+        maxRetry: 1,
+        logoutGeneration: auth().logoutGeneration,
+      );
+      await advance(tester, 500);
+      expect(executor.requests, hasLength(1));
+
+      await auth().logout();
+      await drainQueue(tester);
+
+      expect(loop.errors.single, isA<LoggedOutException>());
+      expect(loop.completed, isEmpty,
+          reason: 'a loop ended by a logout does not say the retries ran out');
+      expect(loop.done.isCompleted, isTrue);
+    });
   });
 
   queueTest(
@@ -476,5 +499,52 @@ void main() {
     expect(cancelled, isTrue);
     expect(executor.requests, hasLength(1),
         reason: 'no request after the cancel');
+  });
+
+  queueTest('cancelling the subscription during the first delay sends nothing',
+      (tester) async {
+    final subscription = repo
+        .scheduledCommand(
+          action: JNAPAction.getFirmwareUpdateStatus,
+          firstDelayInMilliSec: 3000,
+          retryDelayInMilliSec: 2000,
+          maxRetry: 10,
+        )
+        .listen((_) {});
+
+    await advance(tester, 1000);
+    var cancelled = false;
+    unawaited(subscription.cancel().then((_) => cancelled = true));
+    await advance(tester, 10000);
+    await drainQueue(tester);
+
+    expect(cancelled, isTrue);
+    expect(executor.requests, isEmpty, reason: 'no request after the cancel');
+  });
+
+  queueTest(
+      'cancelling the subscription during the last retry delay does not '
+      'say the retries ran out', (tester) async {
+    final completed = <bool>[];
+    final subscription = repo
+        .scheduledCommand(
+          action: JNAPAction.getFirmwareUpdateStatus,
+          firstDelayInMilliSec: 0,
+          retryDelayInMilliSec: 2000,
+          maxRetry: 1,
+          onCompleted: completed.add,
+        )
+        .listen((_) {});
+
+    await advance(tester, 500);
+    expect(executor.requests, hasLength(1));
+    var cancelled = false;
+    unawaited(subscription.cancel().then((_) => cancelled = true));
+    await advance(tester, 10000);
+    await drainQueue(tester);
+
+    expect(cancelled, isTrue);
+    expect(completed, isEmpty,
+        reason: 'a cancelled loop tells its caller nothing');
   });
 }
