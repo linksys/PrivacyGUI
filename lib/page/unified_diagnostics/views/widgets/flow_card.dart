@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -63,7 +64,7 @@ class FlowCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(AppRadius.sm),
                           ),
                           child: AppText.labelSmall(
-                            'Recommended',
+                            loc(context).diagnosticsRecommended,
                             color: colorScheme.onPrimaryContainer,
                           ),
                         ),

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/util/network_utils.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -7,6 +6,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 import '../../models/device_score.dart';
 import '../../models/diagnostic_result.dart';
 import '../../models/diagnostic_state.dart';
+import 'signal_level_label.dart';
 
 class StepResultTile extends StatelessWidget {
   final DiagnosticStepUIModel result;
@@ -193,17 +193,20 @@ class StepResultTile extends StatelessWidget {
               loc(context).signal,
               r.connectedDevices == 0
                   ? loc(context).noClients
-                  : '${r.rssi} dBm (avg)'),
+                  : loc(context).diagnosticsAverageRssi(r.rssi)),
           if (r.connectedDevices > 0)
             _ResultDetail(
                 loc(context).wirelessClients, '${r.connectedDevices}'),
           for (final radio in r.radios.where((rd) => rd.hasClients))
             _ResultDetail(
               radio.isResolved
-                  ? '${radio.band} Ch${radio.channelInUse ?? '--'}'
+                  ? loc(context).diagnosticsBandChannel(
+                      radio.band, '${radio.channelInUse ?? '--'}')
                   : loc(context).unresolved,
-              '${radio.averageRssi} dBm avg / min ${radio.minRssi} '
-              '(${radio.clientCount} clients)',
+              loc(context).diagnosticsRadioSignal(
+                  radio.averageRssi,
+                  radio.minRssi,
+                  loc(context).diagnosticsClients(radio.clientCount)),
             ),
         ],
       DhcpPoolCheckUIModel r => [
@@ -355,9 +358,10 @@ class StepResultTile extends StatelessWidget {
             _ResultDetail('  ${loc(context).connectedTo}', n.parentLabel!));
       }
       if (!n.isWired && n.signalStrengthDbm != 0) {
-        final signalLevel = getWifiSignalLevel(n.signalStrengthDbm);
-        details.add(_ResultDetail('  ${loc(context).signal}',
-            '${n.signalStrengthDbm} dBm (${signalLevel.displayTitle})'));
+        details.add(_ResultDetail(
+            '  ${loc(context).signal}',
+            '${n.signalStrengthDbm} dBm '
+                '(${diagnosticsSignalLevelLabel(context, n.signalStrengthDbm)})'));
       }
       if (n.lastUplinkRateKbps > 0 || n.lastDownlinkRateKbps > 0) {
         details.add(_ResultDetail(

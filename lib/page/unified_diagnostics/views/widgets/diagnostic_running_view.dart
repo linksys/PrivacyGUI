@@ -207,10 +207,13 @@ class DiagnosticRunningView extends ConsumerWidget {
           final percent? => loc(context).channelFinderBusy(percent),
           null => loc(context).completed,
         },
-      DhcpPoolCheckUIModel r => '${r.usedLeases}/${r.capacity} used',
-      ConnectedDevicesCheckUIModel r => '${r.totalDevices} devices',
-      DnsLookupCheckUIModel r => r.hasResolved ? 'OK' : loc(context).failed,
-      TracerouteCheckUIModel r => '${r.hops.length} hops',
+      DhcpPoolCheckUIModel r =>
+        loc(context).diagnosticsLeasesUsed(r.usedLeases, r.capacity),
+      ConnectedDevicesCheckUIModel r =>
+        loc(context).diagnosticsDevices(r.totalDevices),
+      DnsLookupCheckUIModel r =>
+        r.hasResolved ? loc(context).diagnosticsStatusOk : loc(context).failed,
+      TracerouteCheckUIModel r => loc(context).nHops(r.hops.length),
       _ when result.step == DiagnosticStep.runningSpeedTest => result.rawData
               .containsKey('downloadMbps')
           ? '${(result.rawData['downloadMbps'] as double).toStringAsFixed(1)} Mbps'
