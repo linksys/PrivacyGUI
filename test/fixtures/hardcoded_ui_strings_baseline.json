@@ -1,0 +1,359 @@
+{
+  "lib/components/mixin/preserved_state_mixin.dart": {
+    "main": 1
+  },
+  "lib/components/shortcuts/dialogs.dart": {
+    "Child": 2,
+    "Last": 2,
+    "Master": 2,
+    "dialog-cancel": 1,
+    "dialog-submit": 1
+  },
+  "lib/components/styled/general_settings_widget/general_settings_widget.dart": {
+    "darkThemeData": 1,
+    "general settings": 1,
+    "mascot": 1,
+    "theme": 1,
+    "version": 1,
+    "version ${…} (${…})": 1
+  },
+  "lib/components/styled/general_settings_widget/language_tile.dart": {
+    "checked": 1,
+    "locale": 1,
+    "locale list": 1
+  },
+  "lib/components/styled/general_settings_widget/theme_mode_tile.dart": {
+    "Dark Mode": 1,
+    "Light Mode": 1,
+    "System": 1,
+    "checked": 1,
+    "theme mode list": 1
+  },
+  "lib/components/styled/menus/widgets/bottom_navigation_menu.dart": {
+    "darkThemeData": 1
+  },
+  "lib/components/styled/menus/widgets/top_navigation_menu.dart": {
+    "darkThemeData": 1
+  },
+  "lib/components/ui_kit_page_view.dart": {
+    "page-cancel": 1,
+    "page-save": 1
+  },
+  "lib/page/_shared/components/layout_blocks/row_blocks.dart": {
+    "Guest": 2
+  },
+  "lib/page/_shared/components/remote_session_chip.dart": {
+    "AM": 1,
+    "Active": 1,
+    "Expired": 1,
+    "Expires At": 1,
+    "Initiating": 1,
+    "Invalid": 1,
+    "PM": 1,
+    "Pending": 1,
+    "Status": 1,
+    "Unknown": 1
+  },
+  "lib/page/_shared/components/wifi_ui.dart": {
+    "Enhanced Open": 1
+  },
+  "lib/page/admin/cards/usp_time_settings_card.dart": {
+    "DST": 1,
+    "Not set": 1,
+    "time": 1
+  },
+  "lib/page/admin/views/components/usp_timezone_card.dart": {
+    "Not set": 1
+  },
+  "lib/page/admin/views/dialogs/confirm_action_dialog.dart": {
+    "Confirm": 1
+  },
+  "lib/page/ai_assistant/views/router_assistant_view.dart": {
+    "A2UI Action: ${…}": 2,
+    "AKIA...": 1,
+    "Analyzing": 1,
+    "Checking": 1,
+    "Haiku 4.5 (Fast)": 1,
+    "Looking into this": 1,
+    "MessageBubble: rendering, isUser=${…}, isA2UI=${…}, content=${…}": 1,
+    "MessageBubble: rendering, isUser=${…}, isA2UI=${…}, length=${…}": 1,
+    "MessageBubble: unknown message type, role=${…}": 1,
+    "Opus 4.7": 1,
+    "Opus 4.8 (Most Capable)": 1,
+    "Processing": 1,
+    "RouterAssistantView: could not ${…}: ${…}${…}": 1,
+    "RouterAssistantView: could not connect with manual config: ${…}": 1,
+    "RouterAssistantView: could not start a session from environment config: ${…}": 1,
+    "RouterAssistantView: no environment config (${…})": 1,
+    "Sonnet 4.5": 1,
+    "Sonnet 4.6": 1,
+    "Thinking": 1,
+    "Working on it": 1,
+    "assistant-model-${…}": 1,
+    "clear credentials": 1,
+    "read saved credentials": 1,
+    "save credentials": 1,
+    "save model": 1,
+    "unknown": 3,
+    "us-west-2": 1,
+    "us.anthropic.claude-haiku-4-5-20251001-v1:0": 1,
+    "us.anthropic.claude-opus-4-7": 1,
+    "us.anthropic.claude-opus-4-8": 1,
+    "us.anthropic.claude-sonnet-4-5-20250929-v1:0": 1,
+    "us.anthropic.claude-sonnet-4-6": 1
+  },
+  "lib/page/apps/views/usp_apps_view.dart": {
+    "${…}${…}token=${…}": 1,
+    "${…}/app-store/?token=${…}": 1
+  },
+  "lib/page/dashboard/views/components/settings/usp_layout_settings_panel.dart": {
+    "preset_changed": 1,
+    "reset": 1
+  },
+  "lib/page/dashboard/views/components/usp_device_analytics_card.dart": {
+    "device_analytics": 1
+  },
+  "lib/page/dashboard/views/components/usp_network_health_card.dart": {
+    "network_health": 1
+  },
+  "lib/page/dashboard/views/components/usp_system_status_card.dart": {
+    "system_status": 1
+  },
+  "lib/page/dashboard/views/components/usp_traffic_analysis_card.dart": {
+    "traffic_analysis": 1
+  },
+  "lib/page/dashboard/views/dialogs/ethernet_port_detail_dialog.dart": {
+    "Down": 1,
+    "No connected devices": 1,
+    "Up": 1
+  },
+  "lib/page/dashboard/views/dialogs/port_forwarding_dialog.dart": {
+    "Both": 1
+  },
+  "lib/page/dashboard/views/dialogs/preset_selection_dialog.dart": {
+    "Choose Dashboard Style": 1,
+    "Select a layout that suits your needs. You can customise it further with drag-and-drop editing.": 1
+  },
+  "lib/page/dashboard/views/dialogs/wifi_channel_dialog.dart": {
+    "wifi-channel-${…}": 1,
+    "wifi-channel-auto": 1
+  },
+  "lib/page/dashboard/views/usp_dashboard_view.dart": {
+    "${…}?ended=true": 1
+  },
+  "lib/page/dashboard/widgets/package_widget_renderer.dart": {
+    "Action completed": 1,
+    "Action failed": 1,
+    "Action failed (${…})": 1,
+    "Cannot open page": 1,
+    "Data refreshed": 1,
+    "Failed to open page": 1,
+    "Opened app page": 1,
+    "Widget error: ${…}": 2
+  },
+  "lib/page/ddns/views/usp_ddns_view.dart": {
+    "ddns-provider-${…}": 1,
+    "disabled": 1
+  },
+  "lib/page/devices/cards/usp_connected_devices_card.dart": {
+    "Wired": 1
+  },
+  "lib/page/devices/views/usp_device_detail_view.dart": {
+    "dhcp": 2
+  },
+  "lib/page/dhcp/views/dialogs/dhcp_reservation_edit_dialog.dart": {
+    "duplicateIpAddress": 1,
+    "duplicateMacAddress": 1,
+    "invalidMacAddressFormat": 1
+  },
+  "lib/page/firmware_update/views/components/firmware_router_status_card.dart": {
+    "(empty)": 1
+  },
+  "lib/page/firmware_update/views/firmware_ota_view.dart": {
+    "loadBanks": 1,
+    "observeRunningOtaInstall": 1
+  },
+  "lib/page/internet_settings/cards/usp_network_status_card.dart": {
+    "Enabled": 1,
+    "wanRenew": 1
+  },
+  "lib/page/internet_settings/views/sections/auto_ipoe_section.dart": {
+    "asahiauth-password": 1,
+    "asahiauthkey": 1,
+    "biglobe-password": 1,
+    "biglobe-user-id": 1,
+    "standard-ipv4-address": 1,
+    "standard-ipv6-interfaceid": 1,
+    "standard-ipv6-remote": 1,
+    "transix-ipv4-address": 1,
+    "transix-ipv6-interfaceid": 1,
+    "transix-ipv6-remote": 1,
+    "transixupdate-password": 1,
+    "transixupdate-user-id": 1,
+    "v6plus-ipv4-address": 1,
+    "v6plus-ipv6-interfaceid": 1,
+    "v6plus-ipv6-remote": 1,
+    "v6plus-password": 1,
+    "v6plus-user-id": 1,
+    "xpass-ipv4-address": 1,
+    "xpass-ipv6-remote": 1,
+    "xpassbasicauth-password": 1,
+    "xpassbasicauthid": 1,
+    "xpassddns-password": 1,
+    "xpassddnsid": 1,
+    "xpassfqdn": 1,
+    "xpassupdateurl": 1
+  },
+  "lib/page/internet_settings/views/sections/usp_ipv4_section.dart": {
+    "${…} Server": 2,
+    "AlwaysOn": 1,
+    "OnDemand": 1,
+    "internet-connection-type-${…}": 1,
+    "internet-vlan-priority-${…}": 1
+  },
+  "lib/page/internet_settings/views/sections/usp_ipv6_section.dart": {
+    "2001:db8::/32": 1
+  },
+  "lib/page/ipv6_port_service/views/dialogs/ipv6_port_service_rule_dialog.dart": {
+    "Both": 1,
+    "ipv6-rule-end-port": 1,
+    "ipv6-rule-start-port": 1
+  },
+  "lib/page/ipv6_port_service/views/usp_ipv6_port_service_view.dart": {
+    "${…} | Port ${…}": 1
+  },
+  "lib/page/landing/views/home_view.dart": {
+    "${…} - local": 1,
+    "version ${…}": 1
+  },
+  "lib/page/local_network/cards/usp_dhcp_reservations_card.dart": {
+    "No DHCP clients": 1,
+    "dhcp": 3
+  },
+  "lib/page/mac_filter/views/mac_filter_add_device_dialog.dart": {
+    "alreadyInList": 1,
+    "invalidMacFormat": 1
+  },
+  "lib/page/notification_history/views/usp_notification_history_view.dart": {
+    "Event": 1,
+    "OperationComplete": 1,
+    "ValueChange": 1,
+    "command_key": 1,
+    "command_name": 1,
+    "err_code": 1,
+    "err_msg": 1,
+    "event_name": 1,
+    "notification-history-type-${…}": 1,
+    "notification-history-type-all": 1,
+    "param_path": 1,
+    "param_value": 1
+  },
+  "lib/page/port_forwarding/cards/usp_port_forwarding_card.dart": {
+    "portForwarding": 3
+  },
+  "lib/page/port_forwarding/views/dialogs/port_range_forwarding_dialog.dart": {
+    "Both": 1,
+    "max32Characters": 1,
+    "mustBeGreaterThanStartPort": 1,
+    "pf-range-external-port-end": 1,
+    "pf-range-external-port-start": 1,
+    "portMustBe1To65535": 2,
+    "rulesOverlapError": 1
+  },
+  "lib/page/port_forwarding/views/dialogs/port_triggering_dialog.dart": {
+    "Both": 1,
+    "max32Characters": 1,
+    "mustBeGreaterThanStartPort": 2,
+    "pf-trigger-forward-port-end": 1,
+    "pf-trigger-forward-port-start": 1,
+    "pf-trigger-trigger-port-end": 1,
+    "pf-trigger-trigger-port-start": 1,
+    "portMustBe1To65535": 4,
+    "rulesOverlapError": 2
+  },
+  "lib/page/remote_assistance/views/remote_assistance_banner.dart": {
+    "A support agent is currently connected to your router. Please do not close this window.": 1,
+    "Are you sure you want to end the Remote Assistance session?": 1,
+    "Connected": 1,
+    "Expires in": 1,
+    "PIN: ": 1,
+    "Share this PIN with your support agent:": 1
+  },
+  "lib/page/remote_assistance/views/remote_assistance_confirm_view.dart": {
+    "${…}?session=${…}": 1,
+    "Connect": 1,
+    "Connecting...": 1,
+    "Connection failed: ${…}": 1,
+    "Environment: ${…}": 1,
+    "Expected URL format:\n/remote-assistance?session=<id>&token=<token>": 1,
+    "Missing Parameters": 1,
+    "Session Ended": 1,
+    "Session ID: ${…}": 1,
+    "Session validated. Ready to connect.": 1,
+    "The following required parameters are missing:\n${…}": 1,
+    "The remote assistance session has been disconnected.": 1,
+    "You can close this window or start a new session.": 1,
+    "session": 1,
+    "token": 1
+  },
+  "lib/page/remote_assistance/views/remote_assistance_dialog.dart": {
+    "A support agent is currently connected to your router. Please do not close this window.": 1,
+    "An unexpected error occurred": 1,
+    "Connected": 1,
+    "Expires in": 1,
+    "Generating PIN...": 1,
+    "Share this PIN with your support agent:": 1,
+    "The session has expired or been terminated. Please contact support again if you need further assistance.": 1,
+    "To take advantage of Remote Assistance, you must first contact a phone support agent. Go to {{support:linksys.com/support}} and click on Phone Call to get started.": 1,
+    "Waiting for agent...": 1
+  },
+  "lib/page/statistics/views/sections/stats_error_rates_section.dart": {
+    "Avg: ${…}": 1,
+    "Avg: ${…}  Peak: ${…}": 1
+  },
+  "lib/page/statistics/views/sections/stats_packet_loss_section.dart": {
+    "Avg: ${…}%  Peak: ${…}%": 1
+  },
+  "lib/page/support/shared_widgets/faq_agent/components/faq_component_registry.dart": {
+    "FAQResult": 1,
+    "NetworkError": 1,
+    "No results found": 1,
+    "NoResults": 1,
+    "Unable to connect. Please check your network.": 1
+  },
+  "lib/page/support/views/components/remote_assistance_card.dart": {
+    "Get help from Linksys support": 1
+  },
+  "lib/page/system_log/views/usp_system_log_view.dart": {
+    "Max Size: ${…}": 1,
+    "Persistent": 1,
+    "Volatile": 1
+  },
+  "lib/page/wifi_settings/cards/usp_wifi_networks_card.dart": {
+    "${…} \"${…}\" on all bands?": 1,
+    "Disable": 1,
+    "Enable": 1,
+    "No WiFi networks configured": 1
+  },
+  "lib/page/wifi_settings/cards/usp_wifi_performance_card.dart": {
+    "No WiFi clients connected": 2,
+    "No WiFi radios available": 1,
+    "wifi_performance": 1
+  },
+  "lib/page/wifi_settings/views/components/wifi_network_card.dart": {
+    "802.11a Only": 1,
+    "802.11a/n Only": 1,
+    "802.11a/n/ac Only": 1,
+    "802.11a/n/ac/ax Only": 1,
+    "802.11b Only": 1,
+    "802.11b/g Only": 1,
+    "802.11b/g/n Only": 1,
+    "802.11b/g/n/ax Only": 1,
+    "Auto": 6,
+    "Mixed": 1,
+    "mixed": 5,
+    "wifi-broadcast-${…}": 1,
+    "wifi-enable-${…}": 1,
+    "wifi-name-${…}": 1
+  }
+}
