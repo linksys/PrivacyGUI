@@ -4,6 +4,7 @@ import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
+import 'package:privacy_gui/core/jnap/scheduled_loop.dart';
 
 import '../mocks/router_repository_mocks.dart';
 
@@ -170,31 +171,33 @@ class RouterBoundary {
   /// The actions the router received, in order.
   List<JNAPAction> get actions => [for (final command in sent) command.key];
 
+  /// A write the table need not name: it answers OK with no output.
+  bool _answersOkUnasked(JNAPAction action) =>
+      action.name.startsWith('set') || action.name.startsWith('renew');
+
   JNAPSuccess _answer(JNAPAction action) {
     final turns = _answers[action];
     if (turns != null) {
       return (turns.length > 1 ? turns.removeAt(0) : turns.single)();
     }
-    if (action.name.startsWith('set') || action.name.startsWith('renew')) {
+    if (_answersOkUnasked(action)) {
       return const JNAPSuccess(result: 'OK', output: {});
     }
     throw StateError('The router was asked for $action, which this test '
         'does not give it.');
   }
 
-  /// [RouterRepository.scheduledCommand], without its delays unless
-  /// [honorsPollDelays] is on: each poll sends [action] to the table, yields
-  /// the answer, checks [condition], and stops there or once [maxRetry] polls
-  /// ran; [onCompleted] is then told whether the polls ran out.
+  /// [RouterRepository.scheduledCommand]'s own loop, `scheduledLoop`, run on
+  /// the table instead of the network, and without its delays unless
+  /// [honorsPollDelays] is on. So a provider test runs the real loop's rules:
+  /// its condition, [maxRetry], `-1`, the JNAP error it yields for a failed
+  /// request, [onCompleted], and a cancel.
   ///
-  /// The delays fall where the real ones do: [firstDelay] before the first
-  /// poll, and [retryDelay] after each poll that does not meet [condition],
-  /// the last one included.
-  ///
-  /// A JNAP error is yielded, not thrown, as it is there. Anything else is
-  /// thrown, where the real one would yield it as a JNAP error: the only
-  /// such throw here is an action the table does not name, which is a gap in
-  /// the test, so it fails the test rather than reaching the provider.
+  /// Two failures are not turned into a JNAP error, because each is a gap in
+  /// the test, and fails it instead of reaching the provider: an action the
+  /// table does not name, and a poll with no limit that never meets its
+  /// condition. Both are thrown where the real loop checks for a logout,
+  /// which a test here does not model: it has no login to end.
   Stream<JNAPResult> _poll(
     JNAPAction action, {
     required Map<String, dynamic> data,
@@ -205,33 +208,31 @@ class RouterBoundary {
     Function(bool exceedMaxRetry)? onCompleted,
   }) async* {
     polls.add(action);
-    var retry = 0;
-    var exceededMaxRetry = true;
-    while (++retry <= maxRetry || maxRetry == -1) {
-      if (honorsPollDelays && retry == 1) {
-        await Future.delayed(Duration(milliseconds: firstDelay));
-      }
-      if (maxRetry == -1 && retry > _endlessPollLimit) {
-        throw StateError('$action was polled $_endlessPollLimit times and '
-            'never met its condition: give it an answer that does.');
-      }
-      sent.add(SentCommand(action, data));
-      JNAPResult result;
-      try {
-        result = _answer(action);
-      } on JNAPError catch (error) {
-        result = error;
-      }
-      yield result;
-      if (condition?.call(result) ?? false) {
-        exceededMaxRetry = false;
-        break;
-      }
-      if (honorsPollDelays) {
-        await Future.delayed(Duration(milliseconds: retryDelay));
-      }
-    }
-    onCompleted?.call(exceededMaxRetry);
+    var requests = 0;
+    yield* scheduledLoop(
+      action: action,
+      request: () async {
+        requests++;
+        sent.add(SentCommand(action, data));
+        return _answer(action);
+      },
+      guard: () {
+        if (!_answers.containsKey(action) && !_answersOkUnasked(action)) {
+          throw StateError('The router was asked for $action, which this '
+              'test does not give it.');
+        }
+        if (maxRetry == -1 && requests >= _endlessPollLimit) {
+          throw StateError('$action was polled $_endlessPollLimit times and '
+              'never met its condition: give it an answer that does.');
+        }
+      },
+      retryDelayInMilliSec: retryDelay,
+      maxRetry: maxRetry,
+      firstDelayInMilliSec: firstDelay,
+      condition: condition,
+      onCompleted: onCompleted,
+      wait: honorsPollDelays ? Future.delayed : (_) async {},
+    );
   }
 
   /// How many times a poll with no limit (maxRetry -1) may run in a test.

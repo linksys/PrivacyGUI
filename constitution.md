@@ -93,8 +93,6 @@ These dependencies predate this constitution. They are listed, not fixed (#1804,
 |---|---|---|
 | `lib/page/advanced_settings/local_network_settings/views/local_network_settings_view.dart` | `lib/core/jnap/router_repository.dart` | |
 | `lib/page/advanced_settings/local_network_settings/views/local_network_settings_view.dart` | `routerRepositoryProvider` | `getLocalIP()`, twice |
-| `lib/page/dashboard/views/prepare_dashboard_view.dart` | `lib/core/jnap/router_repository.dart` | |
-| `lib/page/dashboard/views/prepare_dashboard_view.dart` | `routerRepositoryProvider` | `send(getDeviceInfo)` |
 | `lib/page/instant_setup/pnp_admin_view.dart` | `lib/core/jnap/router_repository.dart` | |
 | `lib/page/instant_setup/pnp_admin_view.dart` | `routerRepositoryProvider` | `isLoggedIn()` |
 | `lib/page/instant_setup/pnp_setup_view.dart` | `lib/core/jnap/command/base_command.dart` | `CacheLevel` |

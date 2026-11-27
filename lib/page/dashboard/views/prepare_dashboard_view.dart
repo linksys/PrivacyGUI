@@ -1,24 +1,15 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
-import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
-import 'package:privacy_gui/providers/auth/auth_provider.dart';
-import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
-import 'package:privacy_gui/providers/connectivity/connectivity_provider.dart';
 import 'package:privacy_gui/constants/_constants.dart';
-import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/access/access_policy.dart';
-import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class PrepareDashboardView extends ArgumentsConsumerStatefulView {
   const PrepareDashboardView({
@@ -43,44 +34,15 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
 
   _checkSelfNetworks() async {
     final router = GoRouter.of(context);
-    await ref.read(connectivityProvider.notifier).forceUpdate();
-    final prefs = await SharedPreferences.getInstance();
-    String? serialNumber = prefs.getString(pCurrentSN);
-    final loginType =
-        ref.read(authProvider.select((value) => value.value?.loginType));
-    // Only PnP opens this page, once it has logged in locally. The router
-    // prepares a remote login itself (_prepareRemote).
-    if (loginType == LoginType.local) {
-      logger.i('PREPARE LOGIN:: local');
-      final routerRepository = ref.read(routerRepositoryProvider);
-
-      final newSerialNumber = await routerRepository
-          .send(
-            JNAPAction.getDeviceInfo,
-            fetchRemote: true,
-          )
-          .then<String>(
-              (value) => NodeDeviceInfo.fromJson(value.output).serialNumber);
-      await ref
-          .read(dashboardManagerProvider.notifier)
-          .saveSelectedNetwork(newSerialNumber, '');
-    }
     logger.d('Go to dashboard');
-    await ProviderContainer()
-        .read(linksysCacheManagerProvider)
-        .loadCache(serialNumber: serialNumber ?? '');
+    // Only PnP opens this page, once it has logged in locally; the router's
+    // redirect starts a remote login's session itself. Both run the same
+    // start (#1904). PnP held polling while it set the router up, so polling
+    // starts again even on the router it had.
     final nodeDeviceInfo = await ref
         .read(dashboardManagerProvider.notifier)
-        .checkDeviceInfo(null)
-        .then<NodeDeviceInfo?>((nodeDeviceInfo) => nodeDeviceInfo)
-        .onError((error, stackTrace) => null);
+        .startSession(forcePolling: true);
     if (nodeDeviceInfo != null) {
-      logger.d('SN changed: ${nodeDeviceInfo.serialNumber}');
-      await ref.read(connectivityProvider.notifier).forceUpdate();
-      logger.d('Force update connectivity finish!');
-
-      ref.read(pollingProvider.notifier).stopPolling();
-      ref.read(pollingProvider.notifier).startPolling();
       router.goNamed(RouteNamed.dashboardHome);
     } else {
       // TODO #LINKSYS Error handling for unable to get deviceinfo
