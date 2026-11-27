@@ -12,6 +12,7 @@ import 'package:privacy_gui/core/ai_session/router_ai_loader.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:privacy_gui/constants/error_code.dart';
@@ -440,6 +441,10 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     // then.
     ref.read(pollingProvider.notifier).stopPolling();
     ref.read(selectedNetworkIdProvider.notifier).state = null;
+    // The nodes a firmware install saved belong to this login's router. The
+    // next login, maybe to another router, would show them in place of its
+    // own (#1904).
+    ref.read(firmwareUpdateCandidateProvider.notifier).state = null;
   }
 
   Future<void> _logoutAiSession() async {
