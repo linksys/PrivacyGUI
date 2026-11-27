@@ -288,7 +288,8 @@ final editDirtyState = UspWifiSettingsState(
 // Advanced Tab States
 // ---------------------------------------------------------------------------
 
-/// DFS enabled on all radios, and MLO switched on (#1692).
+/// DFS enabled on the 5 GHz radio, and MLO switched on (#1692). The map holds
+/// the 5 GHz radio only: the DFS switch is that radio's 802.11h (#1973).
 ///
 /// MLO on is half of the MLO card's widest state; the other half is the
 /// `Inactive` status, which is L1's — `wifiSettingsOverrides` defaults it to
@@ -299,34 +300,24 @@ final editDirtyState = UspWifiSettingsState(
 final advancedDfsOnState = WifiAdvancedFeatureState(
   settings: Preservable(
     original: WifiAdvancedSettings(
-      ieee80211hByRadio: {
-        'Device.WiFi.Radio.1.': true,
-        'Device.WiFi.Radio.2.': true,
-      },
+      ieee80211hByRadio: {'Device.WiFi.Radio.2.': true},
       mloEnabled: true,
     ),
     current: WifiAdvancedSettings(
-      ieee80211hByRadio: {
-        'Device.WiFi.Radio.1.': true,
-        'Device.WiFi.Radio.2.': true,
-      },
+      ieee80211hByRadio: {'Device.WiFi.Radio.2.': true},
       mloEnabled: true,
     ),
   ),
   status: const WifiAdvancedStatus(),
 );
 
-/// DFS disabled on all radios
+/// DFS disabled on the 5 GHz radio
 final advancedDfsOffState = WifiAdvancedFeatureState(
   settings: Preservable(
-    original: WifiAdvancedSettings(ieee80211hByRadio: {
-      'Device.WiFi.Radio.1.': false,
-      'Device.WiFi.Radio.2.': false,
-    }),
-    current: WifiAdvancedSettings(ieee80211hByRadio: {
-      'Device.WiFi.Radio.1.': false,
-      'Device.WiFi.Radio.2.': false,
-    }),
+    original: WifiAdvancedSettings(
+        ieee80211hByRadio: {'Device.WiFi.Radio.2.': false}),
+    current: WifiAdvancedSettings(
+        ieee80211hByRadio: {'Device.WiFi.Radio.2.': false}),
   ),
   status: const WifiAdvancedStatus(),
 );
@@ -334,14 +325,10 @@ final advancedDfsOffState = WifiAdvancedFeatureState(
 /// Advanced tab dirty — DFS was off, user toggled on
 final advancedDirtyState = WifiAdvancedFeatureState(
   settings: Preservable(
-    original: WifiAdvancedSettings(ieee80211hByRadio: {
-      'Device.WiFi.Radio.1.': false,
-      'Device.WiFi.Radio.2.': false,
-    }),
-    current: WifiAdvancedSettings(ieee80211hByRadio: {
-      'Device.WiFi.Radio.1.': true,
-      'Device.WiFi.Radio.2.': true,
-    }),
+    original: WifiAdvancedSettings(
+        ieee80211hByRadio: {'Device.WiFi.Radio.2.': false}),
+    current:
+        WifiAdvancedSettings(ieee80211hByRadio: {'Device.WiFi.Radio.2.': true}),
   ),
   status: const WifiAdvancedStatus(),
 );

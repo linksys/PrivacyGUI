@@ -123,7 +123,7 @@ class UspWifiSettingsService {
       // e.g. "None, WPA2-Personal, WPA3-Personal" → ['None', 'WPA2-Personal', 'WPA3-Personal']
       final supportedModes = _parseModesSupported(ap?.modesSupported ?? '');
 
-      final band = _normalizeBand(radio?.operatingFrequencyBand ?? '');
+      final band = normalizeWifiBand(radio?.operatingFrequencyBand ?? '');
       // DFS (IEEE 802.11h) channels must not appear when DFS is disabled. The
       // firmware leaves them in PossibleChannels regardless, so filter here —
       // before computing per-bandwidth lists — so both the dropdown and the
@@ -765,13 +765,4 @@ List<String> _parseSupportedBandwidths(String raw) {
       .map((s) => s.trim())
       .where((s) => s.isNotEmpty)
       .toList();
-}
-
-/// Normalizes TR-181 OperatingFrequencyBand to display string.
-String _normalizeBand(String rawBand) {
-  final lower = rawBand.toLowerCase();
-  if (lower.contains('6g') || lower.contains('6 g')) return '6GHz';
-  if (lower.contains('5g') || lower.contains('5 g')) return '5GHz';
-  if (lower.contains('2.4') || lower.contains('2_4')) return '2.4GHz';
-  return rawBand;
 }

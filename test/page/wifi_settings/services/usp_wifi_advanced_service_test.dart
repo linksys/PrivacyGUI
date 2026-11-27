@@ -49,28 +49,82 @@ void main() {
     svc = UspWifiAdvancedService(mockUsp);
   });
 
+  // The DFS switch is the 5 GHz radio's 802.11h (LinksysWRT#578, #1973).
   group('UspWifiAdvancedService - fetchIeee80211h', () {
-    test('parses per-radio IEEE80211hEnabled from USP response', () async {
+    test('reads 802.11h on the 5 GHz radio only, in one Get with the band',
+        () async {
+      // The M60 on the bench (FW 2.0.4.26112201, 2026-11-26).
       when(() => mockUsp.get(any())).thenAnswer((_) async => {
-            'Device.WiFi.Radio.1.IEEE80211hEnabled': true,
-            'Device.WiFi.Radio.2.IEEE80211hEnabled': false,
+            'Device.WiFi.Radio.1.IEEE80211hEnabled': false,
+            'Device.WiFi.Radio.1.OperatingFrequencyBand': '2.4GHz',
+            'Device.WiFi.Radio.2.IEEE80211hEnabled': true,
+            'Device.WiFi.Radio.2.OperatingFrequencyBand': '5GHz',
           });
 
       final result = await svc.fetchIeee80211h();
 
-      expect(result, {
-        'Device.WiFi.Radio.1.': true,
-        'Device.WiFi.Radio.2.': false,
+      expect(result, {'Device.WiFi.Radio.2.': true});
+      verify(() => mockUsp.get([
+            'Device.WiFi.Radio.*.IEEE80211hEnabled',
+            'Device.WiFi.Radio.*.OperatingFrequencyBand',
+          ])).called(1);
+    });
+
+    test('a tri-band router: the 2.4 GHz and 6 GHz radios are left out',
+        () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            'Device.WiFi.Radio.1.IEEE80211hEnabled': true,
+            'Device.WiFi.Radio.1.OperatingFrequencyBand': '2.4GHz',
+            'Device.WiFi.Radio.2.IEEE80211hEnabled': false,
+            'Device.WiFi.Radio.2.OperatingFrequencyBand': '5GHz',
+            'Device.WiFi.Radio.3.IEEE80211hEnabled': true,
+            'Device.WiFi.Radio.3.OperatingFrequencyBand': '6GHz',
+          });
+
+      expect(await svc.fetchIeee80211h(), {'Device.WiFi.Radio.2.': false});
+    });
+
+    test('every 5 GHz radio is kept', () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            'Device.WiFi.Radio.2.IEEE80211hEnabled': true,
+            'Device.WiFi.Radio.2.OperatingFrequencyBand': '5GHz',
+            'Device.WiFi.Radio.3.IEEE80211hEnabled': false,
+            'Device.WiFi.Radio.3.OperatingFrequencyBand': '5GHz',
+          });
+
+      expect(await svc.fetchIeee80211h(), {
+        'Device.WiFi.Radio.2.': true,
+        'Device.WiFi.Radio.3.': false,
       });
-      verify(() => mockUsp.get(['Device.WiFi.Radio.*.IEEE80211hEnabled']))
-          .called(1);
+    });
+
+    test('a radio that reports no band is left out, not guessed', () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            'Device.WiFi.Radio.1.IEEE80211hEnabled': true,
+            'Device.WiFi.Radio.2.IEEE80211hEnabled': true,
+            'Device.WiFi.Radio.2.OperatingFrequencyBand': '5GHz',
+          });
+
+      expect(await svc.fetchIeee80211h(), {'Device.WiFi.Radio.2.': true});
+    });
+
+    test('a router with no 5 GHz radio reads as no DFS radio', () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            'Device.WiFi.Radio.1.IEEE80211hEnabled': false,
+            'Device.WiFi.Radio.1.OperatingFrequencyBand': '2.4GHz',
+          });
+
+      expect(await svc.fetchIeee80211h(), isEmpty);
     });
 
     test('handles string true/false values', () async {
       when(() => mockUsp.get(any())).thenAnswer((_) async => {
             'Device.WiFi.Radio.1.IEEE80211hEnabled': 'true',
+            'Device.WiFi.Radio.1.OperatingFrequencyBand': '5GHz',
             'Device.WiFi.Radio.2.IEEE80211hEnabled': '1',
+            'Device.WiFi.Radio.2.OperatingFrequencyBand': '5GHz',
             'Device.WiFi.Radio.3.IEEE80211hEnabled': 'false',
+            'Device.WiFi.Radio.3.OperatingFrequencyBand': '5GHz',
           });
 
       final result = await svc.fetchIeee80211h();
@@ -90,15 +144,16 @@ void main() {
 
     test('ignores unrelated keys in response', () async {
       when(() => mockUsp.get(any())).thenAnswer((_) async => {
-            'Device.WiFi.Radio.1.IEEE80211hEnabled': true,
-            'Device.WiFi.Radio.1.Channel': 36,
+            'Device.WiFi.Radio.2.IEEE80211hEnabled': true,
+            'Device.WiFi.Radio.2.OperatingFrequencyBand': '5GHz',
+            'Device.WiFi.Radio.2.Channel': 36,
             'Device.WiFi.SSID.1.SSID': 'TestNet',
           });
 
       final result = await svc.fetchIeee80211h();
 
       expect(result, hasLength(1));
-      expect(result['Device.WiFi.Radio.1.'], isTrue);
+      expect(result['Device.WiFi.Radio.2.'], isTrue);
     });
   });
 

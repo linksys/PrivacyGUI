@@ -16,7 +16,8 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// Implements:
 ///   - Client steering: Device.X_LINKSYS_Mesh.ClientSteeringEnabled (#1661)
 ///   - Node steering: Device.X_LINKSYS_Mesh.NodeSteeringEnabled (#1661)
-///   - DFS (IEEE 802.11h): Device.WiFi.Radio.{i}.IEEE80211hEnabled
+///   - DFS (IEEE 802.11h): Device.WiFi.Radio.{5 GHz}.IEEE80211hEnabled, the
+///     5 GHz radios only (LinksysWRT#578, #1973); no card without one
 ///   - MLO: Device.X_LINKSYS_Mesh.MLOEnabled, with MLOStatus (#1692)
 ///
 /// In 1.x's order: the two steering switches, DFS, then MLO.
