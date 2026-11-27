@@ -148,4 +148,36 @@ void main() {
       onCompleted: (tester) async {},
     );
   });
+
+  group('InstallPromptBanner label', () {
+    // The button's text style replaces the theme's, so a style with no font
+    // family leaves the label to the web engine's fallback font, which the web
+    // build did not ship: the label drew blank (#1975).
+    testWidgets('the install button keeps the theme\'s label font',
+        (tester) async {
+      await tester.pumpWidget(
+        testableSingleRoute(
+          child: const Scaffold(
+            body: Column(children: [InstallPromptBanner()]),
+          ),
+          overrides: [
+            pwaInstallServiceProvider
+                .overrideWith(() => FakePwaInstallService(PwaMode.native)),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      final button = find.byKey(const Key('pwa_install_button'));
+      final label =
+          find.descendant(of: button, matching: find.byType(RichText));
+      final style = tester.widget<RichText>(label).text.style;
+      final themeFont =
+          Theme.of(tester.element(button)).textTheme.labelMedium?.fontFamily;
+
+      expect(themeFont, isNotNull);
+      expect(style?.fontFamily, themeFont);
+      expect(style?.fontWeight, FontWeight.bold);
+    });
+  });
 }
