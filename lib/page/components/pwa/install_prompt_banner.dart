@@ -50,10 +50,14 @@ class InstallPromptBanner extends ConsumerWidget {
               loc(context).pwaInstallButton,
               key: const Key('pwa_install_button'),
               color: Colors.white.withValues(alpha: 0.2),
-              textStyle: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
+              // From the theme, so the label keeps the app's font: a style
+              // with no font family is drawn in the web engine's fallback
+              // font. The colour is the button's foreground, which a
+              // FilledButton applies over the style's own (#1975).
+              textStyle: Theme.of(context)
+                  .textTheme
+                  .labelMedium
+                  ?.copyWith(fontWeight: FontWeight.bold),
               onTap: () {
                 switch (mode) {
                   case PwaMode.ios:
