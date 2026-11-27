@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/source/line_info.dart';
@@ -70,6 +72,48 @@ List<Finding> findHookViolations(Map<String, String> sources) => _scan(
 List<Finding> findLiteralSemanticLabels(Map<String, String> sources) =>
     _scan(sources, _LabelVisitor.new);
 
+/// The public widget classes that [sources] declare (constitution 11.4): each
+/// public class that extends one of [bases], or another widget class of
+/// [sources], in whichever file that one is, whether it is declared with
+/// `extends` or as a mixin application, `class X = Y with Z;`. The default
+/// base is `Widget`, which finds the widgets of the Flutter SDK itself.
+Set<String> widgetClassesIn(
+  Map<String, String> sources, {
+  Set<String> bases = const {'Widget'},
+}) {
+  final superclassOf = <String, String>{
+    for (final source in sources.values)
+      for (final declaration in parseDart(source).declarations)
+        if (_superclassOf(declaration) case final superclass?)
+          (declaration as NamedCompilationUnitMember).name.lexeme: superclass,
+  };
+  bool isWidget(String name, Set<String> seen) {
+    final superclass = superclassOf[name];
+    if (superclass == null || !seen.add(name)) return false;
+    return bases.contains(superclass) || isWidget(superclass, seen);
+  }
+
+  return {
+    for (final name in superclassOf.keys)
+      if (!name.startsWith('_') && isWidget(name, {})) name,
+  };
+}
+
+/// The public widget classes of the Flutter SDK that runs the tests, in its
+/// widgets, material and cupertino libraries: the classes that a widget of
+/// `plugins/widgets` can extend.
+Set<String> flutterWidgetClasses() {
+  final root = Platform.environment['FLUTTER_ROOT'];
+  if (root == null) {
+    throw StateError('FLUTTER_ROOT is not set. Run the test with `flutter '
+        'test`, which sets it to the SDK that runs the test.');
+  }
+  return widgetClassesIn({
+    for (final library in ['widgets', 'material', 'cupertino'])
+      ...dartSources('$root/packages/flutter/lib/src/$library'),
+  });
+}
+
 /// What each visitor that [visitor] makes finds in [sources].
 List<Finding> _scan(
   Map<String, String> sources,
@@ -83,6 +127,16 @@ List<Finding> _scan(
   });
   return findings;
 }
+
+/// The name of the class that [declaration] extends, when it declares a class
+/// with a superclass: `class X extends Y` or `class X = Y with Z`.
+String? _superclassOf(CompilationUnitMember declaration) =>
+    switch (declaration) {
+      ClassDeclaration(:final extendsClause?) =>
+        extendsClause.superclass.name2.lexeme,
+      ClassTypeAlias(:final superclass) => superclass.name2.lexeme,
+      _ => null,
+    };
 
 /// The name of a named argument.
 String _argumentName(NamedExpression argument) => argument.name.label.name;

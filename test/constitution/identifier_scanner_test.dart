@@ -341,6 +341,103 @@ void main() {
     });
   });
 
+  group('widget classes', () {
+    const widgets = 'plugins/widgets/lib/widgets';
+
+    test('a public class that extends one of the bases is a widget', () {
+      final classes = widgetClassesIn({
+        '$widgets/a.dart': 'class AppA extends StatelessWidget {}\n'
+            'class AppB extends StatefulWidget {}\n'
+            'class AppChip extends Chip {}\n',
+      }, bases: {
+        'StatelessWidget',
+        'StatefulWidget',
+        'Chip',
+      });
+
+      expect(classes, {'AppA', 'AppB', 'AppChip'});
+    });
+
+    test('a class that extends another widget of the sources is a widget', () {
+      final classes = widgetClassesIn({
+        '$widgets/a.dart': 'class AppBase extends StatelessWidget {}\n',
+        // Declared before its superclass's file is read, and generic.
+        '$widgets/0.dart': 'class AppChild<T> extends AppBase {}\n'
+            'class AppGrandchild extends AppChild<int> {}\n',
+      }, bases: {
+        'StatelessWidget'
+      });
+
+      expect(classes, {'AppBase', 'AppChild', 'AppGrandchild'});
+    });
+
+    test('a mixin application of a widget is a widget', () {
+      final classes = widgetClassesIn({
+        '$widgets/a.dart': 'class AppMixed = StatelessWidget with AppMixin;\n'
+            'class AppMixedChild extends AppMixed {}\n'
+            'class AppPlain = Object with AppMixin;\n',
+      }, bases: {
+        'StatelessWidget'
+      });
+
+      expect(classes, {'AppMixed', 'AppMixedChild'});
+    });
+
+    test('without bases, a widget is a class that extends Widget', () {
+      final classes = widgetClassesIn({
+        'flutter/framework.dart':
+            'abstract class StatelessWidget extends Widget {}\n',
+        'flutter/text.dart': 'class Text extends StatelessWidget {}\n'
+            'class TextStyle with Diagnosticable {}\n',
+      });
+
+      expect(classes, {'StatelessWidget', 'Text'});
+    });
+
+    test('a private class, a State and a plain class are not widgets', () {
+      final classes = widgetClassesIn({
+        '$widgets/a.dart': 'class _AppHidden extends StatelessWidget {}\n'
+            'class AppState extends State<AppA> {}\n'
+            'class AppData extends Equatable {}\n'
+            'class AppController {}\n'
+            'class AppPainter extends CustomPainter {}\n',
+      }, bases: {
+        'StatelessWidget'
+      });
+
+      expect(classes, isEmpty);
+    });
+
+    test('a part file is read like any other file', () {
+      final classes = widgetClassesIn({
+        '$widgets/button.dart': "part 'text_button.dart';\n",
+        '$widgets/text_button.dart': "part of 'button.dart';\n"
+            'class AppTextButton extends StatelessWidget {}\n',
+      }, bases: {
+        'StatelessWidget'
+      });
+
+      expect(classes, {'AppTextButton'});
+    });
+
+    test("the Flutter SDK's widgets include its concrete widgets", () {
+      final classes = flutterWidgetClasses();
+
+      expect(
+          classes,
+          containsAll([
+            'StatelessWidget',
+            'StatefulWidget',
+            'SingleChildRenderObjectWidget',
+            'Chip',
+            'AppBar',
+            'CupertinoButton',
+          ]));
+      // A class that extends another class, but not a widget.
+      expect(classes, isNot(contains('TextEditingController')));
+    });
+  });
+
   test('findings count per file, the way the tables list them', () {
     final counts = countsByFile([
       (path: 'lib/page/a.dart', line: 3, what: 'x'),

@@ -1,7 +1,7 @@
 # The 1.x Constitution
 
-**Version:** 1.9
-**Last amended:** 2026-11-25 (#1935, E2E identifiers)
+**Version:** 1.10
+**Last amended:** 2026-11-27 (#1936, E2E identifiers for every component)
 **Applies to:** the 1.x line of PrivacyGUI: `dev-1.*`, `release-1.*`, and `main` while it ships 1.x. 2.x has its own `constitution.md`; nothing here binds 2.x, and nothing in 2.x's binds 1.x.
 
 ## Preamble
@@ -736,8 +736,10 @@ The page scanner checks every string literal under `lib/page/` passed as `identi
 
 ### 11.4 Layers (2.x 16.4)
 
-- **`plugins/widgets`** owns passthrough (issue #1935, Decision 2). Every component accepts `identifier` and makes it reach the DOM, except pure layout, spacing and animation helpers. A change goes on a new PrivacyGUI-Widgets branch cut from the version that `plugins/widgets` pins, as `v1.2.11` to `v1.2.13` were, and the app's PR moves the submodule (issue #1935, Decision 9).
-- **`lib/`** owns the identifier values, including those on raw `Semantics(identifier:)` nodes.
+- **`plugins/widgets`** owns passthrough (issue #1935, Decision 2). Every component accepts `identifier` and makes it reach the DOM, except pure layout, spacing and animation helpers, and the internal bases that another component builds on. A change goes on a new PrivacyGUI-Widgets branch cut from the version that `plugins/widgets` pins, as `v1.2.11` to `v1.2.15` were, and the app's PR moves the submodule (issue #1935, Decision 9).
+  - A component names the parts it builds, as 11.3 says. A part that the caller builds and passes in, as a child or from a builder, such as an `AppPopupButton` menu item or an `ExpandableFab` action, carries the caller's identifier instead.
+  - A part that repeats over the caller's data takes its key from the caller, as `AppDropdownButton` and `AppRadioList` do with `itemKey`, `AppTabBar` with `tabKeys` and `AppStepper` with `stepKeys`. Without the key, the parts have no identifier. Where the caller describes each item in an object of its own, such as `AppSectionItemData` or `AppMenuItem`, the object carries the item's whole identifier instead.
+- **`lib/`** owns the identifier values, including those on raw `Semantics(identifier:)` nodes. The exception is `LinksysAppBar`, which is the page's own bar and takes no identifier: its `page-title`, `page-trailing`, `page-back` and `page-close` are the same on every page (issue #1935, issue #1936).
 
 An identifier is a contract with the tests that locate it: a change that renames one changes those tests too. So does a change that moves a hook from `semanticLabel` to `identifier`, even with the same string: a test that found the control by its label, as `find.bySemanticsLabel` or by accessible name, has to find it by `find.bySemanticsIdentifier` or by `flt-semantics-identifier` instead (2.x 16.4).
 
@@ -751,12 +753,45 @@ A widget test does not see this by itself: `find.bySemanticsIdentifier` finds an
 
 **The roster.** `test/constitution/widget_identifier_roster_test.dart` pumps every public constructor of each component in its roster with an identifier, and checks each identifier the component exposes: `find.bySemanticsIdentifier` finds one node, and the node the engine receives, which is that node or the parent it merges into, carries the identifier and is not a text field. PrivacyGUI-Widgets has no CI of its own, and 7.1 leaves `plugins/**` out of analysis, so this test in this repository is what holds a component to passthrough.
 
-The roster holds the components the pilot pages use (issue #1935); issue #1936 adds the rest. An identifier that a component does not expose yet, from every constructor, is a row of the table: the component, the identifier as a pattern over `{id}`, and why. Deleting a row because the component was fixed is not an amendment (9.1). Adding one is.
+The roster holds every public widget class in `plugins/widgets/lib/widgets/` except the excluded list below (issue #1936). The test finds those classes itself, as every public class that extends a widget class of the Flutter SDK that runs it, or another of them, so a new component fails it until it is in the roster or on the list. It does not see a class that extends a widget of another package, such as `gap`'s `Gap`: review checks that one (11.5).
+
+An identifier that a component does not expose yet, from every constructor, is a row of the table: the component, the identifier as a pattern over `{id}`, and why. Deleting a row because the component was fixed is not an amendment (9.1). Adding one is.
 
 <!-- identifier-roster:begin -->
 | Component | Identifier | Why |
 |---|---|---|
 <!-- identifier-roster:end -->
+
+**The excluded list.** These components take no identifier: each is an `animation`, `layout` or `spacing` helper, which shows no state and takes no input of its own, or a `base` that another component builds on and that the other component gives its identifier. A layout's children carry their own identifiers. Taking a component off the list because it now passes the roster is not an amendment (9.1). Adding one is.
+
+<!-- identifier-excluded:begin -->
+| Component | Kind | Why |
+|---|---|---|
+| `AppBasicLayout` | `layout` | Places a header, a content and a footer. |
+| `AppBulletList` | `layout` | Lays its children out in rows; the bullet before each is decoration. |
+| `AppGap` | `spacing` | An empty box of a fixed size. |
+| `AppMeshWiredConnection` | `animation` | A decorative animation of a wired connection. |
+| `AppNestedScrollLayout` | `layout` | A scroll view with a collapsing app bar over its body. |
+| `AppPageView` | `layout` | The page's `Scaffold` and grid. Its app bar, content and bottom bar carry their own identifiers. |
+| `AppPanelLayout` | `base` | The layout of `AppSimplePanel` and `AppPanelWithValueCheck`, which carry the identifier. |
+| `AppProfileHeaderLayout` | `layout` | A scroll view with a collapsing header. Its back button is `LinksysAppBar`'s, `page-back`. |
+| `AppSection` | `layout` | Puts a header over its content. An item of `AppSection.withList` carries the identifier of its `AppSectionItemData`. |
+| `AppSliderMenuItemLayout` | `base` | The layout of `AppSliderMenuItem`, which carries the identifier. |
+| `BaseIconToggleButton` | `base` | The base of `AppIconToggleButton`, which carries the identifier. |
+| `Blink` | `animation` | Fades its child in and out. |
+| `BreathDot` | `animation` | A pulsing dot. |
+| `FillColumn` | `layout` | A column that gives one child the height the others leave. |
+| `FitOrGrow` | `layout` | Lays its child out at a page's height when it fits, and at its own when it does not. |
+| `GroupList` | `layout` | Lays out labelled groups of the items its builders make. |
+| `Hover` | `animation` | Floats its child up and down. |
+| `LinksysStackedListView` | `layout` | Stacks the items it is given. |
+| `ResponsiveLayout` | `layout` | Picks the child for the screen width. |
+| `Rotation` | `animation` | Rotates its child. |
+| `Scale` | `animation` | Scales its child. |
+| `TextInputField` | `base` | The base of `AppTextField`, which carries the identifier. |
+<!-- identifier-excluded:end -->
+
+*Amended 2026-11-27 (#1936): the roster holds every component of `plugins/widgets` that the excluded list does not name, and fails for one that is in neither, so a new component cannot skip 11.4. The list writes out which components the rule's helpers are, with a reason each, and adds the internal bases, which the rule did not name. A component names only the parts it builds, and takes the key of a repeated part from the caller. `LinksysAppBar`'s fixed identifiers, which issue #1935 put in `plugins/widgets`, are written down as the exception they are, with the two this issue adds. An exception is added and a rule tightened, for which 9.2 asks a major number. The version moves to 1.10 instead, as the amendments since 1.4 kept the major number. The team approved it in the review of PR #2004 on 2026-11-27 (9.3).*
 
 ### 11.5 Code review checklist (2.x 16.5)
 
@@ -768,12 +803,14 @@ Review checks that:
 - a change that renames an identifier, or moves a hook from `semanticLabel` to `identifier`, changes the tests that locate it in the same change (11.4);
 - identifiers follow 11.3, and an instance key comes from the item's data through a pure, unit-tested function, never from a row index or translated text;
 - content that no test touches has no identifier (11.2);
-- a new or changed component in `plugins/widgets` passes the roster, or has its row (11.4).
+- a new or changed component in `plugins/widgets` is in the roster and passes it, or has its row, or is on the excluded list for a reason that holds, including one that extends another package's widget, which the roster test does not see (11.4).
 
-**Enforced by**: Test, for the three tables; review for the rest (11.5).
+*Amended 2026-11-27 (#1936): the last item checks the excluded list too, now that 11.4 has one, and a component that extends another package's widget, which the roster test does not see. **Enforced by** names what the roster test checks now.*
+
+**Enforced by**: Test, for the four tables; review for the rest (11.5).
 
 - `test/constitution/e2e_identifier_test.dart` compares what its scanners find in `lib/` with the tables in 11.1.3 and 11.2. It fails when a file's findings have no row, or a different count, and when a row no longer matches. It lists each finding of a file whose count is wrong, by line.
-- `test/constitution/widget_identifier_roster_test.dart` compares the roster with the table in 11.4. It fails when a component has no row for an identifier it does not expose, when a row's identifier is exposed now, and when a row names no component and identifier in the roster.
+- `test/constitution/widget_identifier_roster_test.dart` compares the roster with the two tables in 11.4. It fails when a component has no row for an identifier it does not expose, when a row's identifier is exposed now, and when a row names no component and identifier in the roster. It also fails when a public widget class of `plugins/widgets` is neither in the roster nor on the excluded list, when either names a class that is not one, when a class is on both, and when an excluded component's kind is not one that 11.4 excludes.
 - `test/constitution/identifier_scanner_test.dart` and `semantics_identifier_test.dart` test the scanners and the check on the node the engine receives. The latter also holds that check to what a browser showed: the wrappers above.
 
 As in 1.5, the tests cannot tell a new row from an old one. That the tables only shrink is enforced by Article IX.
