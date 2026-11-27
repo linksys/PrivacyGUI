@@ -230,7 +230,6 @@ class _LiteralVisitor extends RecursiveAstVisitor<void> {
               e is InterpolationString ? e.value : r'${…}',
           ].join(),
         AdjacentStrings(:final strings) => strings.map(_text).join(),
-        _ => '',
       };
 
   void _consider(AstNode node, String text) {

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_result.dart';
-import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_state.dart';
 import 'package:privacy_gui/page/unified_diagnostics/views/widgets/diagnostic_result_card.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
