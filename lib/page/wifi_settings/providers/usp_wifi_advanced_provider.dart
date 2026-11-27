@@ -75,11 +75,15 @@ class UspWifiAdvancedNotifier
   }) async {
     try {
       final ieee80211h = await _svc.fetchIeee80211h();
-      // A router always has radios. Straight after a write reloads them, a
+      // A router keeps its radios. Straight after a write reloads them, a
       // radio read answers with no rows (#1499 bench), and applying that would
       // show DFS off for a save that turned it on. On the read-back only, so
-      // a display read keeps today's shape (#1212 second review).
-      if (_readingBack && ieee80211h.isEmpty) {
+      // a display read keeps today's shape (#1212 second review). And only
+      // when the tab had a 5 GHz radio: the read keeps those alone (#1973),
+      // so a router without one reads empty every time, settled or not.
+      if (_readingBack &&
+          ieee80211h.isEmpty &&
+          state.settings.original.ieee80211hByRadio.isNotEmpty) {
         throw const NetworkError(
             detail: 'radio table empty while the radios reload');
       }
@@ -333,7 +337,8 @@ class UspWifiAdvancedNotifier
   // UI Mutation (synchronous — buffers, no network call)
   // ---------------------------------------------------------------------------
 
-  /// Toggle DFS/802.11h on or off for all radios.
+  /// Toggle DFS/802.11h on or off for every 5 GHz radio — the radios in
+  /// `ieee80211hByRadio` (#1973).
   /// Updates [settings.current] only — does NOT call the service.
   /// User must call save() to persist the change.
   void setDfsEnabled(bool enabled) {
@@ -343,9 +348,9 @@ class UspWifiAdvancedNotifier
 
     // When the user toggles back to the original effective DFS state, restore
     // the original per-radio map so the dirty flag clears correctly. Without
-    // this, mixed per-radio values (e.g. 2.4 GHz=false, 5 GHz=true) would
-    // never match after a uniform set-all toggle. Only the map: a pending
-    // steering edit is not DFS's to undo.
+    // this, mixed per-radio values (e.g. two 5 GHz radios, one on and one off)
+    // would never match after a uniform set-all toggle. Only the map: a
+    // pending steering edit is not DFS's to undo.
     if (enabled == original.isDfsEnabled) {
       state = state.copyWith(
         settings: state.settings.update(

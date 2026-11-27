@@ -372,7 +372,7 @@ final kWifiSettingsPageCase = PageSurfaceCase(
 /// a fixture thinned to an empty map would sweep two short cards and report them as
 /// this tab's coverage. `defaultAdvancedState` — an alias for `advancedDfsOnState`,
 /// which is the name [kWifiSettingsPageCase]'s doc uses for the same object — carries
-/// two radios, which is what keeps the DFS card in the sweep. Whichever name the alias
+/// the 5 GHz radio, which is what keeps the DFS card in the sweep. Whichever name the alias
 /// points at is what this case actually sweeps, which is the reason to say both here.
 final kWifiSettingsAdvancedPageCase = PageSurfaceCase(
   id: 'wifi_settings_advanced',

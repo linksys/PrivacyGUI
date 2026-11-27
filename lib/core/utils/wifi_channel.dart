@@ -1,6 +1,7 @@
-// Shared WiFi channel helpers: TR-181 PossibleChannels parsing and DFS
-// (IEEE 802.11h) channel classification/filtering. Pure functions with no
-// Flutter or provider dependencies — safe to import from services and widgets.
+// Shared WiFi channel helpers: TR-181 PossibleChannels parsing,
+// OperatingFrequencyBand normalization and DFS (IEEE 802.11h) channel
+// classification/filtering. Pure functions with no Flutter or provider
+// dependencies — safe to import from services and widgets.
 
 /// Parses a TR-181 `PossibleChannels` string into a sorted list of channel
 /// numbers. Handles comma-separated values and range notation.
@@ -60,6 +61,17 @@ const Set<int> dfsChannels5GHz = {
   52, 56, 60, 64, //
   100, 104, 108, 112, 116, 120, 124, 128, 132, 136, 140, 144,
 };
+
+/// A TR-181 `OperatingFrequencyBand` as the normalized band string
+/// ("2.4GHz" / "5GHz" / "6GHz"); a value it does not recognise comes back
+/// as it is.
+String normalizeWifiBand(String rawBand) {
+  final lower = rawBand.toLowerCase();
+  if (lower.contains('6g') || lower.contains('6 g')) return '6GHz';
+  if (lower.contains('5g') || lower.contains('5 g')) return '5GHz';
+  if (lower.contains('2.4') || lower.contains('2_4')) return '2.4GHz';
+  return rawBand;
+}
 
 /// True only for 5 GHz DFS channels. [band] is the normalized band string
 /// ("2.4GHz" / "5GHz" / "6GHz").

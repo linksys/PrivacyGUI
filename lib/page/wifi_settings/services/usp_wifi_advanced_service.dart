@@ -4,6 +4,7 @@ import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/utils/wifi_channel.dart';
 import 'package:privacy_gui/generated/mesh_mlo.g.dart';
 import 'package:privacy_gui/generated/mesh_steering.g.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_advanced_settings.dart';
@@ -15,8 +16,11 @@ final uspWifiAdvancedServiceProvider = Provider<UspWifiAdvancedService>(
 
 /// Stateless service for the Wi-Fi Settings Advanced tab.
 ///
-/// - IEEE 802.11h (DFS + TPC): `Device.WiFi.Radio.{i}.IEEE80211hEnabled`, via
-///   raw USP get/set (no codegen definition exists for this path).
+/// - IEEE 802.11h (DFS + TPC): `Device.WiFi.Radio.{5 GHz}.IEEE80211hEnabled`
+///   (LinksysWRT#578), the 5 GHz radios only (#1973), via raw USP get/set.
+///   Raw because the read needs two leaves: the `WiFiRadios` codegen class
+///   reads fifteen, all required, so one leaf a radio lacks would fail the
+///   whole tab.
 /// - Client and node steering: `Device.X_LINKSYS_Mesh.{Client,Node}SteeringEnabled`
 ///   (linksys/FWDEV#192), through the `MeshSteering` codegen class.
 /// - MLO: `Device.X_LINKSYS_Mesh.{MLOEnabled,MLOStatus}` (linksys/FWDEV#201),
@@ -24,28 +28,37 @@ final uspWifiAdvancedServiceProvider = Provider<UspWifiAdvancedService>(
 ///
 /// A save is one Set for the whole tab ([planSave]).
 class UspWifiAdvancedService {
-  static const _ieee80211hPath = 'Device.WiFi.Radio.*.IEEE80211hEnabled';
+  static const _ieee80211hLeaf = 'IEEE80211hEnabled';
+  static const _bandLeaf = 'OperatingFrequencyBand';
 
   final UspClient _usp;
 
   UspWifiAdvancedService(this._usp);
 
-  /// Fetches IEEE 802.11h enabled state per radio.
+  /// Fetches IEEE 802.11h on the **5 GHz radios** — the DFS switch's radios
+  /// (LinksysWRT#578: `Device.WiFi.Radio.{5 GHz}.IEEE80211hEnabled`).
   ///
-  /// Returns a map of radio instance path → enabled flag.
-  /// e.g. `{"Device.WiFi.Radio.1." : true, "Device.WiFi.Radio.2." : false}`
+  /// Returns a map of 5 GHz radio instance path → enabled flag, e.g.
+  /// `{"Device.WiFi.Radio.2." : true}`. The 2.4 GHz and 6 GHz radios are not
+  /// in it, so the switch never shows or writes them (#1973), and a radio
+  /// whose band is not reported is left out rather than guessed.
   Future<Map<String, bool>> fetchIeee80211h() async {
     try {
-      final response = await _usp.get([_ieee80211hPath]);
+      final response = await _usp.get([
+        'Device.WiFi.Radio.*.$_ieee80211hLeaf',
+        'Device.WiFi.Radio.*.$_bandLeaf',
+      ]);
 
       final result = <String, bool>{};
       for (final key in response.keys) {
         if (key.startsWith('Device.WiFi.Radio.') &&
-            key.endsWith('.IEEE80211hEnabled')) {
+            key.endsWith('.$_ieee80211hLeaf')) {
           final radioPath =
-              key.substring(0, key.length - 'IEEE80211hEnabled'.length);
-          final val = response[key];
-          result[radioPath] = _asBool(val);
+              key.substring(0, key.length - _ieee80211hLeaf.length);
+          final band = response['$radioPath$_bandLeaf'];
+          if (band is String && normalizeWifiBand(band) == '5GHz') {
+            result[radioPath] = _asBool(response[key]);
+          }
         }
       }
       return result;

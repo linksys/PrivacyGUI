@@ -253,7 +253,7 @@ class UspWifiDataService {
       }).toList();
       return WifiRadioUIModel(
         instancePath: radio.instancePath,
-        band: _normalizeBand(radio.operatingFrequencyBand),
+        band: normalizeWifiBand(radio.operatingFrequencyBand),
         enable: radio.enable,
         transmitPower: radio.transmitPower,
         maxBitRate: radio.maxBitRate,
@@ -502,7 +502,7 @@ class UspWifiDataService {
     final bandByRadioPath = {
       for (final r in radios.items)
         ensureTrailingDot(r.instancePath):
-            _normalizeBand(r.operatingFrequencyBand),
+            normalizeWifiBand(r.operatingFrequencyBand),
     };
 
     final result = <String, ClientConnectionDetail>{};
@@ -553,14 +553,6 @@ class UspWifiDataService {
   // Helpers
   // ---------------------------------------------------------------------------
 
-  static String _normalizeBand(String rawBand) {
-    final lower = rawBand.toLowerCase();
-    if (lower.contains('6g') || lower.contains('6 g')) return '6GHz';
-    if (lower.contains('5g') || lower.contains('5 g')) return '5GHz';
-    if (lower.contains('2.4') || lower.contains('2_4')) return '2.4GHz';
-    return rawBand;
-  }
-
   /// Builds a BSSID → band mapping from WiFi SSID and Radio data.
   ///
   /// Used by [MeshTopologyBuilder] to determine band for clients on slave nodes
@@ -575,7 +567,7 @@ class UspWifiDataService {
     final bandByRadioPath = <String, String>{};
     for (final radio in radios.items) {
       final path = ensureTrailingDot(radio.instancePath);
-      bandByRadioPath[path] = _normalizeBand(radio.operatingFrequencyBand);
+      bandByRadioPath[path] = normalizeWifiBand(radio.operatingFrequencyBand);
     }
 
     // Build BSSID → band mapping via SSID.LowerLayers → Radio
