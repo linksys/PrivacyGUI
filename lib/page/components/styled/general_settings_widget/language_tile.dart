@@ -7,6 +7,12 @@ import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 
+/// The key of [locale]'s identifier in the language list (constitution 11.3):
+/// its language tag in lower case, such as `zh-tw`, as a tag's region is upper
+/// case and an identifier is kebab case.
+String localeIdentifierKey(Locale locale) =>
+    locale.toLanguageTag().toLowerCase();
+
 class LanguageTile extends ConsumerStatefulWidget {
   final void Function(Locale locale)? onSelected;
   final void Function()? onTap;
@@ -44,7 +50,7 @@ class _LanguageTileState extends ConsumerState<LanguageTile> {
         widget.onTap?.call();
       },
       child: Semantics(
-          identifier: 'now-general-settings-locale',
+          identifier: 'general-settings-locale',
           label: 'locale',
           child: _displayLocale(widget.locale)),
     );
@@ -70,7 +76,7 @@ class _LanguageTileState extends ConsumerState<LanguageTile> {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       child: Semantics(
-        identifier: 'now-locale-list',
+        identifier: 'locale-list',
         label: 'locale list',
         explicitChildNodes: true,
         child: ListView.builder(
@@ -81,11 +87,11 @@ class _LanguageTileState extends ConsumerState<LanguageTile> {
                 hoverColor:
                     Theme.of(context).colorScheme.background.withOpacity(.5),
                 title: Semantics(
-                    identifier: 'now-locale-item-${locale.toLanguageTag()}',
+                    identifier: 'locale-item-${localeIdentifierKey(locale)}',
                     child: AppText.labelLarge(locale.displayText)),
                 trailing: widget.locale == locale
                     ? Semantics(
-                        identifier: 'now-locale-item-checked',
+                        identifier: 'locale-item-checked',
                         label: 'checked',
                         child: const Icon(LinksysIcons.check))
                     : null,

@@ -102,7 +102,10 @@ void main() {
         scrollable: true,
         menu: PageMenu(
           title: 'Menu',
-          items: [PageMenuItem(label: 'Menu item', icon: null)],
+          items: [
+            PageMenuItem(
+                label: 'Menu item', icon: null, identifier: 'menu-item'),
+          ],
         ),
         content:
             const Center(child: SizedBox(key: _box, width: 100, height: 100)),

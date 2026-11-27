@@ -17,7 +17,6 @@ import 'package:privacy_gui/providers/brand_asset_provider.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/expansion_card.dart';
-import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/page/support/faq_data.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
@@ -80,7 +79,7 @@ class _FaqListViewState extends ConsumerState<FaqListView> {
           AppTextButton.noPadding(
             loc(context).faqVisitLinksysSupport,
             identifier:
-                'now-faq-link-${FaqItem.faqVisitLinksysSupport.displayString(context).kebab()}',
+                'faq-link-${FaqItem.faqVisitLinksysSupport.identifierKey}',
             onTap: () {
               gotoOfficialWebUrl(FaqItem.faqVisitLinksysSupport.url,
                   locale: ref.read(appSettingsProvider).locale);
@@ -105,13 +104,14 @@ class _FaqListViewState extends ConsumerState<FaqListView> {
                     children: [
                       _buildExpansionCard(
                         title: category.displayString(context),
+                        identifier: 'faq-category-${category.identifierKey}',
                         children: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: category.items
                               .map((item) => AppTextButton(
                                     item.displayString(context),
                                     identifier:
-                                        'now-faq-${item.displayString(context).kebab()}',
+                                        'faq-item-${item.identifierKey}',
                                     onTap: () {
                                       gotoOfficialWebUrl(item.url,
                                           locale: ref
@@ -134,7 +134,7 @@ class _FaqListViewState extends ConsumerState<FaqListView> {
 
   Widget _buildWebInterfaceGuideCard(BuildContext context) {
     return AppCard(
-      identifier: 'now-faq-web-interface-guide',
+      identifier: 'faq-web-interface-guide',
       onTap: () {
         gotoOfficialWebUrl(linkWebInterfaceGuide,
             locale: ref.read(appSettingsProvider).locale);
@@ -163,11 +163,12 @@ class _FaqListViewState extends ConsumerState<FaqListView> {
 
   AppExpansionCard _buildExpansionCard({
     required String title,
+    required String identifier,
     required Widget children,
   }) {
     return AppExpansionCard(
       title: title,
-      identifier: 'now-faq-${title.kebab()}',
+      identifier: identifier,
       expandedIcon: LinksysIcons.add,
       collapsedIcon: LinksysIcons.remove,
       children: [

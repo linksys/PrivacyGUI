@@ -38,7 +38,7 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
       parent: shellNavigatorKey.currentContext,
       maxWidth: 240,
       button: Semantics(
-        identifier: 'now-topbar-icon-general-settings',
+        identifier: 'topbar-general-settings',
         label: 'general settings',
         child: Icon(
           isRemote ? Icons.support_agent : LinksysIcons.person,
@@ -79,7 +79,7 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
                 Padding(
                   padding: const EdgeInsets.all(Spacing.small2),
                   child: Semantics(
-                    identifier: 'now-general-settings-theme',
+                    identifier: 'general-settings-theme',
                     label: 'theme',
                     child: const ThemeModeTile(),
                   ),
@@ -88,7 +88,7 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
                 // Padding(
                 //   padding: const EdgeInsets.all(Spacing.small2),
                 //   child: Semantics(
-                //     identifier: 'now-general-settings-theme-color',
+                //     identifier: 'general-settings-theme-color',
                 //     label: 'themeColor',
                 //     child: const ThemeColorTile(),
                 //   ),
@@ -100,7 +100,7 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
                     initialData: '-',
                     builder: (context, data) {
                       return Semantics(
-                        identifier: 'now-general-text-version',
+                        identifier: 'general-settings-version',
                         label: 'version',
                         child: AppText.bodySmall(
                           'version ${data.data}${BuildConfig.sourceRevisionSuffix}',

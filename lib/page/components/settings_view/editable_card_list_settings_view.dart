@@ -4,7 +4,7 @@ import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/table/card_list_settings_view.dart';
 
-class EditableCardListsettingsView<T> extends StatefulWidget {
+class AppEditableCardListSettingsView<T> extends StatefulWidget {
   final String? title;
   final String? addLabel;
   final IconData? addIcon;
@@ -17,7 +17,16 @@ class EditableCardListsettingsView<T> extends StatefulWidget {
   final void Function(int, T)? onSave;
   final void Function(int, T)? onDelete;
 
-  const EditableCardListsettingsView({
+  /// The prefix of the list's identifiers (constitution 11.3): the add button
+  /// is `{identifier}-add`, and a card's actions are `{identifier}-edit-{key}`
+  /// and `-delete-`.
+  final String? identifier;
+
+  /// A card's key, from its data: never its position or translated text. It
+  /// is required with [identifier].
+  final String Function(T item)? rowKey;
+
+  const AppEditableCardListSettingsView({
     super.key,
     this.title,
     this.addIcon,
@@ -29,15 +38,18 @@ class EditableCardListsettingsView<T> extends StatefulWidget {
     this.onSave,
     this.onDelete,
     this.addEnabled = true,
-  });
+    this.identifier,
+    this.rowKey,
+  }) : assert(identifier == null || rowKey != null,
+            'A list with an identifier needs a rowKey.');
 
   @override
-  State<EditableCardListsettingsView<T>> createState() =>
-      _EditableCardListsettingsViewState<T>();
+  State<AppEditableCardListSettingsView<T>> createState() =>
+      _AppEditableCardListSettingsViewState<T>();
 }
 
-class _EditableCardListsettingsViewState<T>
-    extends State<EditableCardListsettingsView<T>> {
+class _AppEditableCardListSettingsViewState<T>
+    extends State<AppEditableCardListSettingsView<T>> {
   @override
   Widget build(BuildContext context) {
     return AppCardListSettingsView<T>(
@@ -47,6 +59,8 @@ class _EditableCardListsettingsViewState<T>
           AppTextButton(
             widget.addLabel!,
             icon: widget.addIcon ?? LinksysIcons.add,
+            identifier:
+                widget.identifier == null ? null : '${widget.identifier}-add',
             onTap: widget.addEnabled
                 ? () {
                     onEdit(null);
@@ -63,12 +77,14 @@ class _EditableCardListsettingsViewState<T>
         actions: [
           AppIconButton(
               icon: LinksysIcons.edit,
+              identifier: _rowIdentifier('edit', data),
               onTap: () {
                 onEdit(data);
               }),
           AppIconButton(
             icon: LinksysIcons.delete,
             color: Theme.of(context).colorScheme.error,
+            identifier: _rowIdentifier('delete', data),
             onTap: () {
               widget.onDelete?.call(widget.dataList.indexOf(data), data);
             },
@@ -77,6 +93,14 @@ class _EditableCardListsettingsViewState<T>
         content: widget.itemCardBuilder(context, data).content,
       ),
     );
+  }
+
+  /// The identifier of [item]'s [action], `{identifier}-{action}-{key}`.
+  String? _rowIdentifier(String action, T item) {
+    final identifier = widget.identifier;
+    final rowKey = widget.rowKey;
+    if (identifier == null || rowKey == null) return null;
+    return '$identifier-$action-${rowKey(item)}';
   }
 
   void onEdit(T? data) {

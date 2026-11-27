@@ -7,6 +7,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:privacy_gui/core/cache/utility.dart';
 import 'package:privacy_gui/core/jnap/access/access_policy.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/scheduled_loop.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/auth/auth_exception.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
@@ -257,6 +258,12 @@ class RouterRepository {
   /// [LoggedOutException]. [onCompleted] is not called: the condition did not
   /// hold, and the retries did not run out. Left null, the loop goes on across
   /// a logout (#1904).
+  ///
+  /// A cancel ends the loop at its next yield: after a delay, before the next
+  /// request or before [onCompleted], which is not called either. A request
+  /// already out is let finish. A cancel and a logout end the loop each on its
+  /// own; when both fall in one delay, the cancel ends it, with no error. A
+  /// paused listener holds the loop before its next request.
   Stream<JNAPResult> scheduledCommand({
     required JNAPAction action,
     int retryDelayInMilliSec = 5000,
@@ -268,28 +275,10 @@ class RouterRepository {
     int? requestTimeoutOverride,
     bool auth = false,
     int? logoutGeneration,
-  }) async* {
-    int retry = 0;
-    bool exceedMaxRetry = true;
-    void endIfLoggedOut() {
-      if (logoutGeneration != null &&
-          ref.read(authProvider.notifier).loggedOutSince(logoutGeneration)) {
-        logger.d('SCHEDULED COMMAND: command {$action}: logged out, STOP!');
-        throw const LoggedOutException();
-      }
-    }
-
-    while (++retry <= maxRetry || maxRetry == -1) {
-      logger.d('SCHEDULED COMMAND: publish command {$action}: $retry times');
-      if (retry <= 1) {
-        await Future.delayed(Duration(milliseconds: firstDelayInMilliSec));
-      }
-      // After the delay and before the request, so that a logout during the
-      // delay stops the request it was waiting to send.
-      endIfLoggedOut();
-      late JNAPResult result;
-      try {
-        result = await send(
+  }) =>
+      scheduledLoop(
+        action: action,
+        request: () => send(
           action,
           data: data,
           auth: auth,
@@ -297,37 +286,22 @@ class RouterRepository {
           cacheLevel: CacheLevel.noCache,
           retries: 0,
           timeoutMs: requestTimeoutOverride ?? 10000,
-        );
-      } on JNAPError catch (e) {
-        // JNAP error
-        logger.d('SCHEDULED COMMAND: error catched $e, from command {$action}');
-        result = e;
-      } on TimeoutException catch (e) {
-        // Timeout exception
-        result = JNAPError(result: e.runtimeType.toString());
-      } catch (e) {
-        // Unknown Exception
-        result = JNAPError(
-          result: 'UNKNOWN',
-          error: e.runtimeType.toString(),
-        );
-      }
-      // And once the answer is in: a request that was out at the logout
-      // answers for a login that has ended, and a caller handed its answer
-      // would act on it, as the firmware install's completion did.
-      endIfLoggedOut();
-      yield result;
-
-      if (condition?.call(result) ?? false) {
-        logger.d(
-            'SCHEDULED COMMAND: command {$action}: $retry times: satisfy condition, STOP!');
-        exceedMaxRetry = false;
-        break;
-      }
-      await Future.delayed(Duration(milliseconds: retryDelayInMilliSec));
-    }
-    onCompleted?.call(exceedMaxRetry);
-  }
+        ),
+        guard: () {
+          if (logoutGeneration != null &&
+              ref
+                  .read(authProvider.notifier)
+                  .loggedOutSince(logoutGeneration)) {
+            logger.d('SCHEDULED COMMAND: command {$action}: logged out, STOP!');
+            throw const LoggedOutException();
+          }
+        },
+        retryDelayInMilliSec: retryDelayInMilliSec,
+        maxRetry: maxRetry,
+        firstDelayInMilliSec: firstDelayInMilliSec,
+        condition: condition,
+        onCompleted: onCompleted,
+      );
 
   Future<String> _buildCommandUrl({
     required RouterType routerType,
