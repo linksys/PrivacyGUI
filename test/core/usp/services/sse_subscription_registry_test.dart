@@ -181,9 +181,15 @@ void main() {
       expect(registry.activeIds, {_sub.subscriptionId});
     });
 
+    // A registration still in flight when the session ends lands on the
+    // router with nothing left to remove it: on Guardian the disconnect's
+    // cleanup listed the subscriptions before it landed, and locally the
+    // cleanup is a no-op. So it is unregistered when it lands, after the
+    // session has ended — the 401 that may answer is one the gate ignores
+    // (#1666, folded in from #1981's review).
     test(
         'a registration that completes after the session ended leaves nothing '
-        'active', () async {
+        'active, and is unregistered', () async {
       final gate = Completer<Map<String, dynamic>>();
       when(() => mockBridge.subscribe(
             subscriptionId: any(named: 'subscriptionId'),
@@ -196,9 +202,75 @@ void main() {
       await registry.onSseDisconnected(intentional: true);
       gate.complete({});
       await held;
+      await Future.delayed(Duration.zero);
 
       expect(registry.activeIds, isEmpty);
       expect(registry.records, isEmpty);
+      verifyUnregistered(1);
+    });
+
+    test('so is one that completes after unregisterAll', () async {
+      final gate = Completer<Map<String, dynamic>>();
+      when(() => mockBridge.subscribe(
+            subscriptionId: any(named: 'subscriptionId'),
+            path: any(named: 'path'),
+            notifType: any(named: 'notifType'),
+          )).thenAnswer((_) => gate.future);
+
+      final held = registry.hold([_sub], holder: Object());
+      await Future.delayed(Duration.zero);
+      await registry.unregisterAll();
+      gate.complete({});
+      await held;
+      await Future.delayed(Duration.zero);
+
+      verifyUnregistered(1);
+    });
+
+    // A newer hold of the id owns it on the router now; unregistering the id
+    // would undo that registration.
+    test('not when a newer hold of the id has taken it in the meantime',
+        () async {
+      final first = Completer<Map<String, dynamic>>();
+      when(() => mockBridge.subscribe(
+            subscriptionId: any(named: 'subscriptionId'),
+            path: any(named: 'path'),
+            notifType: any(named: 'notifType'),
+          )).thenAnswer((_) => first.future);
+      final held = registry.hold([_sub], holder: Object());
+      await Future.delayed(Duration.zero);
+      await registry.onSseDisconnected(intentional: true);
+      when(() => mockBridge.subscribe(
+            subscriptionId: any(named: 'subscriptionId'),
+            path: any(named: 'path'),
+            notifType: any(named: 'notifType'),
+          )).thenAnswer((_) async => {});
+      await registry.hold([_sub], holder: Object()); // the next session's
+
+      first.complete({});
+      await held;
+      await Future.delayed(Duration.zero);
+
+      verifyNotUnregistered();
+      expect(registry.activeIds, {_sub.subscriptionId});
+    });
+
+    test('not when the router refused the registration', () async {
+      final gate = Completer<Map<String, dynamic>>();
+      when(() => mockBridge.subscribe(
+            subscriptionId: any(named: 'subscriptionId'),
+            path: any(named: 'path'),
+            notifType: any(named: 'notifType'),
+          )).thenAnswer((_) => gate.future);
+
+      final held = registry.hold([_sub], holder: Object());
+      await Future.delayed(Duration.zero);
+      await registry.onSseDisconnected(intentional: true);
+      gate.completeError(Exception('refused'));
+      await held.catchError((_) {});
+      await Future.delayed(Duration.zero);
+
+      verifyNotUnregistered();
     });
 
     test(

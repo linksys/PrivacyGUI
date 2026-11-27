@@ -23,11 +23,11 @@ abstract class CredentialStrategy {
   /// not — so the strategy *returns* it rather than restating it. #1474 phase 4
   /// moved the `if` that chose the value, not the value.
   ///
-  /// Two consumers since #1627, both reading the one flag: `UspBridgeClient`
-  /// for its REST 401s (constructor, via `BridgeConfig`) and `UspClient` for a
-  /// USP command's 401 (`sseManagerProvider` assigns it). Ending up with one
-  /// answer for both paths is the point — before #1627 the second path ran the
-  /// local reauth in every mode.
+  /// One consumer since #1666: `SessionAuthGate`, which every path that sees a
+  /// 401 asks — USP commands, the heartbeat refresh, the session restore, the
+  /// bridge and the Remote Assistance poll. Before #1627 a USP command's 401 ran
+  /// the local reauth in every mode; from #1627 to #1666 the bridge and
+  /// `UspClient` each read this flag themselves.
   AuthBehavior get authBehavior;
 
   /// Whether [usp] holds this mode's credential yet — the question the SSE

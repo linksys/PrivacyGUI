@@ -12,10 +12,9 @@ import 'sse_operation_strategy.dart' show AuthBehavior;
 /// - a reauth and a heartbeat refresh each take one when they start, and report
 ///   with it.
 ///
-/// The bridge and the Remote Assistance poll come to the gate in the second half
-/// of #1666's PR C, by the same rule: the local bridge per request (it reads the
-/// client's token), the remote bridge at construction (Guardian's token is fixed
-/// then), the poll when it starts.
+/// The bridge and the Remote Assistance poll follow the same rule: the local
+/// bridge per request (it reads the client's token), the remote bridge at
+/// construction (Guardian's token is fixed then), the poll when it starts.
 ///
 /// A ticket that is no longer [SessionAuthGate.ticket] belongs to a session that
 /// has been replaced, and nothing it reports can end the session that replaced
@@ -63,10 +62,10 @@ enum AuthDecision {
 
 enum _EpochState { none, live, ended }
 
-/// Decides what a 401 does to the session (#1666): for `UspClient`'s commands,
-/// the heartbeat refresh and the session restore. The bridge's REST and SSE
-/// handling and the Remote Assistance poll still decide for themselves until
-/// the second half of #1666's PR C brings them here.
+/// Decides what a 401 does to the session (#1666), for every path that can see
+/// one: `UspClient`'s commands, the heartbeat refresh, the session restore, the
+/// bridge's REST requests and notification stream, and the Remote Assistance
+/// session poll.
 ///
 /// Before, five places decided it, each with its own subset of the rules:
 /// `UspClient`, `UspAuthCoordinator`, the bridge's REST and SSE handling, and

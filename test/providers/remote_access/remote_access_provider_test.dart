@@ -706,6 +706,26 @@ void main() {
       });
     });
 
+    // A reload restores the session from storage and polls before the confirm
+    // view activates it again, so no session has begun. The poll is then the
+    // only thing asking Guardian about this session, and its 401 is that
+    // session's, as it was before #1666.
+    test('before any session has begun (a reload), marks it invalid', () {
+      fakeAsync((async) {
+        gate = SessionAuthGate(
+            authBehavior: AuthBehavior.remote, endSession: () => gateEnds++);
+        final container = containerWithGate();
+        pollStarted(async, container);
+
+        answer.completeError(const UnauthorizedError());
+        async.flushMicrotasks();
+
+        expect(statusOf(container), GRASessionStatus.invalid);
+        expect(gateEnds, 0);
+        container.dispose();
+      });
+    });
+
     test('for a session replaced while the poll was out, changes nothing', () {
       fakeAsync((async) {
         final container = containerWithGate();
