@@ -283,6 +283,11 @@ final uspDashboardRoute = ShellRoute(
           UspWifiSettingsView(initialTab: _uspTabQueryParam(state)),
     ),
     LinksysRoute(
+      name: RouteNamed.uspChannelFinder,
+      path: RoutePath.uspChannelFinder,
+      builder: (context, state) => const ChannelFinderView(),
+    ),
+    LinksysRoute(
       name: RouteNamed.uspApps,
       path: RoutePath.uspApps,
       builder: (context, state) => const UspAppsView(),

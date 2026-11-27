@@ -12,7 +12,7 @@ void main() {
 
   group('a card name', () {
     test('comes from a key for every built-in card, not from displayName', () {
-      expect(UspWidgetSpecs.all, hasLength(18));
+      expect(UspWidgetSpecs.all, hasLength(19));
       for (final spec in UspWidgetSpecs.all) {
         // Same id, different displayName: only a lookup keyed by id can still
         // produce the card's real name.

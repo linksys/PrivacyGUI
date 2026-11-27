@@ -82,6 +82,9 @@ import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/add_nodes/views/add_nodes_view.dart';
 import 'package:privacy_gui/page/add_nodes/views/components/add_nodes_phase_content.dart';
+import 'package:privacy_gui/page/channel_finder/views/channel_finder_view.dart';
+import 'package:privacy_gui/page/channel_finder/views/components/channel_finder_channel_row.dart';
+import 'package:privacy_gui/page/channel_finder/views/components/channel_finder_content.dart';
 import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_models.dart';
 import 'package:privacy_gui/page/internet_settings/views/sections/auto_ipoe_section.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_ipoe_view.dart';
@@ -212,6 +215,7 @@ import 'package:ui_kit_library/ui_kit.dart'
         AppTopology;
 
 import '../../mocks/provider_overrides/mock_add_nodes.dart';
+import '../../mocks/provider_overrides/mock_channel_finder.dart';
 import '../../mocks/provider_overrides/mock_admin.dart';
 import '../../mocks/provider_overrides/mock_administration.dart';
 import '../../mocks/provider_overrides/mock_apps.dart';
@@ -244,6 +248,7 @@ import '../../mocks/provider_overrides/mock_topology.dart';
 import '../../mocks/provider_overrides/mock_unified_diagnostics.dart';
 import '../../mocks/provider_overrides/mock_wifi_settings.dart';
 import '../../mocks/test_data/scenes/add_nodes_scene_data.dart';
+import '../../mocks/test_data/scenes/channel_finder_scene_data.dart';
 import '../../mocks/test_data/scenes/devices_scene_data.dart';
 // Both scene files export a top-level `dataState`, so both are prefixed rather
 // than one — a bare `dataState()` beside a `pf.dataState()` reads as the same
@@ -334,11 +339,12 @@ final kWifiSettingsPageCase = PageSurfaceCase(
 /// link does — `initialTab: 1` — for which see [kStatisticsDevicesPageCase]; the two
 /// pages now share one mechanism rather than one excuse.
 ///
-/// ## Coverage: the whole tab, four cards
+/// ## Coverage: the whole tab, five cards
 ///
-/// `UspWifiAdvancedTab` renders four `AppCard`s — client steering, node steering
-/// (#1661), DFS and MLO (#1692) — each one `Expanded` title + [AppSwitch] row over a
-/// description. Until #1661 it was the DFS card alone. The MLO card is the only one
+/// `UspWifiAdvancedTab` renders five `AppCard`s — client steering, node steering
+/// (#1661), DFS and MLO (#1692), each one `Expanded` title + [AppSwitch] row over a
+/// description, and the Channel Finder link (#1778), a `NavLinkBlock` with a
+/// chevron. Until #1661 it was the DFS card alone. The MLO card is the only one
 /// whose row holds a third widget, a status badge, and the only one with a second
 /// paragraph, the `Inactive` hint; the fixture is `Inactive` so both are in the sweep. The green still means *the tab* and not a
 /// prefix of it, for a reason that does not depend on [kPageSweepHeight]: the cards
@@ -2415,6 +2421,10 @@ const kPagesWhoseLoaderIsContent = <String>{
   // source contains but the swept fixture never builds — see
   // [kDiagnosticsRunningPageCase].
   'unified_diagnostics_manual_tools',
+  // #1778's entry, on the same argument: each channel row's busyness is a
+  // determinate linear `AppLoader` whose `value` is the channel's utilization.
+  // See [kChannelFinderPageCase].
+  'channel_finder',
 };
 
 /// Every case the gate sweeps: the pilot's two, then wave 1's five, then wave 2's nine,
@@ -2835,6 +2845,28 @@ final kAddNodesPageCase = PageSurfaceCase(
   forbids: const [AppLoader],
 );
 
+/// `page.channel_finder` (#1778): how busy each Wi-Fi channel is, after a
+/// finished scan of three bands shaped after the bench's
+/// ([channelFinderPageResult]: eleven 2.4 GHz channels, the first band shown).
+///
+/// In [kPagesWhoseLoaderIsContent], on `unified_diagnostics_manual_tools`'s
+/// argument: every [ChannelFinderChannelRow] draws its busyness as a
+/// determinate linear [AppLoader] whose `value` is the channel's utilization,
+/// so the bar's width is the number being reported. UI Kit has no other bar,
+/// and the dashboard's Wi-Fi Performance card draws its signal meters the same
+/// way. The premise is the rows themselves, which only a finished scan builds;
+/// the scan in progress, whose indeterminate loader is a real loading state, is
+/// not this fixture.
+final kChannelFinderPageCase = PageSurfaceCase(
+  id: 'channel_finder',
+  view: () => const ChannelFinderView(),
+  overrides: () => channelFinderOverrides(channelFinderPageDoneState),
+  requires: const [ChannelFinderContent, ChannelFinderChannelRow, AppLoader],
+  // Nothing to forbid by type: the idle and scanning states differ from this one
+  // by having no channel rows, which `requires` already catches.
+  forbids: const [],
+);
+
 /// `page.pnp_add_nodes` (#1734): the same flow opened from the PnP wizard's Your
 /// Network step.
 ///
@@ -3031,4 +3063,6 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   kPnpWifiStepPageCase,
   kPnpGuestStepPageCase,
   kPnpYourNetworkStepPageCase,
+  // #1778: Channel Finder, arriving with the `lib/` change that creates it.
+  kChannelFinderPageCase,
 ];

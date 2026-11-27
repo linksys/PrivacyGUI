@@ -607,6 +607,12 @@ void main() {
     expectedCellCount: 234,
   );
 
+  // #1778: Channel Finder, a finished three-band scan.
+  runOverflowSweep(
+    family: PageSurfaceFamily(kChannelFinderPageCase),
+    expectedCellCount: 234,
+  );
+
   // #1734: adding a node, from the PnP wizard's Your Network step.
   runOverflowSweep(
     family: PageSurfaceFamily(kPnpAddNodesPageCase),

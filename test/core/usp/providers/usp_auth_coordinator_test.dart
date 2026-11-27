@@ -7,18 +7,23 @@ import 'package:privacy_gui/constants/error_code.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_token_storage.dart';
+import 'package:privacy_gui/core/usp/services/session_auth_gate.dart';
+import 'package:privacy_gui/core/usp/services/session_restore_outcome.dart';
+import 'package:privacy_gui/core/usp/services/sse_operation_strategy.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
 /// Mock that stores callback fields (mocktail Mock swallows setter calls).
 class TestUspClient extends Mock implements UspClient {
   @override
-  Future<void> Function()? onReauthRequired;
+  Future<SessionRestoreOutcome> Function()? onReauthRequired;
 
   @override
   VoidCallback? onRefreshTokenSuccess;
 
+  SessionAuthGate? attachedGate;
+
   @override
-  VoidCallback? onForceLogout;
+  void attachAuthGate(SessionAuthGate gate) => attachedGate = gate;
 }
 
 class MockTokenStorage extends Mock implements UspTokenStorage {}
@@ -40,6 +45,9 @@ void main() {
   late TestUspClient mockUsp;
   late MockTokenStorage mockStorage;
   late UspAuthCoordinator coordinator;
+  late SessionAuthGate gate;
+  // How many times the gate ended the session.
+  late int ends;
 
   setUp(() {
     mockUsp = TestUspClient();
@@ -55,7 +63,11 @@ void main() {
     when(() => mockStorage.clear()).thenReturn(null);
     when(() => mockStorage.load()).thenReturn(null);
 
-    coordinator = UspAuthCoordinator(mockUsp, mockStorage);
+    ends = 0;
+    gate = SessionAuthGate(
+        authBehavior: AuthBehavior.local, endSession: () => ends++)
+      ..begin();
+    coordinator = UspAuthCoordinator(mockUsp, mockStorage, gate: gate);
   });
 
   // ---------------------------------------------------------------------------
@@ -131,26 +143,43 @@ void main() {
     // #1666 AC4: a tab that slept past the token's lifetime wakes to this on
     // its next heartbeat. It used to be read as a network error and retried
     // on every beat, so the session stayed on screen and never worked again.
-    test('calls onForceLogout', () async {
+    test('ends the session', () async {
       when(() => mockUsp.refreshToken(token: any(named: 'token')))
           .thenThrow(_sessionNotRefreshable);
 
-      bool logoutCalled = false;
-      coordinator.onForceLogout = () => logoutCalled = true;
-
       await coordinator.ensureAuth();
 
-      expect(logoutCalled, isTrue);
+      expect(ends, 1);
     });
 
     test('clears token storage', () async {
       when(() => mockUsp.refreshToken(token: any(named: 'token')))
           .thenThrow(_sessionNotRefreshable);
-      coordinator.onForceLogout = () {};
+      when(() => mockStorage.load()).thenReturn('test-token');
 
       await coordinator.ensureAuth();
 
       verify(() => mockStorage.clear()).called(1);
+    });
+
+    // The ticket is the one taken when the refresh started (#1666): a refresh
+    // that outlives its session must not end the one that replaced it, nor take
+    // that session's freshly stored token with it.
+    test('a refusal that lands after a new session began ends nothing',
+        () async {
+      final answer = Completer<void>();
+      when(() => mockUsp.refreshToken(token: any(named: 'token')))
+          .thenAnswer((_) => answer.future);
+
+      final refresh = coordinator.ensureAuth();
+      gate.begin(); // the user logged in again meanwhile
+      when(() => mockStorage.load()).thenReturn('the-new-session-token');
+      answer.completeError(_sessionNotRefreshable);
+      await refresh;
+
+      expect(ends, 0);
+      expect(gate.isLive, isTrue);
+      verifyNever(() => mockStorage.clear());
     });
   });
 
@@ -158,16 +187,13 @@ void main() {
   // ensureAuth — network error does NOT trigger force logout
   // ---------------------------------------------------------------------------
   group('ensureAuth — network error', () {
-    test('does NOT call onForceLogout on network error', () async {
+    test('does NOT end the session on a network error', () async {
       when(() => mockUsp.refreshToken(token: any(named: 'token')))
           .thenThrow(Exception('SocketException: Connection refused'));
 
-      bool logoutCalled = false;
-      coordinator.onForceLogout = () => logoutCalled = true;
-
       await coordinator.ensureAuth();
 
-      expect(logoutCalled, isFalse);
+      expect(ends, 0);
     });
   });
 
@@ -405,79 +431,116 @@ void main() {
           () => mockUsp.refreshToken(token: any(named: 'token'))); // No extra
     });
 
-    test('triggers force logout when no stored token and not recovering',
-        () async {
+    // restoreSession reports nothing (#1666): the outcome is its caller's to
+    // act on. `UspClient.reauth` ends the session on `rejected`; a recovery
+    // after an outage ignores it.
+    test('an in-memory refresh that works is restored', () async {
+      expect(
+          await coordinator.restoreSession(), SessionRestoreOutcome.restored);
+    });
+
+    test('no stored token is rejected, and ends nothing by itself', () async {
       when(() => mockUsp.isAuthenticated).thenReturn(false);
       when(() => mockStorage.load()).thenReturn(null);
 
-      bool logoutCalled = false;
-      coordinator.onForceLogout = () => logoutCalled = true;
-
-      await coordinator.restoreSession(isRecovering: false);
-
-      expect(logoutCalled, isTrue);
+      expect(
+          await coordinator.restoreSession(), SessionRestoreOutcome.rejected);
+      expect(ends, 0);
     });
 
-    test('suppresses force logout when no stored token but is recovering',
-        () async {
-      when(() => mockUsp.isAuthenticated).thenReturn(false);
-      when(() => mockStorage.load()).thenReturn(null);
-
-      bool logoutCalled = false;
-      coordinator.onForceLogout = () => logoutCalled = true;
-
-      await coordinator.restoreSession(isRecovering: true);
-
-      expect(logoutCalled, isFalse);
-    });
-
-    test('triggers force logout when token expired and not recovering',
+    test('a refused stored token is rejected and cleared, and ends nothing',
         () async {
       when(() => mockUsp.isAuthenticated).thenReturn(false);
       when(() => mockStorage.load()).thenReturn('expired-token');
       when(() => mockUsp.refreshToken(token: 'expired-token'))
           .thenThrow(_sessionNotRefreshable);
 
-      bool logoutCalled = false;
-      coordinator.onForceLogout = () => logoutCalled = true;
-
-      await coordinator.restoreSession(isRecovering: false);
-
-      expect(logoutCalled, isTrue);
+      expect(
+          await coordinator.restoreSession(), SessionRestoreOutcome.rejected);
+      expect(ends, 0);
       verify(() => mockStorage.clear()).called(1);
     });
 
-    test('suppresses force logout when token expired but is recovering',
+    // A network error on the token in memory, and none in storage: nothing was
+    // refused, so it is not a verdict on the credential (#1666, C1 review).
+    test('an unanswered in-memory refresh with no stored token is unreachable',
         () async {
-      when(() => mockUsp.isAuthenticated).thenReturn(false);
-      when(() => mockStorage.load()).thenReturn('expired-token');
-      when(() => mockUsp.refreshToken(token: 'expired-token'))
+      when(() => mockUsp.refreshToken(token: any(named: 'token')))
+          .thenThrow(Exception('Connection refused'));
+      when(() => mockStorage.load()).thenReturn(null);
+
+      expect(await coordinator.restoreSession(),
+          SessionRestoreOutcome.unreachable);
+    });
+
+    test('a refused in-memory refresh with no stored token is rejected',
+        () async {
+      when(() => mockUsp.refreshToken(token: any(named: 'token')))
           .thenThrow(_sessionNotRefreshable);
+      when(() => mockStorage.load()).thenReturn(null);
 
-      bool logoutCalled = false;
-      coordinator.onForceLogout = () => logoutCalled = true;
-
-      await coordinator.restoreSession(isRecovering: true);
-
-      expect(logoutCalled, isFalse);
-      // Token should still be cleared even in recovery mode
-      verify(() => mockStorage.clear()).called(1);
+      expect(
+          await coordinator.restoreSession(), SessionRestoreOutcome.rejected);
     });
 
-    test('does not trigger force logout on network error (might recover)',
-        () async {
+    test('a network error is unreachable, and keeps the token', () async {
       when(() => mockUsp.isAuthenticated).thenReturn(false);
       when(() => mockStorage.load()).thenReturn('stored-token');
       when(() => mockUsp.refreshToken(token: 'stored-token'))
           .thenThrow(Exception('Connection refused'));
 
-      bool logoutCalled = false;
-      coordinator.onForceLogout = () => logoutCalled = true;
+      expect(await coordinator.restoreSession(),
+          SessionRestoreOutcome.unreachable);
+      verifyNever(() => mockStorage.clear());
+    });
 
-      await coordinator.restoreSession(isRecovering: false);
+    test('a retry inside the cooldown is unreachable, not a verdict', () async {
+      when(() => mockUsp.isAuthenticated).thenReturn(false);
+      when(() => mockStorage.load()).thenReturn('stored-token');
+      when(() => mockUsp.refreshToken(token: 'stored-token'))
+          .thenThrow(Exception('Connection refused'));
 
-      // Network error — don't force logout, might recover
-      expect(logoutCalled, isFalse);
+      await coordinator.restoreSession();
+
+      expect(await coordinator.restoreSession(),
+          SessionRestoreOutcome.unreachable);
+    });
+
+    test('callers that join an in-flight restore get its outcome', () async {
+      when(() => mockUsp.isAuthenticated).thenReturn(false);
+      when(() => mockStorage.load()).thenReturn('expired-token');
+      when(() => mockUsp.refreshToken(token: 'expired-token')).thenAnswer((_) =>
+          Future.delayed(const Duration(milliseconds: 20),
+              () => throw _sessionNotRefreshable));
+
+      final outcomes = await Future.wait([
+        coordinator.restoreSession(),
+        coordinator.restoreSession(),
+      ]);
+
+      expect(outcomes, [
+        SessionRestoreOutcome.rejected,
+        SessionRestoreOutcome.rejected,
+      ]);
+    });
+
+    // A refresh can be slow and a login can land while it runs: the token in
+    // storage is then the new session's (#1666).
+    test('a refused token is cleared only if it is still the one stored',
+        () async {
+      when(() => mockUsp.isAuthenticated).thenReturn(false);
+      final answer = Completer<void>();
+      when(() => mockStorage.load()).thenReturn('old-token');
+      when(() => mockUsp.refreshToken(token: 'old-token'))
+          .thenAnswer((_) => answer.future);
+
+      final restore = coordinator.restoreSession();
+      await Future<void>.delayed(Duration.zero);
+      when(() => mockStorage.load()).thenReturn('new-token');
+      answer.completeError(_sessionNotRefreshable);
+
+      expect(await restore, SessionRestoreOutcome.rejected);
+      verifyNever(() => mockStorage.clear());
     });
   });
 
@@ -485,6 +548,16 @@ void main() {
   // onRefreshTokenSuccess callback
   // ---------------------------------------------------------------------------
   group('onRefreshTokenSuccess wiring', () {
+    // The coordinator is the first thing in Riverpod that holds the façade,
+    // and the boot restore builds it before anything else needs the gate.
+    test('constructor attaches the gate to the client', () {
+      expect(mockUsp.attachedGate, same(gate));
+    });
+
+    test('constructor wires the reauth restore to restoreSession', () async {
+      expect(await mockUsp.onReauthRequired!(), SessionRestoreOutcome.restored);
+    });
+
     test('constructor wires onRefreshTokenSuccess to update timestamp',
         () async {
       // Verify callback was set
@@ -514,7 +587,6 @@ void main() {
       // Make refreshToken throw 401
       when(() => mockUsp.refreshToken(token: any(named: 'token')))
           .thenThrow(_sessionNotRefreshable);
-      coordinator.onForceLogout = () {};
 
       // ensureAuth gets 401 — should reset _lastTokenRefresh
       await coordinator.ensureAuth();
@@ -614,7 +686,7 @@ void main() {
     late UspAuthCoordinator nullCoordinator;
 
     setUp(() {
-      nullCoordinator = UspAuthCoordinator(null, mockStorage);
+      nullCoordinator = UspAuthCoordinator(null, mockStorage, gate: gate);
     });
 
     test('reloginWithNewPassword throws ServiceNotInitializedError', () async {
@@ -631,9 +703,10 @@ void main() {
       );
     });
 
-    test('restoreSession returns early without error', () async {
+    test('restoreSession is unreachable without error', () async {
       // Should not throw, just log warning
-      await nullCoordinator.restoreSession();
+      expect(await nullCoordinator.restoreSession(),
+          SessionRestoreOutcome.unreachable);
       verifyNever(() => mockStorage.load());
     });
 
@@ -663,12 +736,9 @@ void main() {
       when(() => mockUsp.refreshToken(token: any(named: 'token')))
           .thenThrow(_sessionNotRefreshable);
 
-      bool logoutCalled = false;
-      coordinator.onForceLogout = () => logoutCalled = true;
-
       await coordinator.ensureAuth();
 
-      expect(logoutCalled, isTrue);
+      expect(ends, 1);
     });
 
     test('does NOT match an authentication error nobody has measured',
@@ -679,48 +749,36 @@ void main() {
       when(() => mockUsp.refreshToken(token: any(named: 'token'))).thenThrow(
           'Token refresh failed: Authentication error: Authentication required');
 
-      bool logoutCalled = false;
-      coordinator.onForceLogout = () => logoutCalled = true;
-
       await coordinator.ensureAuth();
 
-      expect(logoutCalled, isFalse);
+      expect(ends, 0);
     });
 
     test('matches actual WASM error format', () async {
       when(() => mockUsp.refreshToken(token: any(named: 'token'))).thenThrow(
           Exception('Get failed: Transport error: HTTP error: HTTP 401'));
 
-      bool logoutCalled = false;
-      coordinator.onForceLogout = () => logoutCalled = true;
-
       await coordinator.ensureAuth();
 
-      expect(logoutCalled, isTrue);
+      expect(ends, 1);
     });
 
     test('does NOT match HTTP 500', () async {
       when(() => mockUsp.refreshToken(token: any(named: 'token')))
           .thenThrow(Exception('HTTP 500 Internal Server Error'));
 
-      bool logoutCalled = false;
-      coordinator.onForceLogout = () => logoutCalled = true;
-
       await coordinator.ensureAuth();
 
-      expect(logoutCalled, isFalse);
+      expect(ends, 0);
     });
 
     test('does NOT match HTTP 403', () async {
       when(() => mockUsp.refreshToken(token: any(named: 'token')))
           .thenThrow(Exception('HTTP error: HTTP 403 Forbidden'));
 
-      bool logoutCalled = false;
-      coordinator.onForceLogout = () => logoutCalled = true;
-
       await coordinator.ensureAuth();
 
-      expect(logoutCalled, isFalse);
+      expect(ends, 0);
     });
   });
 }

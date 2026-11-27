@@ -116,6 +116,7 @@ class DiagnosticRunningView extends ConsumerWidget {
         ],
       DiagnosticFlow.wifiCoverage => [
           DiagnosticStep.checkingWifiSignal,
+          DiagnosticStep.checkingChannelCongestion,
         ],
       DiagnosticFlow.meshBackhaul => [
           DiagnosticStep.checkingMeshBackhaul,
@@ -155,7 +156,7 @@ class DiagnosticRunningView extends ConsumerWidget {
       DiagnosticFlow.wifiCoverage => (
           Icons.wifi,
           loc(context).wifiCoverageDiagnostics,
-          1,
+          2,
         ),
       DiagnosticFlow.meshBackhaul => (
           Icons.hub,
@@ -182,6 +183,8 @@ class DiagnosticRunningView extends ConsumerWidget {
       DiagnosticStep.dnsLookup => loc(context).dnsResolution,
       DiagnosticStep.runningSpeedTest => loc(context).speedTest,
       DiagnosticStep.checkingWifiSignal => loc(context).wifiSignalAnalysis,
+      DiagnosticStep.checkingChannelCongestion =>
+        loc(context).diagnosticsChannelCongestion,
       DiagnosticStep.checkingConnectedDevices => loc(context).connectedDevices,
       DiagnosticStep.runningTraceroute => loc(context).networkPathAnalysis,
       DiagnosticStep.analyzing => loc(context).analyzingResults,
@@ -199,10 +202,18 @@ class DiagnosticRunningView extends ConsumerWidget {
       WanStatusCheckUIModel r => r.status,
       PingCheckUIModel r => '${r.avgResponseTime}ms',
       WifiSignalCheckUIModel r => '${r.rssi} dBm',
-      DhcpPoolCheckUIModel r => '${r.usedLeases}/${r.capacity} used',
-      ConnectedDevicesCheckUIModel r => '${r.totalDevices} devices',
-      DnsLookupCheckUIModel r => r.hasResolved ? 'OK' : loc(context).failed,
-      TracerouteCheckUIModel r => '${r.hops.length} hops',
+      ChannelCongestionCheckUIModel r => switch (
+            r.busiest?.utilizationPercent) {
+          final percent? => loc(context).channelFinderBusy(percent),
+          null => loc(context).completed,
+        },
+      DhcpPoolCheckUIModel r =>
+        loc(context).diagnosticsLeasesUsed(r.usedLeases, r.capacity),
+      ConnectedDevicesCheckUIModel r =>
+        loc(context).diagnosticsDevices(r.totalDevices),
+      DnsLookupCheckUIModel r =>
+        r.hasResolved ? loc(context).diagnosticsStatusOk : loc(context).failed,
+      TracerouteCheckUIModel r => loc(context).nHops(r.hops.length),
       _ when result.step == DiagnosticStep.runningSpeedTest => result.rawData
               .containsKey('downloadMbps')
           ? '${(result.rawData['downloadMbps'] as double).toStringAsFixed(1)} Mbps'

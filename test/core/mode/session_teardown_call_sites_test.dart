@@ -72,17 +72,17 @@ const _exitActions = 'lib/components/session/session_exit_actions.dart';
 /// outside it that acts on the core's report.
 ///
 /// `sse_providers.dart` is an exception with a reason, not an oversight. Its two
-/// calls are `bridge.onAuthFailed` and a shared `forceLogout` handed to the auth
-/// coordinator and the client — **callbacks assigned onto transport objects inside
-/// provider build bodies**, so there is no notifier state for a page to listen to,
-/// and the 401 they answer can arrive during boot, before any page is mounted.
-/// Turning them into a report would therefore fail *open*: the app would keep a
-/// session the router has already rejected, which is strictly worse than the layer
-/// violation. Closing it would need a state-carrying owner for transport auth
-/// failure, and nothing is going to build one: the only thing that owner was for was
-/// telling a rejected credential apart from an operator who ended the session on
-/// purpose, and Austin's call on 2026-09-09 was that the two share one screen. So
-/// this waiver is the end state rather than a staging post. #1529 records the
+/// calls are `bridge.onAuthFailed` and the end of `sessionAuthGateProvider`, the 401
+/// gate `UspClient` and the auth coordinator report into since #1666. The 401 they
+/// answer can arrive during boot, before any page is mounted, so turning them into
+/// a report would fail *open*: the app would keep a session the router has already
+/// rejected, which is strictly worse than the layer violation. `SessionAuthGate` is
+/// the state-carrying owner for transport auth failure this note once said nobody
+/// would build, and it still ends the session itself rather than reporting: what a
+/// report was for — telling a rejected credential apart from an operator who ended
+/// the session on purpose — stays closed, because Austin's call on 2026-09-09 was
+/// that the two share one screen. So this waiver is the end state rather than a
+/// staging post. #1529 records the
 /// decision, and both sites carry a comment saying the question is closed — round 2
 /// of #1513's review had asked for a marker there, because the waiver named only
 /// #1323, which carries the reasoning but no acceptance line for these two sites,

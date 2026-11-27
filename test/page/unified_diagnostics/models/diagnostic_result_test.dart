@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_result.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_state.dart';
 
+import '../../../mocks/test_data/wifi_settings_test_data.dart';
+
 void main() {
   group('DiagnosticSeverity', () {
     test('has all expected values', () {
@@ -487,6 +489,67 @@ void main() {
       // `unknown` for it.
       expect(node(null).isWired, isFalse);
       expect(node(null).linkType, isNull);
+    });
+  });
+
+  group('ChannelCongestionCheckUIModel', () {
+    ChannelCongestionRadioUIModel radio(String band, int? utilization) =>
+        ChannelCongestionRadioUIModel(
+            band: band, channel: 6, utilization: utilization);
+
+    test('a channel at half busy or more warns', () {
+      final check = ChannelCongestionCheckUIModel(
+          radios: [radio('2.4GHz', 128), radio('5GHz', 20)]);
+      expect(check.severity, DiagnosticSeverity.warning);
+      expect(check.isCongested, isTrue);
+      expect(check.step, DiagnosticStep.checkingChannelCongestion);
+    });
+
+    test('every channel below half is ok', () {
+      final check = ChannelCongestionCheckUIModel(
+          radios: [radio('2.4GHz', 127), radio('5GHz', null)]);
+      expect(check.severity, DiagnosticSeverity.ok);
+      expect(check.isCongested, isFalse);
+    });
+
+    test('no reading at all is skipped', () {
+      expect(
+          ChannelCongestionCheckUIModel(radios: [radio('5GHz', null)]).severity,
+          DiagnosticSeverity.skipped);
+      expect(ChannelCongestionCheckUIModel(radios: const []).severity,
+          DiagnosticSeverity.skipped);
+    });
+
+    test('busiest is the radio with the highest reading', () {
+      final check = ChannelCongestionCheckUIModel(radios: [
+        radio('2.4GHz', 60),
+        radio('5GHz', null),
+        radio('6GHz', 90),
+      ]);
+      expect(check.busiest?.band, '6GHz');
+      expect(
+          ChannelCongestionCheckUIModel(radios: [radio('5GHz', null)]).busiest,
+          isNull);
+    });
+
+    test('fromRadios reads each enabled radio\'s channel in use', () {
+      final check = ChannelCongestionCheckUIModel.fromRadios([
+        WifiSettingsTestData.createRadioUIModel(
+            band: '2.4GHz', channel: 11, utilization: 30),
+        WifiSettingsTestData.createRadioUIModel(
+            band: '5GHz', enable: false, utilization: 250),
+      ]);
+      expect(check.radios, const [
+        ChannelCongestionRadioUIModel(
+            band: '2.4GHz', channel: 11, utilization: 30),
+      ]);
+      expect(check.severity, DiagnosticSeverity.ok);
+    });
+
+    test('utilizationPercent scales 0-255 to a whole percent', () {
+      expect(radio('5GHz', 128).utilizationPercent, 50);
+      expect(radio('5GHz', 255).utilizationPercent, 100);
+      expect(radio('5GHz', null).utilizationPercent, isNull);
     });
   });
 }

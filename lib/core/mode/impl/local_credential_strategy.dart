@@ -33,7 +33,7 @@ class LocalCredentialStrategy implements CredentialStrategy {
   @override
   Future<bool> reestablishAfterOutage(Ref ref) async {
     final coordinator = ref.read(uspAuthCoordinatorProvider);
-    await coordinator.restoreSession(isRecovering: true);
+    await coordinator.restoreSession();
 
     final serial = await coordinator.getSerialNumber();
     return ref.read(routerFingerprintServiceProvider).matches(serial);

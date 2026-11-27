@@ -105,6 +105,39 @@ void main() {
     providerFile = _stripComments(source);
   });
 
+  // #1666: the 401 gate's session epoch changes with the credential. Begun
+  // anywhere later than the swap, a request on the old connection, or the old
+  // bridge's dispose, answered 401 after the swap would read as the new
+  // session's and end it. Not reachable from a VM test — the swap needs the wasm
+  // client — so it is pinned here, in the source.
+  group('a new session begins at the swap (#1666)', () {
+    test('once, in the swap\'s critical section, after the swap itself', () {
+      const begin = 'sessionAuthGateProvider).begin()';
+      expect(begin.allMatches(providerFile), hasLength(1),
+          reason: 'one place starts a Remote Assistance session');
+
+      final at = providerFile.indexOf(begin);
+      final lock = providerFile.indexOf('uspMutationLockProvider).withLock(');
+      final rebind = providerFile.indexOf('rebindFromBuilder(jsClient');
+      final register = providerFile.indexOf('registerSingleton<UspClient>(');
+      final invalidate =
+          providerFile.indexOf('ref.invalidate(uspClientProvider)');
+      expect([lock, rebind, register, invalidate], everyElement(isNonNegative),
+          reason: 'the swap was reshaped — re-point this scan');
+
+      expect(lock, lessThan(rebind));
+      expect(at, greaterThan(rebind));
+      expect(at, greaterThan(register));
+      expect(at, lessThan(invalidate),
+          reason: 'inside the critical section that swaps the connection');
+      final between =
+          providerFile.substring(rebind > register ? rebind : register, at);
+      expect(between, isNot(contains('await')),
+          reason: 'no await between the swap and the new session: a 401 '
+              'resuming in that gap would end the session just begun');
+    });
+  });
+
   group('activate() rebinds rather than replacing the UspClient', () {
     test('the stripped source is still recognisable code', () {
       // Guards the guard: an over-eager strip (a `://` in a URL literal, say)

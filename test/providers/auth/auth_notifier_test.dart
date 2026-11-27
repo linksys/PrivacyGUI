@@ -24,6 +24,9 @@ import 'package:privacy_gui/framework/mode/transport_strategy.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/providers/auth/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:privacy_gui/core/usp/services/session_auth_gate.dart';
+import 'package:privacy_gui/core/usp/services/session_restore_outcome.dart';
+import 'package:privacy_gui/core/usp/services/sse_operation_strategy.dart';
 
 class MockAuthService extends Mock implements AuthService {}
 
@@ -125,9 +128,17 @@ void main() {
   late MockRouterFingerprintService mockFingerprint;
   late MockSessionService mockSessionService;
   late MockUspClient mockUspClient;
+  // The app's 401 gate (#1666), overridden so these tests can read its state.
+  // In the app it is built at boot; here a test of `logout()` must not be the
+  // first to build it, or the build reads the mode profile.
+  late SessionAuthGate gate;
+  late int gateEnds;
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
+    gateEnds = 0;
+    gate = SessionAuthGate(
+        authBehavior: AuthBehavior.local, endSession: () => gateEnds++);
     mockAuthService = MockAuthService();
     mockUspCoordinator = MockUspAuthCoordinator();
     mockSseManager = MockSseManager();
@@ -137,7 +148,8 @@ void main() {
 
     when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
     when(() => mockUspCoordinator.syncAfterLogout()).thenAnswer((_) async {});
-    when(() => mockUspCoordinator.restoreSession()).thenAnswer((_) async {});
+    when(() => mockUspCoordinator.restoreSession())
+        .thenAnswer((_) async => SessionRestoreOutcome.restored);
     when(() => mockFingerprint.clear()).thenAnswer((_) async {});
     when(() => mockFingerprint.store(any())).thenAnswer((_) async {});
     when(() => mockAuthService.clearAllCredentials()).thenAnswer((_) async {});
@@ -156,6 +168,7 @@ void main() {
         routerFingerprintServiceProvider.overrideWithValue(mockFingerprint),
         sessionServiceProvider.overrideWithValue(mockSessionService),
         uspClientProvider.overrideWithValue(mockUspClient),
+        sessionAuthGateProvider.overrideWithValue(gate),
       ],
     );
   }
@@ -211,8 +224,9 @@ void main() {
     test('concurrent init calls are coalesced — restoreSession called once',
         () async {
       // Slow restoreSession to ensure concurrent calls overlap
-      when(() => mockUspCoordinator.restoreSession())
-          .thenAnswer((_) => Future.delayed(const Duration(milliseconds: 50)));
+      when(() => mockUspCoordinator.restoreSession()).thenAnswer((_) =>
+          Future.delayed(const Duration(milliseconds: 50),
+              () => SessionRestoreOutcome.restored));
 
       final container = createContainer(isAuthenticated: true);
       container.read(authProvider);
@@ -236,6 +250,78 @@ void main() {
   // ---------------------------------------------------------------------------
   // localLogin
   // ---------------------------------------------------------------------------
+
+  // A session begins where a credential is obtained (#1666), and the gate's
+  // epoch is what every later 401 is judged against.
+  group('AuthNotifier — the session epoch', () {
+    test('init that restores a token begins a session', () async {
+      final container = createContainer(isAuthenticated: true);
+      addTearDown(container.dispose);
+      container.read(authProvider);
+      await Future.delayed(Duration.zero);
+
+      await container.read(authProvider.notifier).init();
+
+      expect(gate.isLive, isTrue);
+    });
+
+    test('init that restores nothing begins no session', () async {
+      final container = createContainer(isAuthenticated: false);
+      addTearDown(container.dispose);
+      container.read(authProvider);
+      await Future.delayed(Duration.zero);
+
+      await container.read(authProvider.notifier).init();
+
+      expect(gate.isLive, isFalse);
+    });
+
+    // `init()` also runs from the `/` and `/localLoginPassword` redirects, so a
+    // Back to the login URL reaches it mid-session with the same token.
+    test('init during a live session keeps that session', () async {
+      final container = createContainer(isAuthenticated: true);
+      addTearDown(container.dispose);
+      container.read(authProvider);
+      await Future.delayed(Duration.zero);
+      gate.begin();
+      final live = gate.ticket;
+
+      await container.read(authProvider.notifier).init();
+
+      expect(gate.ticket, live,
+          reason: 'a new epoch would supersede every request in flight');
+    });
+
+    test('localLogin begins a new session, even over a live one', () async {
+      when(() => mockUspCoordinator.tryUspLogin('pass123'))
+          .thenAnswer((_) async => true);
+      final container = createContainer();
+      addTearDown(container.dispose);
+      container.read(authProvider);
+      await Future.delayed(Duration.zero);
+      gate.begin();
+      final before = gate.ticket;
+
+      await container.read(authProvider.notifier).localLogin('pass123');
+
+      expect(gate.isLive, isTrue);
+      expect(gate.ticket, isNot(before),
+          reason: 'requests in flight carry the old token');
+    });
+
+    test('a failed localLogin begins no session', () async {
+      when(() => mockUspCoordinator.tryUspLogin('wrong'))
+          .thenThrow(const InvalidCredentialsError());
+      final container = createContainer();
+      addTearDown(container.dispose);
+      container.read(authProvider);
+      await Future.delayed(Duration.zero);
+
+      await container.read(authProvider.notifier).localLogin('wrong');
+
+      expect(gate.isLive, isFalse);
+    });
+  });
 
   group('AuthNotifier — localLogin', () {
     test('successful login sets state with LoginType.local', () async {
@@ -436,6 +522,7 @@ void main() {
           routerFingerprintServiceProvider.overrideWithValue(mockFingerprint),
           sessionServiceProvider.overrideWithValue(mockSessionService),
           uspClientProvider.overrideWithValue(mockUspClient),
+          sessionAuthGateProvider.overrideWithValue(gate),
         ],
       );
       container.read(authProvider);
@@ -499,10 +586,36 @@ void main() {
             routerFingerprintServiceProvider.overrideWithValue(mockFingerprint),
             sessionServiceProvider.overrideWithValue(mockSessionService),
             uspClientProvider.overrideWithValue(mockUspClient),
+            sessionAuthGateProvider.overrideWithValue(gate),
             appModeProfileProvider
                 .overrideWithValue(_SpyModeProfile(session: spy)),
           ],
         );
+
+    // The mechanism that keeps 7734c2e4d fixed (#1666): the session is ended
+    // before `SessionStrategy.end` spends its token, so the teardown's own 401s
+    // ask for nothing, and so does a cleanup that outlives the teardown.
+    test('the session is ended before SessionStrategy.end runs, and stays so',
+        () async {
+      gate = SessionAuthGate(
+          authBehavior: AuthBehavior.remote, endSession: () => gateEnds++)
+        ..begin();
+      final ticket = gate.ticket;
+      bool? endedWhenStrategyRan;
+      spy.onEnd = () => endedWhenStrategyRan = gate.hasEnded;
+      final container = containerWithSpy();
+      addTearDown(container.dispose);
+      container.read(authProvider);
+      await Future.delayed(Duration.zero);
+
+      await container.read(authProvider.notifier).logout();
+
+      expect(endedWhenStrategyRan, isTrue);
+      // A fire-and-forget cleanup answered 401 after the teardown finished.
+      expect(gate.decideOn401(ticket), AuthDecision.ignore);
+      gate.end(ticket);
+      expect(gateEnds, 0);
+    });
 
     test('calls SessionStrategy.end exactly once', () async {
       final container = containerWithSpy();
@@ -622,6 +735,7 @@ void main() {
             routerFingerprintServiceProvider.overrideWithValue(mockFingerprint),
             sessionServiceProvider.overrideWithValue(mockSessionService),
             uspClientProvider.overrideWithValue(mockUspClient),
+            sessionAuthGateProvider.overrideWithValue(gate),
             appModeProfileProvider
                 .overrideWithValue(_SpyModeProfile(session: spy)),
           ],

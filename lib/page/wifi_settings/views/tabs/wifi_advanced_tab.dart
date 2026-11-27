@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/views/service_error_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
@@ -7,6 +8,7 @@ import 'package:privacy_gui/page/wifi_settings/models/wifi_advanced_feature_stat
 import 'package:privacy_gui/page/wifi_settings/models/mlo_status.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/mlo_status_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_advanced_provider.dart';
+import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Tab 2 — Advanced WiFi settings.
@@ -125,6 +127,20 @@ class UspWifiAdvancedTab extends ConsumerWidget {
               },
             ),
           ],
+          AppGap.md(),
+          // Channel Finder only shows, so it is a page of its own rather than
+          // a setting here; the link keeps it under Wi-Fi → Advanced, where
+          // PM#124 REQ-15 places it (#1778). Pushing it leaves this page's
+          // unsaved edits in place underneath.
+          AppCard(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: NavLinkBlock(
+              identifier: 'wifi-advanced-channel-finder',
+              title: loc(context).channelFinder,
+              description: loc(context).channelFinderDescription,
+              onTap: () => context.pushNamed(RouteNamed.uspChannelFinder),
+            ),
+          ),
         ],
       ),
     );

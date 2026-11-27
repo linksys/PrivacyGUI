@@ -48,6 +48,7 @@ import 'package:privacy_gui/core/usp/models/sse_connection_state.dart';
 import 'package:privacy_gui/core/usp/services/sse_manager.dart';
 import 'package:privacy_gui/framework/mode/session_end.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
+import 'package:privacy_gui/core/usp/services/session_restore_outcome.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
@@ -154,8 +155,8 @@ void main() {
           'agent_connected': true,
           'agent_state': 'ready',
         });
-    when(() => mockAuth.restoreSession(isRecovering: true))
-        .thenAnswer((_) async {});
+    when(() => mockAuth.restoreSession())
+        .thenAnswer((_) async => SessionRestoreOutcome.restored);
     when(() => mockAuth.getSerialNumber()).thenAnswer((_) async => 'ABC123');
     // The stub that used to sink the session: no fingerprint was ever stored for
     // a support session, and `matches()` is false for a null stored value.
@@ -203,8 +204,7 @@ void main() {
           );
       await pumpEventQueue();
 
-      verifyNever(() =>
-          mockAuth.restoreSession(isRecovering: any(named: 'isRecovering')));
+      verifyNever(() => mockAuth.restoreSession());
       verifyNever(() => mockFingerprint.matches(any()));
       // A third `verifyNever(() => mockBridge.health())` stood here until #1576,
       // and it was asserting the fabrication claim rather than acceptance 4:

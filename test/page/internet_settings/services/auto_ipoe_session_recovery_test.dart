@@ -9,6 +9,8 @@ import 'package:privacy_gui/core/usp/transport/usp_transport.dart';
 import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_snapshot.dart';
 import 'package:privacy_gui/page/internet_settings/services/auto_ipoe_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:privacy_gui/core/usp/services/session_auth_gate.dart';
+import 'package:privacy_gui/core/usp/services/session_restore_outcome.dart';
 
 import '../../../mocks/test_data/auto_ipoe_test_data.dart';
 import '../../../mocks/test_data/usp_envelope_test_data.dart';
@@ -79,7 +81,7 @@ void _supportedDeviceTests() {
     await service.storeSubmission(submission);
     when(() => transport.refreshToken()).thenThrow(
         'RefreshToken failed: Transport error: HTTP error: HTTP 401');
-    client.onReauthRequired = () async {};
+    client.onReauthRequired = () async => SessionRestoreOutcome.restored;
 
     await expectLater(service.fetch(), throwsA(isA<NotAuthenticatedError>()));
     expect((await service.loadSubmission())!.requestId, submission.requestId);
@@ -97,9 +99,11 @@ void _supportedDeviceTests() {
   });
 
   test('remote rejected GET ends once without local refresh', () async {
-    client.authBehavior = AuthBehavior.remote;
     var ended = 0;
-    client.onForceLogout = () => ended++;
+    client.attachAuthGate(SessionAuthGate(
+      authBehavior: AuthBehavior.remote,
+      endSession: () => ended++,
+    )..begin());
     await expectLater(service.fetch(), throwsA(isA<NotAuthenticatedError>()));
     expect(ended, 1);
     verify(() => transport.get(any())).called(1);

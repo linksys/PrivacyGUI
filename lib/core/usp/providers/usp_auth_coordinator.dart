@@ -1,11 +1,14 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/error_code.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/usp/providers/sse_providers.dart'
+    show sessionAuthGateProvider;
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/session_auth_gate.dart';
+import 'package:privacy_gui/core/usp/services/session_restore_outcome.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
 import 'usp_token_storage.dart';
@@ -31,18 +34,18 @@ class UspAuthCoordinator {
   final UspClient? _usp;
   final UspTokenStorage _tokenStorage;
 
+  /// Where a refused credential is reported (#1666).
+  final SessionAuthGate _gate;
+
   DateTime? _lastTokenRefresh;
   Completer<void>? _refreshInProgress;
-  Completer<bool>? _restoreInProgress;
+  Completer<SessionRestoreOutcome>? _restoreInProgress;
   DateTime? _lastRestoreAttempt;
   bool? _lastRestoreResult;
 
   /// Cooldown period after a failed restore attempt to prevent rapid retries.
   /// Short (1s) since refreshToken doesn't risk account lockout like login does.
   static const Duration _restoreCooldown = Duration(seconds: 1);
-
-  /// Called when proactive refresh gets 401 — session externally terminated.
-  VoidCallback? onForceLogout;
 
   /// Proactive refresh threshold. Must be less than JWT TTL (15 min).
   /// At 12 min, the worst-case margin is ~2:30 (heartbeat at 12:29 + refresh).
@@ -82,9 +85,17 @@ class UspAuthCoordinator {
     return _accountLockedPattern.hasMatch(error.toString());
   }
 
-  UspAuthCoordinator(this._usp, this._tokenStorage) {
-    // 401 retry is not recovery — force logout on failure
-    _usp?.onReauthRequired = () => restoreSession(isRecovering: false);
+  UspAuthCoordinator(
+    this._usp,
+    this._tokenStorage, {
+    required SessionAuthGate gate,
+  }) : _gate = gate {
+    // Here, beside the other two, because this is the first place in Riverpod
+    // that holds the façade: `UspClient` is built in `di.dart` and by Remote
+    // Assistance's `activate()`, and the boot restore reads this provider
+    // before anything else needs the gate.
+    _usp?.attachAuthGate(gate);
+    _usp?.onReauthRequired = restoreSession;
     _usp?.onRefreshTokenSuccess = () {
       _lastTokenRefresh = DateTime.now();
       _persistToken();
@@ -133,39 +144,46 @@ class UspAuthCoordinator {
   /// 1. If WASM client has a token in memory → try `refreshToken()` first
   /// 2. If no in-memory token → try restoring from sessionStorage via
   ///    `refreshToken(storedToken)` which validates and restores the session
-  /// 3. If no stored token or refresh failed → trigger force logout
+  /// 3. Otherwise → [SessionRestoreOutcome.rejected] when the router refused
+  ///    the token or there was none, [SessionRestoreOutcome.unreachable] when
+  ///    it could not be asked
   ///
   /// Password is never stored — this is intentional for security.
   /// If the token expires, the user must enter their password again.
   ///
-  /// Set [isRecovering] to true when the app is waiting for the router to
-  /// recover (e.g., after reboot). In this case, failure is expected and
-  /// force logout is suppressed — the recovery probe will retry later.
+  /// **Reports nothing (#1666).** Whoever asked decides what the outcome
+  /// means: `UspClient.reauth` ends the session on a rejection; a recovery
+  /// after an outage, which expects failures, ignores it. Before, this method
+  /// forced the logout itself unless told it was "recovering", and a caller that
+  /// joined an in-flight restore inherited whichever flag the first one passed.
   ///
-  /// Multiple concurrent calls are coalesced — only the first triggers an
-  /// actual restore; subsequent callers await the same result.
-  Future<void> restoreSession({bool isRecovering = false}) async {
+  /// Never throws. Multiple concurrent calls are coalesced — only the first
+  /// triggers an actual restore; the others get its outcome.
+  Future<SessionRestoreOutcome> restoreSession() async {
     if (_usp == null) {
       logger.w('[USP][Auth]: restoreSession skipped: UspClient is null');
-      return;
+      return SessionRestoreOutcome.unreachable;
     }
 
     // Coalesce concurrent calls — return in-flight result if one exists
-    if (_restoreInProgress != null) {
+    final inFlight = _restoreInProgress;
+    if (inFlight != null) {
       logger.d('[USP][Auth]: restoreSession already in progress, awaiting...');
-      await _restoreInProgress!.future;
-      return;
+      return inFlight.future;
     }
 
-    _restoreInProgress = Completer<bool>();
+    final restore = Completer<SessionRestoreOutcome>();
+    _restoreInProgress = restore;
+    SessionRestoreOutcome outcome;
     try {
-      final result = await _restoreSessionImpl(isRecovering: isRecovering);
-      _restoreInProgress!.complete(result);
+      outcome = await _restoreSessionImpl();
     } catch (e) {
-      _restoreInProgress!.completeError(e);
-    } finally {
-      _restoreInProgress = null;
+      logger.w('[USP][Auth]: restoreSession failed unexpectedly: $e');
+      outcome = SessionRestoreOutcome.unreachable;
     }
+    if (identical(_restoreInProgress, restore)) _restoreInProgress = null;
+    restore.complete(outcome);
+    return outcome;
   }
 
   /// Forget everything this object knows about the *current* session, keeping
@@ -201,21 +219,23 @@ class UspAuthCoordinator {
   }
 
   /// Implementation of session restore with token-only strategy.
-  Future<bool> _restoreSessionImpl({required bool isRecovering}) async {
+  Future<SessionRestoreOutcome> _restoreSessionImpl() async {
     // Step 1: If WASM client already has a token, try refreshing it
+    var inMemoryUnanswered = false;
     if (_usp!.isAuthenticated) {
       try {
         await _usp.refreshToken();
         _lastTokenRefresh = DateTime.now();
         _persistToken();
         logger.d('[USP][Auth]: restoreSession via in-memory token succeeded');
-        return true;
+        return SessionRestoreOutcome.restored;
       } catch (e) {
         if (_isAuthError(e)) {
           logger.d('[USP][Auth]: in-memory token refresh got 401, '
               'trying stored token');
         } else {
           logger.w('[USP][Auth]: in-memory token refresh failed: $e');
+          inMemoryUnanswered = true;
         }
         // Fall through to try stored token
       }
@@ -224,9 +244,15 @@ class UspAuthCoordinator {
     // Step 2: Try restoring from sessionStorage
     final storedToken = _tokenStorage.load();
     if (storedToken == null || storedToken.isEmpty) {
-      logger.d('[USP][Auth]: restoreSession skipped: no stored token');
-      _triggerForceLogoutIfNotRecovering(isRecovering);
-      return false;
+      // Nothing was refused if the router never answered about the token in
+      // memory: that is a network error, not a verdict on the credential.
+      if (inMemoryUnanswered) {
+        logger.d('[USP][Auth]: restoreSession: no stored token, and the '
+            'in-memory one could not be checked');
+        return SessionRestoreOutcome.unreachable;
+      }
+      logger.d('[USP][Auth]: restoreSession: no stored token');
+      return SessionRestoreOutcome.rejected;
     }
 
     // Check cooldown to prevent rapid retries
@@ -235,7 +261,7 @@ class UspAuthCoordinator {
         _lastRestoreResult == false &&
         DateTime.now().difference(lastAttempt) < _restoreCooldown) {
       logger.d('[USP][Auth]: restoreSession skipped: cooldown after failure');
-      return false;
+      return SessionRestoreOutcome.unreachable;
     }
 
     _lastRestoreAttempt = DateTime.now();
@@ -248,29 +274,28 @@ class UspAuthCoordinator {
       _persistToken();
       _lastRestoreResult = true;
       logger.d('[USP][Auth]: restoreSession via stored token succeeded');
-      return true;
+      return SessionRestoreOutcome.restored;
     } catch (e) {
       _lastRestoreResult = false;
       if (_isAuthError(e)) {
         logger.d('[USP][Auth]: stored token expired/invalid, clearing');
-        _tokenStorage.clear();
-        _triggerForceLogoutIfNotRecovering(isRecovering);
-      } else {
-        logger.w('[USP][Auth]: stored token refresh failed: $e');
-        // Network error — don't force logout, might recover
+        _clearStoredTokenIf(storedToken);
+        return SessionRestoreOutcome.rejected;
       }
-      return false;
+      logger.w('[USP][Auth]: stored token refresh failed: $e');
+      // Network error — says nothing about the token
+      return SessionRestoreOutcome.unreachable;
     }
   }
 
-  /// Triggers force logout unless in recovery mode.
-  void _triggerForceLogoutIfNotRecovering(bool isRecovering) {
-    if (isRecovering) {
-      logger.d('[USP][Auth]: Suppressing force logout — in recovery mode');
-      return;
-    }
-    logger.w('[USP][Auth]: Triggering force logout');
-    onForceLogout?.call();
+  /// Clears the stored token only if it is still [tried] (#1666).
+  ///
+  /// A refresh can be slow, and a login can land while it runs: the token in
+  /// storage is then the new session's, and the old attempt's failure must not
+  /// take it with it.
+  void _clearStoredTokenIf(String? tried) {
+    if (tried == null || _tokenStorage.load() != tried) return;
+    _tokenStorage.clear();
   }
 
   /// Re-authenticates with a new password after password change.
@@ -381,7 +406,8 @@ class UspAuthCoordinator {
   /// to avoid unnecessary network calls. When the router will not refresh the
   /// session — a 401, or `refreshToken`'s "Authentication token has expired",
   /// which is what a tab that slept past the token's lifetime wakes to (#1666)
-  /// — triggers force logout instead of attempting [restoreSession], because:
+  /// — ends the session through the gate instead of attempting
+  /// [restoreSession], with the ticket taken when this refresh started, because:
   /// - SSE heartbeat arriving means the connection is live
   /// - A 401 on proactive refresh means the session was externally terminated
   ///   (e.g., SSH killed the session on the router)
@@ -398,6 +424,8 @@ class UspAuthCoordinator {
       return;
     }
 
+    final ticket = _gate.ticket;
+    final tried = _usp.sessionToken;
     _refreshInProgress = Completer<void>();
     try {
       await _usp.refreshToken();
@@ -407,9 +435,10 @@ class UspAuthCoordinator {
     } catch (e) {
       if (_isAuthError(e)) {
         _lastTokenRefresh = null;
-        _tokenStorage.clear();
-        logger.w('[USP][Auth]: Proactive refresh got 401 — forcing logout: $e');
-        onForceLogout?.call();
+        _clearStoredTokenIf(tried);
+        logger.w('[USP][Auth]: Proactive refresh refused — ending the '
+            'session: $e');
+        _gate.end(ticket);
       } else {
         logger.w(
             '[USP][Auth]: Proactive refresh failed (non-auth, will retry): $e');
@@ -424,5 +453,6 @@ final uspAuthCoordinatorProvider = Provider<UspAuthCoordinator>((ref) {
   return UspAuthCoordinator(
     ref.watch(uspClientProvider),
     UspTokenStorage(),
+    gate: ref.read(sessionAuthGateProvider),
   );
 });

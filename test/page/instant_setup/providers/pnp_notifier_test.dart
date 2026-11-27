@@ -31,6 +31,7 @@ import 'package:privacy_gui/page/instant_setup/services/pnp_service.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_status_service.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:privacy_gui/core/usp/services/session_restore_outcome.dart';
 
 import '../../../mocks/provider_overrides/mock_firmware_update.dart';
 import '../../../mocks/test_data/devices_test_data.dart';
@@ -85,8 +86,9 @@ class _CountingAuthCoordinator implements UspAuthCoordinator {
   int restoreCalls = 0;
 
   @override
-  Future<void> restoreSession({bool isRecovering = false}) async {
+  Future<SessionRestoreOutcome> restoreSession() async {
     restoreCalls++;
+    return SessionRestoreOutcome.restored;
   }
 
   @override

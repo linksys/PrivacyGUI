@@ -7,6 +7,7 @@ import 'package:privacy_gui/core/usp/providers/bridge_request_throttler_provider
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/network_diagnostics_executor.dart';
+import 'package:privacy_gui/core/usp/services/session_auth_gate.dart';
 import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
 import 'package:privacy_gui/core/usp/models/sse_connection_state.dart';
 import 'package:privacy_gui/core/usp/services/sse_manager.dart';
@@ -99,6 +100,33 @@ final uspBridgeClientProvider = Provider<UspBridgeClient?>((ref) {
   return bridge;
 });
 
+/// Who answers "does this 401 end the session?" (#1666) for USP commands, the
+/// heartbeat refresh and the session restore — see [SessionAuthGate]. The
+/// bridge's `onAuthFailed` below still answers for itself until the second half
+/// of #1666's PR C.
+///
+/// Built once and never rebuilt: it reads, never watches, so the session epoch
+/// it keeps lasts as long as the app. The mode's answer comes from
+/// `CredentialStrategy.authBehavior`, which is fixed for the build.
+///
+/// It ends the session here, in the one file under `lib/core/` allowed to
+/// (`session_teardown_call_sites_test.dart`), with the same waiver and the same
+/// cause as `bridge.onAuthFailed` above: what it noticed is a credential the
+/// router has stopped accepting. Built at boot, through the coordinator, so it
+/// is live before any page is: a 401 can arrive before the dashboard shell has
+/// mounted (PnP, or a Remote Assistance session still on its way in).
+final sessionAuthGateProvider = Provider<SessionAuthGate>((ref) {
+  return SessionAuthGate(
+    authBehavior: ref.read(appModeProfileProvider).credential.authBehavior,
+    endSession: () {
+      logger.w('[USP][Auth]: Session credential rejected — logging out');
+      unawaited(
+        ref.read(authProvider.notifier).logout(cause: EndCause.sessionLost),
+      );
+    },
+  );
+});
+
 /// Singleton [SseManager] provider — NOT autoDispose.
 ///
 /// Lives for the entire authenticated session. Composes:
@@ -129,43 +157,13 @@ final sseManagerProvider = Provider<SseManager?>((ref) {
   final authCoordinator = ref.read(uspAuthCoordinatorProvider);
   manager.onHeartbeatAuth = () => authCoordinator.ensureAuth();
 
-  // Wire force logout — shared guard prevents duplicate triggers
-  //
-  // The same waiver as `bridge.onAuthFailed` above, and closed the same way, reached
-  // from the auth coordinator and the client instead of the bridge. The log line says
-  // "navigating to login", which has no counterpart in Remote Assistance.
-  bool logoutTriggered = false;
-  void forceLogout() {
-    if (logoutTriggered) return;
-    logoutTriggered = true;
-    logger.w('[USP][Auth]: Force logout triggered — navigating to login');
-    // Same cause and the same reason as `bridge.onAuthFailed` above: whichever of
-    // the two paths noticed, what it noticed is a credential the router has stopped
-    // accepting.
-    ref.read(authProvider.notifier).logout(cause: EndCause.sessionLost);
-  }
+  // What a 401 on a USP command or a heartbeat refresh does is
+  // [sessionAuthGateProvider]'s (#1666), which the coordinator attaches to the
+  // client. It used to be wired here, with a guard that lived as long as this
+  // build — and locally this provider is built once per tab, so every forced
+  // logout after the first one did nothing.
 
-  authCoordinator.onForceLogout = forceLogout;
-  usp.onForceLogout = forceLogout;
-
-  // #1627: what a 401 on a USP command means, and so whether the client may try
-  // to recover it — the same answer the bridge was built with for its own REST
-  // 401s. Set beside `onForceLogout` because under Remote Assistance that callback
-  // *is* the answer: the Guardian token cannot be refreshed, so the client ends
-  // the session instead of running the local reauth, whose `restoreSession()`
-  // step would return without logging out.
-  //
-  // Not reset on dispose, unlike the callback above: the mode is fixed for the
-  // build, so between a dispose and the rebuild after a Remote Assistance
-  // re-activation the value is still `AuthBehavior.remote`, and resetting it
-  // would reopen the local reauth for exactly that window.
-  usp.authBehavior = profile.credential.authBehavior;
-
-  ref.onDispose(() {
-    authCoordinator.onForceLogout = null;
-    usp.onForceLogout = null;
-    manager.dispose();
-  });
+  ref.onDispose(manager.dispose);
 
   return manager;
 });
