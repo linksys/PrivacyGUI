@@ -2,18 +2,20 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:privacy_gui/core/utils/device_features.dart';
-import 'package:privacy_gui/providers/global_model_number_provider.dart';
 
 import 'pwa_logic.dart';
 
 enum PwaMode { none, native, ios, mac }
 
-// ... (imports)
-
 class PwaInstallService extends Notifier<PwaMode> {
-  // Reuse logic instance
-  final _pwaLogic = PwaLogic();
+  /// [logic] and [isWeb] default to the browser's [PwaLogic] and [kIsWeb].
+  /// Tests pass their own, so that the service runs on the Dart VM.
+  PwaInstallService({PwaLogic? logic, bool? isWeb})
+      : _pwaLogic = logic ?? PwaLogic(),
+        _isWeb = isWeb ?? kIsWeb;
+
+  final PwaLogic _pwaLogic;
+  final bool _isWeb;
   bool _isListenersInitialized = false;
 
   BeforeInstallPromptEvent? _deferredPrompt;
@@ -21,50 +23,35 @@ class PwaInstallService extends Notifier<PwaMode> {
 
   @override
   PwaMode build() {
-    // Watch model number to trigger rebuilds (or just keep it alive so listen works)
-    // Actually, we don't need to rebuild 'state' on every model change directly here,
-    // because we handle logic in _checkPlatformAndPersistence via listen.
-    // However, keeping watch ensures we are subscribed.
-    final modelNumber = ref.watch(globalModelNumberProvider);
-
     // Only run on Web
-    if (kIsWeb) {
+    if (_isWeb) {
       if (!_isListenersInitialized) {
         _initListeners();
         _isListenersInitialized = true;
       }
 
       // Trigger check on build (initial load or subsequent builds)
-      _checkPlatformAndPersistence(modelNumber);
+      _checkPlatformAndPersistence();
     }
     return PwaMode.none; // Default
   }
 
-  Future<void> _checkPlatformAndPersistence(String modelNumber) async {
+  Future<void> _checkPlatformAndPersistence() async {
     try {
-      // 1. Feature Flag Check (Centralized in device_features.dart)
-      // Use the passed model number instead of reading from ref
-      if (!isFeatureSupported(DeviceFeature.pwa, modelNumber)) {
-        state = PwaMode.none;
-        return;
-      }
-
-      // ... (rest same, remove local ref.read)
-
-      // 2. Standalone Check
+      // 1. Standalone Check
       if (isStandalone) {
         state = PwaMode.none;
         return;
       }
 
-      // 3. Persistence/Dismissal Check
+      // 2. Persistence/Dismissal Check
       final dismissed = await isDismissedRecently();
       if (dismissed) {
         state = PwaMode.none;
         return;
       }
 
-      // 4. Platform checks for non-native-prompt platforms (iOS/Mac)
+      // 3. Platform checks for non-native-prompt platforms (iOS/Mac)
       if (isIOS) {
         state = PwaMode.ios;
       } else if (isMacSafari) {
@@ -107,31 +94,12 @@ class PwaInstallService extends Notifier<PwaMode> {
   }
 
   void _initListeners() {
-    if (!kIsWeb) return;
-
-    // Listen to model number changes to handle device switching or delayed load
-    ref.listen(globalModelNumberProvider, (prev, next) {
-      if (prev == next) return;
-      _checkPlatformAndPersistence(next);
-    });
+    if (!_isWeb) return;
 
     try {
       // Use the shared Logic Loader
       _pwaLogic.initListeners(
-        onBeforeInstallPrompt: (event) {
-          _deferredPrompt = event;
-          // Check persistence
-          isDismissedRecently().then((recentlyDismissed) {
-            // ...
-            // Re-check using current model number
-            final modelNumber = ref.read(globalModelNumberProvider);
-            if (!isFeatureSupported(DeviceFeature.pwa, modelNumber)) {
-              // ...
-              return;
-            }
-            // ...
-          });
-        },
+        onBeforeInstallPrompt: _onBeforeInstallPrompt,
         onAppInstalled: () {
           _deferredPrompt = null;
           state = PwaMode.none;
@@ -140,6 +108,19 @@ class PwaInstallService extends Notifier<PwaMode> {
     } catch (e) {
       debugPrint('PWA: Error initializing listeners: $e');
     }
+  }
+
+  // The browser offers its install prompt: live, or the event that
+  // web/early-bootstrap.js captured before the app started, which
+  // initListeners replays. Every model offers it.
+  Future<void> _onBeforeInstallPrompt(BeforeInstallPromptEvent event) async {
+    _deferredPrompt = event;
+    if (isStandalone) return;
+    if (await isDismissedRecently()) {
+      debugPrint('PWA: Install prompt kept hidden: dismissed recently');
+      return;
+    }
+    state = PwaMode.native;
   }
 
   Future<void> promptInstall() async {
@@ -157,17 +138,17 @@ class PwaInstallService extends Notifier<PwaMode> {
   }
 
   bool get isIOS {
-    if (!kIsWeb) return false;
+    if (!_isWeb) return false;
     return _pwaLogic.isIOS;
   }
 
   bool get isMacSafari {
-    if (!kIsWeb) return false;
+    if (!_isWeb) return false;
     return _pwaLogic.isMacSafari;
   }
 
   bool get isStandalone {
-    if (!kIsWeb) return false;
+    if (!_isWeb) return false;
     return _pwaLogic.isStandalone;
   }
 }
