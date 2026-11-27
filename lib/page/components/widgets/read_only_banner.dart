@@ -18,7 +18,7 @@ class ReadOnlyBanner extends ConsumerWidget {
     }
     final colorScheme = Theme.of(context).colorScheme;
     return Semantics(
-      identifier: 'now-read-only-banner',
+      identifier: 'read-only-banner',
       child: Container(
         width: double.infinity,
         color: colorScheme.secondaryContainer,

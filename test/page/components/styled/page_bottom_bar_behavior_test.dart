@@ -7,13 +7,14 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 import '../../../common/config.dart';
 import '../../../common/di.dart';
+import '../../../common/screen.dart';
+import '../../../common/semantics_identifiers.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 
 /// Found by the identifier the page view stamps on the button, not its label.
-final _positive = find.byWidgetPredicate((widget) =>
-    widget is AppFilledButton &&
-    widget.identifier == 'now-page-bottom-button-positive');
+final _positive = find.byWidgetPredicate(
+    (widget) => widget is AppFilledButton && widget.identifier == 'page-save');
 
 AppFilledButton _positiveButton(WidgetTester tester) =>
     tester.widget<AppFilledButton>(_positive);
@@ -28,8 +29,9 @@ void main() {
   // from get_it.
   mockDependencyRegister();
 
-  Future<void> pumpPage(WidgetTester tester, {PageBottomBar? bar}) async {
-    await tester.setScreenSize(device1440w);
+  Future<void> pumpPage(WidgetTester tester,
+      {PageBottomBar? bar, ScreenSize size = device1440w}) async {
+    await tester.setScreenSize(size);
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(testableSingleRoute(
       locale: const Locale('en'),
@@ -95,6 +97,82 @@ void main() {
       await pumpPage(tester);
 
       expect(_positive, findsNothing);
+    });
+  });
+
+  // E2E tests locate the bar's buttons by these (constitution 11.2).
+  group('PageBottomBar identifiers', () {
+    for (final size in [device480w, device1440w]) {
+      testWidgets('are page-save and page-cancel by default at ${size.name}',
+          (tester) async {
+        final semantics = tester.ensureSemantics();
+        var saves = 0;
+        var cancels = 0;
+        await pumpPage(tester,
+            size: size,
+            bar: PageBottomBar(
+              isPositiveEnabled: true,
+              isNegitiveEnabled: true,
+              onPositiveTap: () => saves++,
+              onNegitiveTap: () => cancels++,
+            ));
+
+        await tester.tap(find.bySemanticsIdentifier('page-save'));
+        await tester.tap(find.bySemanticsIdentifier('page-cancel'));
+        await tester.pumpAndSettle();
+        // Before any expect: flutter_test checks for a live handle before
+        // tear-down runs.
+        semantics.dispose();
+
+        expect(saves, 1);
+        expect(cancels, 1);
+      });
+    }
+
+    testWidgets('are the bar\'s own when it passes them', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pumpPage(tester,
+          bar: PageBottomBar(
+            isPositiveEnabled: true,
+            isNegitiveEnabled: true,
+            positiveLabel: 'Test again',
+            negitiveLable: 'Close',
+            positiveIdentifier: 'speed-test-again',
+            negativeIdentifier: 'speed-test-close',
+            onPositiveTap: () {},
+            onNegitiveTap: () {},
+          ));
+
+      final found = identifierCounts([
+        'speed-test-again',
+        'speed-test-close',
+        'page-save',
+        'page-cancel',
+      ]);
+      semantics.dispose();
+
+      expect(found, {
+        'speed-test-again': 1,
+        'speed-test-close': 1,
+        'page-save': 0,
+        'page-cancel': 0,
+      });
+    });
+
+    test('copyWith keeps them unless it is given others', () {
+      final bar = PageBottomBar(
+        isPositiveEnabled: true,
+        positiveIdentifier: 'speed-test-again',
+        negativeIdentifier: 'speed-test-close',
+        onPositiveTap: () {},
+      );
+
+      final kept = bar.copyWith(isPositiveEnabled: false);
+      final replaced = bar.copyWith(positiveIdentifier: 'speed-test-start');
+
+      expect((kept.positiveIdentifier, kept.negativeIdentifier),
+          ('speed-test-again', 'speed-test-close'));
+      expect(replaced.positiveIdentifier, 'speed-test-start');
     });
   });
 

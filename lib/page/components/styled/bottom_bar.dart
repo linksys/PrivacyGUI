@@ -40,13 +40,13 @@ class _BottomBarState extends ConsumerState<BottomBar> {
                         Padding(
                           padding: const EdgeInsets.only(right: 8.0),
                           child: Semantics(
-                              identifier: 'now-bottom-text-copyright',
+                              identifier: 'footer-copyright',
                               child: AppText.bodySmall(loc(context)
                                   .copyRight(BuildConfig.copyRightYear))),
                         ),
                         AppTextButton.noPadding(
                           loc(context).endUserLicenseAgreement,
-                          identifier: 'now-bottom-text-button-eula',
+                          identifier: 'footer-eula',
                           onTap: () {
                             gotoOfficialWebUrl(linkEULA,
                                 locale: ref.read(appSettingsProvider).locale);
@@ -58,7 +58,7 @@ class _BottomBarState extends ConsumerState<BottomBar> {
                         ),
                         AppTextButton.noPadding(
                           loc(context).termsOfService,
-                          identifier: 'now-bottom-text-button-terms',
+                          identifier: 'footer-terms',
                           onTap: () {
                             gotoOfficialWebUrl(linkTerms,
                                 locale: ref.read(appSettingsProvider).locale);
@@ -70,7 +70,7 @@ class _BottomBarState extends ConsumerState<BottomBar> {
                         ),
                         AppTextButton.noPadding(
                           loc(context).privacyAndSecurity,
-                          identifier: 'now-bottom-text-button-privacy',
+                          identifier: 'footer-privacy',
                           onTap: () {
                             gotoOfficialWebUrl(linkPrivacy,
                                 locale: ref.read(appSettingsProvider).locale);
@@ -82,7 +82,7 @@ class _BottomBarState extends ConsumerState<BottomBar> {
                         ),
                         AppTextButton.noPadding(
                           loc(context).thirdPartyLicenses,
-                          identifier: 'now-bottom-text-button-third-party',
+                          identifier: 'footer-third-party',
                           onTap: () {
                             gotoOfficialWebUrl(linkThirdParty,
                                 locale: ref.read(appSettingsProvider).locale);
