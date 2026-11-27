@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/models/operate_result.dart';
 import 'dart:ui';
@@ -208,9 +209,9 @@ class SseOperationAwaiter {
         return completer.future;
       }
     }
-    throw TimeoutException(
-      'OperationComplete not received within ${timeout.inSeconds}s '
-      'for $operateCommand',
+    throw TimeoutError(
+      detail: 'OperationComplete not received within ${timeout.inSeconds}s '
+          'for $operateCommand',
     );
   }
 
@@ -249,13 +250,13 @@ class SseOperationAwaiter {
       try {
         return await _usp.operate(operateCommand, args: args).timeout(
               _operateHttpTimeout,
-              onTimeout: () => throw TimeoutException(
-                'HTTP operate ack not received within '
-                '${_operateHttpTimeout.inSeconds}s for $operateCommand '
-                '(attempt ${attempt + 1})',
+              onTimeout: () => throw TimeoutError(
+                detail: 'HTTP operate ack not received within '
+                    '${_operateHttpTimeout.inSeconds}s for $operateCommand '
+                    '(attempt ${attempt + 1})',
               ),
             );
-      } on TimeoutException catch (e) {
+      } on TimeoutError catch (e) {
         lastError = e;
         if (attempt < _operateHttpRetries) {
           logger.w('[USP][SSE][Operate]: HTTP ack timeout for $operateCommand '
@@ -704,9 +705,9 @@ class SseOperationAwaiter {
       }
     }
 
-    throw TimeoutException(
-      'Polling fallback timed out after ${timeout.inSeconds}s '
-      'for $operateCommand',
+    throw TimeoutError(
+      detail: 'Polling fallback timed out after ${timeout.inSeconds}s '
+          'for $operateCommand',
     );
   }
 

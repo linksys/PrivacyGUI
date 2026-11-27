@@ -320,6 +320,17 @@ void main() {
       expect(() => svc.fetch(), throwsA(isA<ServiceError>()));
     });
 
+    test('a read the request throttler gave up on stays a TimeoutError',
+        () async {
+      // What `UspClient.get` throws when the throttler's per-request window
+      // runs out (#1831). This service maps everything it catches, which used
+      // to turn the timeout into an UnexpectedError.
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenThrow(const TimeoutError(detail: 'request exceeded 15s'));
+
+      await expectLater(svc.fetch(), throwsA(isA<TimeoutError>()));
+    });
+
     test('maps USP error to ServiceError on fetch failure', () async {
       when(() => mockUsp.get(any(), priority: any(named: 'priority')))
           .thenThrow(Exception('USP timeout'));

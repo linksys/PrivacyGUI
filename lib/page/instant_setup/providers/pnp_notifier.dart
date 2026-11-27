@@ -785,18 +785,25 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
       },
     );
     try {
-      await settled.future.timeout(ref.read(pnpFirmwareRebootDeadlineProvider));
-      logger.i('[PnP] the router came back after the firmware update '
-          '(${ref.read(appConnectionStateProvider).name})');
-    } on TimeoutException {
-      // The connection state is left in `waitingForRecovery` on purpose: the probe
-      // loop is still the thing that will notice the router returning, and forcing
-      // it to `authenticated` here would claim a session this code has not seen.
-      // What PnP does is stop waiting — the credentials are what a user with an
-      // unreachable router needs, and they are on the next screen.
-      logger.w('[PnP] the router did not come back within '
-          '${ref.read(pnpFirmwareRebootDeadlineProvider).inMinutes} minutes — '
-          'showing the WiFi credentials anyway');
+      // The deadline is an answer, not a failure: whether the router came back
+      // in time. So it is a value, and nothing is thrown for it (#1831).
+      final cameBack = await settled.future.then((_) => true).timeout(
+          ref.read(pnpFirmwareRebootDeadlineProvider),
+          onTimeout: () => false);
+      if (cameBack) {
+        logger.i('[PnP] the router came back after the firmware update '
+            '(${ref.read(appConnectionStateProvider).name})');
+      } else {
+        // The connection state is left in `waitingForRecovery` on purpose: the
+        // probe loop is still the thing that will notice the router returning,
+        // and forcing it to `authenticated` here would claim a session this code
+        // has not seen. What PnP does is stop waiting — the credentials are what
+        // a user with an unreachable router needs, and they are on the next
+        // screen.
+        logger.w('[PnP] the router did not come back within '
+            '${ref.read(pnpFirmwareRebootDeadlineProvider).inMinutes} minutes — '
+            'showing the WiFi credentials anyway');
+      }
     } finally {
       sub.close();
     }

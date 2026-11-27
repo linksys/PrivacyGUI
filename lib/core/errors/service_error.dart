@@ -172,8 +172,10 @@ final class NetworkError extends ServiceError {
 /// Operation timed out before completing.
 ///
 /// A generic timeout (any operation may time out) — not bound to a specific
-/// feature. Used e.g. by diagnostics to fold Dart's [TimeoutException] into the
-/// [ServiceError] hierarchy so the UI can localize it by type.
+/// feature. Raised where the timeout is, so a provider never sees Dart's
+/// [TimeoutException] (#1831): the mutation lock, the operation awaiter and the
+/// request throttler in `lib/core/usp/`, or a provider's own `onTimeout`.
+/// `mapUspErrorToServiceError` passes it through unchanged.
 final class TimeoutError extends ServiceError {
   const TimeoutError({super.code, super.detail});
 
