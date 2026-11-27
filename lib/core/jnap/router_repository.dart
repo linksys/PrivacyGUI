@@ -284,6 +284,10 @@ class RouterRepository {
       if (retry <= 1) {
         await Future.delayed(Duration(milliseconds: firstDelayInMilliSec));
       }
+      // An async* loop learns of a cancel only at a yield, and the next yield
+      // comes after the request. Yielding nothing here, after the delay, lets
+      // a cancel during the delay end the loop before it sends (#1904).
+      yield* const Stream<JNAPResult>.empty();
       // After the delay and before the request, so that a logout during the
       // delay stops the request it was waiting to send.
       endIfLoggedOut();

@@ -9,10 +9,9 @@
 // A loop can be tied to the login its work began in (#1904 P1): a logout then
 // ends it before its next request. The "tied to a login" group pins that.
 //
-// One case is red and skipped until #1904 P2: cancelling the subscription
-// during a retry delay still sends one more request, because an async* loop
-// only notices the cancel at its next yield, which comes after the next send.
-// A loop tied to the login does not rely on a cancel to stop.
+// Cancelling the subscription during a delay ends the loop before its next
+// request (#1904 P2). An async* loop notices a cancel only at a yield, so the
+// loop yields nothing after each delay, ahead of the send.
 //
 // Time is the test binding's fake clock. Each request waits for the command
 // queue's next 50 ms tick before it reaches the executor, so the checks below
@@ -40,10 +39,6 @@ import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../common/di.dart';
-
-/// Skipped until #1904 P2, which makes a cancel stop the loop before its next
-/// request.
-const _redUntil1904P2 = true;
 
 /// What the router does with one request.
 typedef _Answer = Response Function();
@@ -456,8 +451,7 @@ void main() {
 
   queueTest(
       'cancelling the subscription stops the loop before its next '
-      'request',
-      skip: _redUntil1904P2, (tester) async {
+      'request', (tester) async {
     final results = <JNAPResult>[];
     final subscription = repo
         .scheduledCommand(
