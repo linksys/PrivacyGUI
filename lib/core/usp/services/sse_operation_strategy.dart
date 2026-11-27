@@ -98,9 +98,6 @@ abstract class SseOperationStrategy {
   /// Configuration for heartbeat monitoring.
   HeartbeatConfig get heartbeatConfig;
 
-  /// Configuration for auth failure handling.
-  AuthBehavior get authBehavior;
-
   /// Registers subscriptions on the backend.
   ///
   /// Local: Direct register (bridge is idempotent).

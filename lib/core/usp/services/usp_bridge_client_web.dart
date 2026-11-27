@@ -6,11 +6,13 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:web/web.dart' as web;
 
+import 'bridge_auth.dart';
 import 'bridge_endpoints.dart';
-import 'sse_operation_strategy.dart';
+import 'session_auth_gate.dart';
 import 'usp_client.dart';
 import 'usp_bridge_client_errors.dart';
 
+export 'session_auth_gate.dart' show RequestKind;
 export 'sse_operation_strategy.dart' show AuthBehavior;
 export 'usp_bridge_client_errors.dart';
 
@@ -26,19 +28,21 @@ external set _jsSseAbort(JSAny? value);
 /// Uses the JWT session token from [UspClient] for authentication.
 /// Handles: Health, SSE Notifications, Subscription.
 ///
-/// All REST endpoints are wrapped with 401 retry logic that delegates
-/// re-authentication to [UspClient.reauth].
+/// What a 401 does is [SessionAuthGate]'s to decide (#1666): every REST
+/// request and the notification stream ask it, with the ticket read beside the
+/// token ([BridgeCredential]), and the local retry delegates to
+/// [UspClient.reauth].
 class UspBridgeClient {
   final UspClient _usp;
   final BridgeEndpoints _endpoints;
   final String? _overrideBaseUrl;
-  final String? _overrideToken;
   final String? _clientTypeId;
-  final AuthBehavior _authBehavior;
   final RemoteReads? _remoteReads;
+  final SessionAuthGate _gate;
 
-  /// Called when auth fails and cannot be recovered (session expired).
-  void Function()? onAuthFailed;
+  /// Built in the constructor body, not lazily: a fixed token's ticket is the
+  /// session live when this bridge was made, not when it first sends.
+  late final BridgeCredential _credential;
 
   UspBridgeClient(
     this._usp, {
@@ -46,14 +50,21 @@ class UspBridgeClient {
     String? baseUrl,
     String? authToken,
     String? clientTypeId,
-    AuthBehavior authBehavior = AuthBehavior.local,
+    required SessionAuthGate gate,
     RemoteReads? remoteReads,
   })  : _endpoints = endpoints ?? BridgeEndpoints.local,
         _overrideBaseUrl = baseUrl,
-        _overrideToken = authToken,
         _clientTypeId = clientTypeId,
-        _authBehavior = authBehavior,
-        _remoteReads = remoteReads;
+        _gate = gate,
+        _remoteReads = remoteReads {
+    // Remote: Guardian's temporaryAccessToken. Local: the WASM client's session
+    // token, read per request.
+    _credential = BridgeCredential(
+      fixedToken: authToken,
+      sessionToken: () => _usp.sessionToken,
+      gate: gate,
+    );
+  }
 
   /// Active SSE AbortController — stored so [abortSse] can cancel
   /// synchronously from a `beforeunload` handler.
@@ -66,21 +77,8 @@ class UspBridgeClient {
   /// web app was served from.
   String get _baseUrl => _overrideBaseUrl ?? _usp.baseUrl;
 
-  String get _token {
-    // Remote mode: use override token (temporaryAccessToken from Guardian)
-    if (_overrideToken != null) return _overrideToken;
-
-    // Local mode: use session token from WASM client
-    final token = _usp.sessionToken;
-    if (token == null) {
-      throw StateError('Session token not available. '
-          'Ensure the WASM client exports sessionToken() and login is complete.');
-    }
-    return token;
-  }
-
-  Map<String, String> get _authHeaders => {
-        'Authorization': 'Bearer $_token',
+  Map<String, String> _headersFor(String token) => {
+        'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
         if (_clientTypeId != null) 'X-Linksys-Client-Type-Id': _clientTypeId,
       };
@@ -89,55 +87,45 @@ class UspBridgeClient {
   // 401 Auth Retry (REST path)
   // ══════════════════════════════════════════════════════════════════════════
 
-  /// Wraps a REST request with 401 handling based on [AuthBehavior].
+  /// Sends a REST request; a 401 is [SessionAuthGate]'s to decide (#1666),
+  /// through [resendAfter401]: reauth and send once more, end the session, or
+  /// neither. Each attempt reads its token and ticket together, so a request
+  /// sent again after a reauth carries the refreshed token.
   ///
-  /// Local mode: delegates to [UspClient.reauth] then retries once.
-  /// Remote mode: no retry (temporaryAccessToken cannot refresh), triggers
-  /// [onAuthFailed] and throws [SessionExpiredException].
+  /// [kind] [RequestKind.bestEffort] marks a request whose answer nothing
+  /// depends on: the SSE bootstrap's [health]. Its 401 is neither retried nor
+  /// allowed to end the session. The other request that used to opt out, the
+  /// cleanup after an intentional disconnect, no longer has to: it runs in the
+  /// session `logout()` has already ended (or, for an old bridge after a Remote
+  /// Assistance re-activation, one the new session has superseded), and the
+  /// gate ignores those — the 770-teardown loop on QA Guardian (2026-09-30)
+  /// cannot start.
   ///
-  /// [reportAuthFailure] false marks a request whose 401 must not end the
-  /// session. The 401 is still thrown, but neither retried nor reported through
-  /// [onAuthFailed]. Two kinds of request ask for that:
-  ///
-  /// - **Teardown** — the best-effort cleanup after an intentional disconnect.
-  ///   The credential has usually just been spent on purpose (the End Session
-  ///   DELETE answers 204 before the cleanup reads go out), so the 401 is
-  ///   expected, and reporting it asks for a logout from inside the logout that
-  ///   caused it. On QA Guardian that looped 770 times in four minutes
-  ///   (2026-09-30).
-  /// - **A best-effort probe** whose failure the caller already ignores — the
-  ///   SSE bootstrap's [health]. Nothing depends on its answer, so it is the wrong
-  ///   request to end a session from; the reads that do depend on the token
-  ///   report its 401 as they always have.
+  /// A 401 that is not sent again throws [SessionExpiredException].
   Future<T> _withAuthRetry<T>(
-    Future<http.Response> Function() request,
+    Future<http.Response> Function(Map<String, String> headers) request,
     T Function(http.Response) parser, {
-    bool reportAuthFailure = true,
+    RequestKind kind = RequestKind.normal,
   }) async {
-    var response = await request();
-    if (response.statusCode == 401 && !reportAuthFailure) {
-      debugPrint('[UspBridgeClient] 401 on a request that does not report it');
-      throw SessionExpiredException('401, not reported');
-    }
-    if (response.statusCode == 401) {
-      if (_authBehavior.shouldRetryOnFailure) {
-        // Local mode: reauth + retry
-        debugPrint('[UspBridgeClient] 401 detected, attempting reauth...');
-        await _usp.reauth();
-        response = await request();
-        if (response.statusCode == 401) {
-          debugPrint('[UspBridgeClient] 401 after reauth — session expired');
-          onAuthFailed?.call();
-          throw SessionExpiredException('Local session expired after reauth');
-        }
-      } else {
-        // Remote mode: no retry, session is over
-        debugPrint('[UspBridgeClient] 401 in Remote mode — session expired');
-        onAuthFailed?.call();
-        throw SessionExpiredException('Remote session expired');
+    var resent = false;
+    while (true) {
+      final (:token, :ticket) = _credential.read();
+      final response = await request(_headersFor(token));
+      if (response.statusCode != 401) return parser(response);
+      debugPrint('[UspBridgeClient] 401${resent ? ' after reauth' : ''}');
+      final again = await resendAfter401(
+        gate: _gate,
+        ticket: ticket,
+        resent: resent,
+        reauth: _usp.reauth,
+        kind: kind,
+      );
+      if (!again) {
+        throw SessionExpiredException(
+            resent ? 'Session expired after reauth' : 'Session not usable');
       }
+      resent = true;
     }
-    return parser(response);
   }
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -157,14 +145,16 @@ class UspBridgeClient {
   /// **succeeds** on a 404 and the probe would have read "unreachable endpoint" as
   /// "reachable router".
   ///
-  /// [reportAuthFailure]: see [_withAuthRetry]. The default reports, because the
+  /// [kind]: see [_withAuthRetry]. The default is a normal request, because the
   /// recovery probe wants exactly that: a rejected token is not an outage to wait
-  /// out. Only the SSE bootstrap's best-effort check passes false.
-  Future<Map<String, dynamic>> health({bool reportAuthFailure = true}) async {
+  /// out. Only the SSE bootstrap's check is [RequestKind.bestEffort].
+  Future<Map<String, dynamic>> health({
+    RequestKind kind = RequestKind.normal,
+  }) async {
     return _withAuthRetry(
-      reportAuthFailure: reportAuthFailure,
-      () => http.get(Uri.parse('$_baseUrl${_endpoints.health}'),
-          headers: _authHeaders),
+      kind: kind,
+      (headers) => http.get(Uri.parse('$_baseUrl${_endpoints.health}'),
+          headers: headers),
       (r) {
         if (r.statusCode < 200 || r.statusCode >= 300) {
           throw BridgeReadException(r.statusCode, 'health');
@@ -230,8 +220,8 @@ class UspBridgeClient {
       );
     }
     return _withAuthRetry(
-      () =>
-          http.get(Uri.parse('$_baseUrl${path(reads)}'), headers: _authHeaders),
+      (headers) =>
+          http.get(Uri.parse('$_baseUrl${path(reads)}'), headers: headers),
       (r) {
         if (r.statusCode < 200 || r.statusCode >= 300) {
           throw BridgeReadException(r.statusCode, label);
@@ -310,7 +300,7 @@ class UspBridgeClient {
     final response = await http
         .get(
       Uri.parse('$_baseUrl${_endpoints.notifications}'),
-      headers: _authHeaders,
+      headers: _headersFor(_credential.read().token),
     )
         .timeout(const Duration(seconds: 5), onTimeout: () {
       return http.Response('(timeout after 5s - expected for SSE)', 200);
@@ -340,8 +330,11 @@ class UspBridgeClient {
       final url = '$_baseUrl${_endpoints.notifications}';
       debug('Fetching $url ...');
 
+      // The token and its session, read together (#1666): the 401 below is
+      // judged against the session this stream was opened for.
+      final (:token, :ticket) = _credential.read();
       final headers = web.Headers();
-      _authHeaders.forEach((k, v) => headers.append(k, v));
+      _headersFor(token).forEach((k, v) => headers.append(k, v));
       headers.set('Accept', 'text/event-stream'); // override Content-Type
 
       final init = web.RequestInit(
@@ -357,35 +350,21 @@ class UspBridgeClient {
 
       if (!response.ok) {
         if (response.status == 401) {
-          if (_authBehavior.shouldRetryOnFailure) {
-            // Local mode: attempt reauth and retry
-            if (authRetryCount >= 1) {
-              debug('401 retry limit reached (max 1 retry)');
-              onAuthFailed?.call();
-              controller.addError(SessionExpiredException(
-                  'Local session expired after reauth'));
-              await controller.close();
-              return;
-            }
-            debug('401 detected, attempting reauth and reconnect...');
-            try {
-              await _usp.reauth();
-              debug('Reauth succeeded, reconnecting SSE...');
-              await _startSseStream(controller, abortController,
-                  authRetryCount: authRetryCount + 1);
-            } catch (e) {
-              debug('Reauth failed: $e');
-              onAuthFailed?.call();
-              controller.addError(
-                  SessionExpiredException('SSE 401 reauth failed: $e'));
-              await controller.close();
-            }
+          // The gate decides (#1666): reauth and reopen once, end the session,
+          // or neither — the same rule as the REST requests above.
+          final reopen = await resendAfter401(
+            gate: _gate,
+            ticket: ticket,
+            resent: authRetryCount >= 1,
+            reauth: _usp.reauth,
+          );
+          if (reopen) {
+            debug('Reauth succeeded, reconnecting SSE...');
+            await _startSseStream(controller, abortController,
+                authRetryCount: authRetryCount + 1);
           } else {
-            // Remote mode: no retry, session is over
-            debug('401 in Remote mode — session expired, closing SSE');
-            onAuthFailed?.call();
-            controller
-                .addError(SessionExpiredException('Remote session expired'));
+            debug('401 — the stream does not reopen');
+            controller.addError(SessionExpiredException('SSE 401'));
             await controller.close();
           }
           return;
@@ -519,9 +498,9 @@ class UspBridgeClient {
       5: 'Event',
     };
     return _withAuthRetry(
-      () => http.post(
+      (headers) => http.post(
         Uri.parse('$_baseUrl${_endpoints.subscription}'),
-        headers: _authHeaders,
+        headers: headers,
         body: jsonEncode({
           'action': 'register',
           'subscription_id': subscriptionId,
@@ -534,17 +513,13 @@ class UspBridgeClient {
   }
 
   /// Unregisters an existing subscription.
-  ///
-  /// [teardown]: a 401 is thrown but not reported — see [_withAuthRetry].
   Future<Map<String, dynamic>> unsubscribe({
     required String subscriptionId,
-    bool teardown = false,
   }) async {
     return _withAuthRetry(
-      reportAuthFailure: !teardown,
-      () => http.post(
+      (headers) => http.post(
         Uri.parse('$_baseUrl${_endpoints.subscription}'),
-        headers: _authHeaders,
+        headers: headers,
         body: jsonEncode({
           'action': 'unregister',
           'subscription_id': subscriptionId,
@@ -555,14 +530,11 @@ class UspBridgeClient {
   }
 
   /// Lists all active subscriptions (Remote mode only).
-  ///
-  /// [teardown]: a 401 is thrown but not reported — see [_withAuthRetry].
-  Future<List<String>> listSubscriptions({bool teardown = false}) async {
+  Future<List<String>> listSubscriptions() async {
     final response = await _withAuthRetry(
-      reportAuthFailure: !teardown,
-      () => http.get(
+      (headers) => http.get(
         Uri.parse('$_baseUrl${_endpoints.subscription}'),
-        headers: _authHeaders,
+        headers: headers,
       ),
       (r) => jsonDecode(r.body),
     );

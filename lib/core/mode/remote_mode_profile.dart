@@ -25,7 +25,7 @@ class RemoteModeProfile implements AppModeProfile {
 
   // Statics for the same reason as LocalModeProfile's — see the comment there.
   static const _credential = RemoteCredentialStrategy();
-  static const _transport = RemoteTransportStrategy(credential: _credential);
+  static const _transport = RemoteTransportStrategy();
   static const _session = RemoteSessionStrategy();
   static const _proximity = RemoteProximityStrategy();
 

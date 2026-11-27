@@ -42,9 +42,6 @@ class RemoteSseStrategy implements SseOperationStrategy {
   @override
   HeartbeatConfig get heartbeatConfig => HeartbeatConfig.remote;
 
-  @override
-  AuthBehavior get authBehavior => AuthBehavior.remote;
-
   /// Registers [subscriptions] in two batches: every unregister at once, then
   /// every register at once.
   ///
@@ -125,19 +122,25 @@ class RemoteSseStrategy implements SseOperationStrategy {
     }
   }
 
-  /// `teardown: true`, so a 401 is thrown and swallowed below but never reported.
-  /// A release can arrive after `session.end()` has spent the credential, where a
-  /// reported 401 asks for a logout from inside the logout — the loop
-  /// [onSseDisconnected]'s cleanup closed. Logout itself does not reach this:
-  /// its `disconnect()` forgets every subscription, so a release that arrives
-  /// later sends nothing. The callers are the last holder's release of one id
-  /// and `SseManager.dispose`'s `unregisterAll()`; both ignore the failure.
+  /// A 401 here is thrown and swallowed below. The callers are the last
+  /// holder's release of one id and `SseManager.dispose`'s `unregisterAll()`,
+  /// and both ignore the failure. Logout itself does not reach this: its
+  /// `disconnect()` forgets every subscription, so a release that arrives later
+  /// sends nothing (#1887).
+  ///
+  /// What the 401 means is `SessionAuthGate`'s (#1666), with no opt-out of its
+  /// own. A release that arrives after `session.end()` has spent the credential
+  /// runs in a session `logout()` has already ended. A Remote Assistance
+  /// re-activation's dispose runs on the old bridge, whose ticket the new
+  /// session has superseded. The gate ignores both, which is what the
+  /// `teardown:` flag used to do (721939aa8). A release in a live session
+  /// reports its 401 like any other request.
   @override
   Future<void> unregisterSubscriptions(List<String> subscriptionIds) async {
     for (final id in subscriptionIds) {
       final remoteId = _toRemoteId(id);
       try {
-        await _bridge.unsubscribe(subscriptionId: remoteId, teardown: true);
+        await _bridge.unsubscribe(subscriptionId: remoteId);
         logger.d('[SSE]: Unregistered $id (as $remoteId)');
       } catch (e) {
         logger.w('[SSE]: Failed to unregister $id: $e');
@@ -233,15 +236,17 @@ class RemoteSseStrategy implements SseOperationStrategy {
   void _fireAndForgetCleanup() {
     // Query existing subscriptions and unregister only remote ones (best-effort).
     //
-    // `teardown: true` on both: an intentional disconnect is almost always a
-    // logout, which has already spent the credential, so a 401 here is the
-    // expected answer. Reported as a session loss, it asked for a logout from
-    // inside the logout that caused it — a loop, measured on QA Guardian at 770
-    // teardowns in four minutes.
-    _bridge.listSubscriptions(teardown: true).then((ids) {
+    // An intentional disconnect is almost always a logout, which has already
+    // spent the credential, so a 401 here is the expected answer. Reported as a
+    // session loss it asked for a logout from inside the logout that caused it —
+    // a loop, measured on QA Guardian at 770 teardowns in four minutes
+    // (7734c2e4d). It cannot now: logout() ends the session first, and
+    // `SessionAuthGate` ignores every 401 for an ended session, including one
+    // that arrives after the teardown has finished (#1666).
+    _bridge.listSubscriptions().then((ids) {
       for (final id in ids) {
         if (_isRemoteId(id)) {
-          _bridge.unsubscribe(subscriptionId: id, teardown: true).ignore();
+          _bridge.unsubscribe(subscriptionId: id).ignore();
         }
       }
     }).ignore();

@@ -14,12 +14,13 @@ import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
 /// unobservable from a unit test by construction. Naming the arguments moves the
 /// decision one step earlier, to a place a test can read.
 ///
-/// The 6 differences, all of them wrong-in-a-local-build if the mode is
+/// The 5 differences, all of them wrong-in-a-local-build if the mode is
 /// mis-decided: [endpoints] (on-router paths vs session-scoped Guardian paths),
 /// [baseUrl] (same-origin vs the Guardian host), [authToken] (none vs a bearer),
-/// [clientTypeId] (none vs the agent's), [authBehavior] (retry a 401 vs treat it
-/// as the end of the support session), and [remoteReads] (three endpoints that
-/// exist remotely and have no local counterpart at all).
+/// [clientTypeId] (none vs the agent's), and [remoteReads] (three endpoints that
+/// exist remotely and have no local counterpart at all). What a 401 means used
+/// to be a sixth; since #1666 the bridge asks `SessionAuthGate`, which reads it
+/// from `CredentialStrategy.authBehavior` itself.
 class BridgeConfig {
   /// Which endpoint table is in force. `BridgeEndpoints.local` is a `const`
   /// singleton; the remote table is session-scoped, so it is a function of the
@@ -40,14 +41,9 @@ class BridgeConfig {
   /// Guardian's client-type discriminator, or `null` locally.
   final String? clientTypeId;
 
-  /// What an auth failure means on this transport. Supplied by
-  /// `CredentialStrategy`, not by the transport itself — the two causes are
-  /// independent, and this field is where they meet.
-  final AuthBehavior authBehavior;
-
   /// The read-only endpoints this transport has, or `null` where it has none.
   ///
-  /// The sixth difference, and the only one that is *absent* on one side rather
+  /// The fifth difference, and the only one that is *absent* on one side rather
   /// than merely different. Guardian persists every notify it proxies and serves
   /// three reads over that store; the on-router bridge has no store, so there is
   /// no local path to name and none is invented. See [RemoteReads] for why a
@@ -63,7 +59,6 @@ class BridgeConfig {
     this.baseUrl,
     this.authToken,
     this.clientTypeId,
-    required this.authBehavior,
     this.remoteReads,
   });
 
@@ -85,6 +80,6 @@ class BridgeConfig {
   String toString() => 'BridgeConfig(baseUrl: $baseUrl, '
       'endpoints: ${endpoints.subscription}, '
       'authToken: ${authToken == null ? 'none' : '<redacted>'}, '
-      'clientTypeId: $clientTypeId, authBehavior: $authBehavior, '
+      'clientTypeId: $clientTypeId, '
       'remoteReads: ${remoteReads == null ? 'none' : 'present'})';
 }

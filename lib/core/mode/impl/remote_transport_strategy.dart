@@ -8,17 +8,13 @@ import 'package:privacy_gui/core/usp/services/sse_operation_strategy.dart';
 import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/framework/mode/bridge_config.dart';
-import 'package:privacy_gui/framework/mode/credential_strategy.dart';
 import 'package:privacy_gui/framework/mode/transport_strategy.dart';
 
 /// `browser → Guardian → router`. Every byte crosses a proxy that scopes it to
 /// one support session.
 class RemoteTransportStrategy implements TransportStrategy {
-  /// The credential cause, injected — see [LocalTransportStrategy.credential]
-  /// for why this is not a hard-coded `AuthBehavior.remote`.
-  final CredentialStrategy credential;
-
-  const RemoteTransportStrategy({required this.credential});
+  /// No credential cause — see [LocalTransportStrategy.new].
+  const RemoteTransportStrategy();
 
   /// Null until the Guardian session exists.
   ///
@@ -42,7 +38,6 @@ class RemoteTransportStrategy implements TransportStrategy {
       baseUrl: config.guardianOrigin,
       authToken: config.temporaryAccessToken,
       clientTypeId: config.clientTypeId,
-      authBehavior: credential.authBehavior,
       // The three reads Guardian serves over its own notification store, which
       // the router has no counterpart for. Non-null here and null in the local
       // arm is the whole of how #1580's page learns whether it has anything to
@@ -148,7 +143,7 @@ class RemoteTransportStrategy implements TransportStrategy {
   ///
   /// A `401` here ends the session (#1627) before the `catch` turns it into
   /// `false` — the same outcome as a `401` on [UspBridgeClient.health] above,
-  /// which the bridge's `onAuthFailed` already signs out on. A rejected token is
+  /// which ends the session through `SessionAuthGate` (#1666). A rejected token is
   /// not an outage to wait out, so probing on would only have hidden it.
   Future<bool> _reachableViaSerialNumber(Ref ref) async {
     final usp = ref.read(uspClientProvider);

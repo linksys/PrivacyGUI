@@ -352,8 +352,7 @@ void main() {
     tearDown(() => container.dispose());
 
     Future<bool> probe() =>
-        const RemoteTransportStrategy(credential: RemoteCredentialStrategy())
-            .isRouterReachable(_refOf(container));
+        const RemoteTransportStrategy().isRouterReachable(_refOf(container));
 
     test('a 200 is reachable, and the body is not read', () async {
       // An empty map stands in for a *partial* answer, which the spec makes a
@@ -419,8 +418,7 @@ void main() {
       addTearDown(noBridge.dispose);
 
       await expectLater(
-        const RemoteTransportStrategy(credential: RemoteCredentialStrategy())
-            .isRouterReachable(_refOf(noBridge)),
+        const RemoteTransportStrategy().isRouterReachable(_refOf(noBridge)),
         completion(isFalse),
       );
     });

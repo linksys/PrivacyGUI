@@ -32,12 +32,6 @@ void main() {
     });
   });
 
-  group('authBehavior', () {
-    test('returns local config with shouldRetryOnFailure=true', () {
-      expect(strategy.authBehavior.shouldRetryOnFailure, isTrue);
-    });
-  });
-
   group('registerSubscriptions', () {
     test('calls bridge.subscribe for each subscription', () async {
       await strategy.registerSubscriptions([

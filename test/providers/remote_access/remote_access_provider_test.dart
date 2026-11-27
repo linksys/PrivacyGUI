@@ -1,9 +1,15 @@
+import 'dart:async';
+
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 import 'package:privacy_gui/core/cloud/services/remote_assistance_service.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
+import 'package:privacy_gui/core/usp/services/session_auth_gate.dart';
+import 'package:privacy_gui/core/usp/services/sse_operation_strategy.dart';
 import 'package:privacy_gui/providers/remote_access/remote_access_provider.dart';
 
 class MockRemoteAssistanceService extends Mock
@@ -633,6 +639,116 @@ void main() {
         final state = container.read(remoteAccessProvider);
         expect(state.remainingSeconds, 500); // abs(500) = 500
 
+        container.dispose();
+      });
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // polling — a 401 is the gate's to judge (#1666)
+  // ---------------------------------------------------------------------------
+  //
+  // The poll ends the session by marking it invalid; the chip then navigates
+  // and logs out, so the gate never ends it here. What the gate decides is
+  // whether this 401 is about the session that is current.
+  group('RemoteAccessNotifier - a 401 on the poll', () {
+    late SessionAuthGate gate;
+    late int gateEnds;
+    late Completer<GRASessionInfo> answer;
+
+    setUp(() {
+      gateEnds = 0;
+      gate = SessionAuthGate(
+          authBehavior: AuthBehavior.remote, endSession: () => gateEnds++)
+        ..begin();
+      when(() => mockService.fetchSessionInfoForCA(
+            sessionToken: any(named: 'sessionToken'),
+            sessionId: any(named: 'sessionId'),
+          )).thenAnswer((_) => answer.future);
+    });
+
+    ProviderContainer containerWithGate() => ProviderContainer(overrides: [
+          remoteAssistanceServiceProvider.overrideWithValue(mockService),
+          sessionAuthGateProvider.overrideWithValue(gate),
+        ]);
+
+    /// Starts a poll for session [id] and leaves it waiting on [answer].
+    ///
+    /// [answer] is made here, inside `fakeAsync`: one made in `setUp` delivers
+    /// its error on the real microtask queue, after the test has finished.
+    RemoteAccessNotifier pollStarted(
+        FakeAsync async, ProviderContainer container,
+        {String id = 'test-session-id'}) {
+      answer = Completer<GRASessionInfo>();
+      final notifier = container.read(remoteAccessProvider.notifier);
+      notifier.updateSessionInfo(createTestSessionInfo(id: id), 600,
+          sessionToken: 'test-token');
+      async.flushMicrotasks();
+      async.elapse(const Duration(seconds: 30));
+      return notifier;
+    }
+
+    GRASessionStatus? statusOf(ProviderContainer container) =>
+        container.read(remoteAccessProvider).sessionInfo?.status;
+
+    test('in the live session, marks it invalid and leaves the end to the chip',
+        () {
+      fakeAsync((async) {
+        final container = containerWithGate();
+        pollStarted(async, container);
+
+        answer.completeError(const UnauthorizedError());
+        async.flushMicrotasks();
+
+        expect(statusOf(container), GRASessionStatus.invalid);
+        expect(gateEnds, 0, reason: 'the chip navigates, then logs out');
+        container.dispose();
+      });
+    });
+
+    test('for a session replaced while the poll was out, changes nothing', () {
+      fakeAsync((async) {
+        final container = containerWithGate();
+        pollStarted(async, container);
+
+        gate.begin(); // a re-activation's transport swap
+        answer.completeError(const UnauthorizedError());
+        async.flushMicrotasks();
+
+        expect(statusOf(container), GRASessionStatus.active);
+        container.dispose();
+      });
+    });
+
+    test('once logout() has ended the session, changes nothing', () {
+      fakeAsync((async) {
+        final container = containerWithGate();
+        pollStarted(async, container);
+
+        gate.markEnded();
+        answer.completeError(const UnauthorizedError());
+        async.flushMicrotasks();
+
+        expect(statusOf(container), GRASessionStatus.active);
+        container.dispose();
+      });
+    });
+
+    // Before, the poll invalidated whatever session was current when its
+    // answer came back.
+    test('only ever invalidates the session it polled', () {
+      fakeAsync((async) {
+        final container = containerWithGate();
+        final notifier = pollStarted(async, container, id: 'polled');
+
+        notifier.updateSessionInfo(createTestSessionInfo(id: 'another'), 600,
+            sessionToken: 'test-token');
+        answer.completeError(const UnauthorizedError());
+        async.flushMicrotasks();
+
+        final info = container.read(remoteAccessProvider).sessionInfo;
+        expect(info?.id, 'another');
+        expect(info?.status, GRASessionStatus.active);
         container.dispose();
       });
     });
