@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/models/single_port_forwarding_rule.dart';
@@ -135,6 +136,37 @@ void main() {
 
       expect(rows.values, everyElement(1), reason: '$rows');
       expect(editing.values, everyElement(1), reason: '$editing');
+    });
+
+    // An identifier does not change with state (constitution 11.3): a test
+    // that found the row's save keeps it while it edits the key's own fields.
+    testWidgets('a desktop row keeps its key while its port is edited',
+        (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pumpList(tester, device1440w);
+
+      await tester.tap(find.bySemanticsIdentifier('pf-single-edit-80-tcp'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+          find.bySemanticsIdentifier('pf-single-external-port'), '8080');
+      await tester.pumpAndSettle();
+      final found = identifierCounts([
+        'pf-single-save-80-tcp',
+        'pf-single-cancel-80-tcp',
+        'pf-single-save-8080-tcp',
+      ]);
+      final edited = ProviderScope.containerOf(
+              tester.element(find.byType(SinglePortForwardingListView)))
+          .read(singlePortForwardingRuleProvider)
+          .rule;
+      semantics.dispose();
+
+      expect(edited?.externalPort, 8080, reason: 'the edit took');
+      expect(found, {
+        'pf-single-save-80-tcp': 1,
+        'pf-single-cancel-80-tcp': 1,
+        'pf-single-save-8080-tcp': 0,
+      });
     });
   });
 }
