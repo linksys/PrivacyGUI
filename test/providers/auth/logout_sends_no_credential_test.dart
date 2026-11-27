@@ -37,6 +37,7 @@ import 'package:privacy_gui/core/jnap/jnap_command_executor_mixin.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/spec/jnap_spec.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
@@ -150,6 +151,12 @@ class _RecordingRouter with JNAPCommandExecutor<Response> {
   void answerAfter(JNAPAction action, Duration delay) =>
       delays[action.actionValue] = delay;
 
+  /// The JNAP result the router answers an action with instead of OK.
+  final Map<String, String> refusals = {};
+
+  void refuse(JNAPAction action, {String result = 'ErrorUnknown'}) =>
+      refusals[action.actionValue] = result;
+
   final List<_Received> received = [];
 
   @override
@@ -173,6 +180,10 @@ class _RecordingRouter with JNAPCommandExecutor<Response> {
             ],
           }),
           200);
+    }
+    final refusal = refusals[command.spec.action];
+    if (refusal != null) {
+      return Response(jsonEncode({keyJnapResult: refusal}), 200);
     }
     return Response(
         jsonEncode({
@@ -461,6 +472,40 @@ void main() {
     // would show these nodes in place of its own.
     expect(container.read(firmwareUpdateCandidateProvider), isNull,
         reason: "the install's saved nodes go with its login");
+  });
+
+  netTest(
+      'an install refused after the logout does not bring back the nodes an '
+      'earlier install saved', (tester) async {
+    // From the review of #1994: a refused install puts back the nodes saved
+    // before it. After a logout, that would undo the logout's clearing.
+    await logIn();
+    router.answer(
+        JNAPAction.getFirmwareUpdateStatus, _firmwareStatus(update: true));
+    final firmware = container.read(firmwareUpdateProvider.notifier);
+    firmware.fetchAvailableFirmwareUpdates();
+    for (var i = 0; i < 4; i++) {
+      await tester.pump(const Duration(seconds: 2));
+    }
+    // An earlier install in this login left its nodes saved.
+    container.read(firmwareUpdateCandidateProvider.notifier).state =
+        firmware.getIDStatusRecords();
+    router
+      ..answerAfter(JNAPAction.updateFirmwareNow, const Duration(seconds: 1))
+      ..refuse(JNAPAction.updateFirmwareNow);
+    // Its refusal comes back during the logout, so it is caught from the start.
+    final refused = firmware
+        .updateFirmware()
+        .then<Object?>((_) => null, onError: (Object error) => error);
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(router.received.where(_isInstallRequest), hasLength(1),
+        reason: 'the install was asked for while logged in');
+
+    await logOut(tester);
+    expect(await refused, isA<JNAPError>(), reason: 'the router refused it');
+
+    expect(container.read(firmwareUpdateCandidateProvider), isNull,
+        reason: "the earlier install's nodes went with the login");
   });
 
   /// Logged in, with one update found and its install started. The router
