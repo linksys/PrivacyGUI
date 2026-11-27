@@ -821,10 +821,14 @@ class UnifiedDiagnosticsNotifier
   }
 
   /// The session's Wi-Fi radios, their DataElements utilization re-read just
-  /// now (#1295). Read, not watched (constitution Article IV Rule 2).
+  /// now (#1295). Read, not watched (constitution Article IV Rule 2). A re-read
+  /// that fails throws, so the step is an error rather than a judgement of the
+  /// cached reading. A re-read skipped because the Wi-Fi data is being read
+  /// again is fine: that read brings its own utilization, and the second
+  /// `future` below waits for it.
   Future<List<WifiRadioUIModel>> _readRadiosWithLiveUtilization() async {
     await ref.read(wifiDataProvider.future);
-    await ref.read(wifiDataProvider.notifier).refreshUtilization();
+    await ref.read(wifiDataProvider.notifier).refreshUtilizationOrThrow();
     return (await ref.read(wifiDataProvider.future)).radioModels;
   }
 
